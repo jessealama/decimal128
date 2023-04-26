@@ -1,8 +1,7 @@
 {
     "name": "decimal128",
     "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
+    "description": "Partial implementation of IEEE 754 Decimal128 decimal floating-point numbers",
     "directories": {
         "test": "tests"
     },
