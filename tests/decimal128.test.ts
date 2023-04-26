@@ -368,6 +368,9 @@ describe("ceiling", function () {
             new Decimal128("-123.456").ceil().equals(new Decimal128("-123"))
         );
     });
+    test("ceiling of an integer is unchanged", () => {
+        expect(new Decimal128("123").ceil().equals(new Decimal128("123")));
+    });
 });
 
 describe("cmp", function () {
