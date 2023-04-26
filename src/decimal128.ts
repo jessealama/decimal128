@@ -7,7 +7,7 @@ const maxSigDigits = 34;
 function normalize(s: string): string {
     let minus = !!s.match(/^-/);
     let a = minus ? s.replace(/^-0+/, "-") : s.replace(/^0+/, "");
-    let b = a.replace(/0+$/, "");
+    let b = a.match(/[.]/) ? a.replace(/0+$/, "") : a;
     if (b.match(/^[.]/)) {
         b = "0" + b;
     }

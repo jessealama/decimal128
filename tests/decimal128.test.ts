@@ -69,6 +69,7 @@ describe("scale and significand", () => {
         "-123.456": ["123456", 3],
         "0.0042": ["42", -4],
         "0.00000000000000000000000000000000000001": ["1", -38],
+        "1000": ["1", 4],
     };
     Object.keys(data).forEach((n) => {
         test(`simple example (${n})`, () => {
@@ -252,6 +253,16 @@ describe("multiply", () => {
             new Decimal128("123456789123456789").multiply(
                 new Decimal128("987654321987654321")
             )
+        ).toThrow(RangeError);
+    });
+    test("scale too big", () => {
+        expect(() =>
+            new Decimal128("1" + ("0".repeat(7000)))
+        ).toThrow(RangeError);
+    });
+    test("scale too small", () => {
+        expect(() =>
+            new Decimal128("0." + ("0".repeat(7000)) + "1")
         ).toThrow(RangeError);
     });
 });
