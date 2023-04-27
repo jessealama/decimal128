@@ -17,7 +17,13 @@
         "semi": true,
         "singleQuote": false
     },
-    "keywords": ["decimal", "float", "number", "IEEE", "bigdecimal"],
+    "keywords": [
+        "decimal",
+        "float",
+        "number",
+        "IEEE",
+        "bigdecimal"
+    ],
     "author": "Jesse Alama <jesse@igalia.com>",
     "license": "ISC",
     "devDependencies": {
