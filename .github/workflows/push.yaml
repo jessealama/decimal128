@@ -8,6 +8,6 @@ jobs:
     - name: npm install
       run: npm install
     - name: lint
-      run: npm lint
+      run: npm run lint
     - name: test
-      run: npm test
+      run: npm run coverage
