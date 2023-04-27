@@ -21,7 +21,7 @@ This package is built on top of the excellent [`bignumber.js` package](https://m
 
 This package aims to reproduce the IEEE 754 [Decimal128](https://en.wikipedia.org/wiki/Decimal128_floating-point_format) decimal floating-point numbers in JavaScript. These **decimal** (not binary!) numbers take up 128 bits of information per number. This format allows for an exact representation of decimal numbers with 34 (decimal) significant digits and an exponent between -6143 and 6144. That's a _vast_ amount of range and precision! Decimal128 is a fantastic standard. Let's implement it in JavaScript.
 
-This package aims to work with only *normalized* values in the Decimal128 universe. With this package, there is no way to represent, say, `1.2` and `1.20` as distinct values. Digit strings are normalized right away, so `1.20` becomes `1.2`. 
+This package aims to work with only _normalized_ values in the Decimal128 universe. With this package, there is no way to represent, say, `1.2` and `1.20` as distinct values. Digit strings are normalized right away, so `1.20` becomes `1.2`.
 
 ### Differences with the official Decimal128
 
