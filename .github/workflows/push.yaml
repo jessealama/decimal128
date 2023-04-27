@@ -1,13 +1,13 @@
 on: push
 name: CI
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: npm install
-      run: npm install
-    - name: lint
-      run: npm run lint
-    - name: test
-      run: npm run coverage
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@master
+            - name: npm install
+              run: npm install
+            - name: lint
+              run: npm run lint
+            - name: test
+              run: npm run coverage
