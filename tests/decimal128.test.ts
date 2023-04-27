@@ -61,6 +61,18 @@ describe("syntax tests", () => {
     });
 });
 
+describe("is-negative", () => {
+    test("simple negative example", () => {
+        expect(new Decimal128("-123.456").isNegative);
+    });
+    test("zero is not negative", () => {
+        expect(new Decimal128("0").isNegative).toBeFalsy();
+    });
+    test("simple positive example", () => {
+        expect(new Decimal128("123.456").isNegative).toBeFalsy();
+    });
+});
+
 describe("scale and significand", () => {
     let data = {
         "123.456": ["123456", 3],
@@ -256,14 +268,14 @@ describe("multiply", () => {
         ).toThrow(RangeError);
     });
     test("scale too big", () => {
-        expect(() =>
-            new Decimal128("1" + ("0".repeat(7000)))
-        ).toThrow(RangeError);
+        expect(() => new Decimal128("1" + "0".repeat(7000))).toThrow(
+            RangeError
+        );
     });
     test("scale too small", () => {
-        expect(() =>
-            new Decimal128("0." + ("0".repeat(7000)) + "1")
-        ).toThrow(RangeError);
+        expect(() => new Decimal128("0." + "0".repeat(7000) + "1")).toThrow(
+            RangeError
+        );
     });
 });
 
@@ -357,16 +369,32 @@ describe("to decimal places", function () {
     test("round if number has more digits than requested (5)", () => {
         expect(d.toDecimalPlaces(1).equals(new Decimal128("1")));
     });
+    test("zero decimal places", () => {
+        expect(() => d.toDecimalPlaces(0)).toThrow(RangeError);
+    });
+    test("negative number of decimal places", () => {
+        expect(() => d.toDecimalPlaces(-1)).toThrow(RangeError);
+    });
+    test("non-integer number of decimal places", () => {
+        expect(() => d.toDecimalPlaces(1.5)).toThrow(TypeError);
+    });
 });
 
 describe("floor", function () {
     test("floor works (positive)", () => {
         expect(new Decimal128("123.456").floor().equals(new Decimal128("123")));
+        expect(new Decimal128("-2.5").floor().equals(new Decimal128("-3")));
     });
     test("floor works (negative)", () => {
         expect(
             new Decimal128("-123.456").floor().equals(new Decimal128("-124"))
         );
+    });
+    test("floor of integer is unchanged", () => {
+        expect(new Decimal128("123").floor().equals(new Decimal128("123")));
+    });
+    test("floor of zero is unchanged", () => {
+        expect(new Decimal128("0").floor().equals(new Decimal128("0")));
     });
 });
 

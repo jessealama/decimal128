@@ -54,6 +54,7 @@ function scale(s: string): number | undefined {
 export class Decimal128 {
     public readonly significand: string;
     public readonly scale: number | undefined;
+    public readonly isNegative: boolean;
     private readonly b: BigNumber;
     private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
 
@@ -61,6 +62,8 @@ export class Decimal128 {
         if (!n.match(this.digitStrRegExp)) {
             throw new SyntaxError("Illegal number format");
         }
+
+        this.isNegative = !!n.match(/^-/);
 
         let normalized = normalize(n);
 
@@ -121,6 +124,14 @@ export class Decimal128 {
     }
 
     toDecimalPlaces(n: number): Decimal128 {
+        if (!Number.isInteger(n)) {
+            throw new TypeError("Argument must be an integer");
+        }
+
+        if (n <= 0) {
+            throw new RangeError("Argument must be positive");
+        }
+
         return new Decimal128(this.b.toFixed(n));
     }
 
@@ -129,7 +140,9 @@ export class Decimal128 {
             return this;
         }
 
-        return this.truncate().add(new Decimal128("1"));
+        return this.truncate().add(
+            new Decimal128(this.isNegative ? "-1" : "1")
+        );
     }
 
     floor(): Decimal128 {
