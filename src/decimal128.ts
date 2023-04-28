@@ -1,8 +1,10 @@
 import BigNumber from "bignumber.js";
+import Decimal from "decimal.js";
 
 const scaleMin = -6143;
 const scaleMax = 6144;
 const maxSigDigits = 34;
+const DIGITS_E = "2.718281828459045235360287471352662";
 
 function normalize(s: string): string {
     let minus = !!s.match(/^-/);
@@ -60,7 +62,7 @@ export class Decimal128 {
 
     constructor(n: string) {
         if (!n.match(this.digitStrRegExp)) {
-            throw new SyntaxError("Illegal number format");
+            throw new SyntaxError(`Illegal number format "${n}"`);
         }
 
         this.isNegative = !!n.match(/^-/);
@@ -95,6 +97,10 @@ export class Decimal128 {
         return this.b.isInteger();
     }
 
+    isZero(): boolean {
+        return this.b.isZero();
+    }
+
     equals(x: Decimal128): boolean {
         return this.b.isEqualTo(x.b);
     }
@@ -121,6 +127,41 @@ export class Decimal128 {
 
     abs(): Decimal128 {
         return this.toDecimal128(this.b.absoluteValue());
+    }
+
+    private toDecimal(): Decimal {
+        return new Decimal(this.b.toFixed());
+    }
+
+    private static fromDecimal(d: Decimal): Decimal128 {
+        return new Decimal128(d.toFixed());
+    }
+
+    log(): Decimal128 {
+        if (this.isZero()) {
+            throw new RangeError("Cannot take logarithm of zero");
+        }
+
+        if (this.isNegative) {
+            throw new RangeError("Cannot take logarithm of negative number");
+        }
+
+        return Decimal128.fromDecimal(this.toDecimal().log());
+    }
+
+    exp(x: Decimal128): Decimal128 {
+        if (this.isZero() && x.isNegative) {
+            throw new RangeError("Cannot raise zero to negative power");
+        }
+
+        if (x.isInteger()) {
+            return this.toDecimal128(this.b.exponentiatedBy(x.b));
+        }
+
+        // use logarithmic exponentiation
+        return Decimal128.fromDecimal(
+            Decimal.exp(this.multiply(x.log()).toString())
+        );
     }
 
     toDecimalPlaces(n: number): Decimal128 {
@@ -160,6 +201,6 @@ export class Decimal128 {
     private toDecimal128(x: BigNumber): Decimal128 {
         return new Decimal128(x.toFixed());
     }
-}
 
-export const E = new Decimal128("2.718281828459045235360287471352662");
+    public static E = new Decimal128(DIGITS_E);
+}
