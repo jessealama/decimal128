@@ -1,6 +1,6 @@
 {
     "name": "decimal128",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Partial implementation of IEEE 754 Decimal128 decimal floating-point numbers",
     "directories": {
         "test": "tests"
