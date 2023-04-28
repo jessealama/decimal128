@@ -129,18 +129,15 @@ export class Decimal128 {
         return this.toDecimal128(this.b.absoluteValue());
     }
 
-    private toDecimal(): Decimal
-    {
+    private toDecimal(): Decimal {
         return new Decimal(this.b.toFixed());
     }
 
-    private static fromDecimal(d: Decimal): Decimal128
-    {
+    private static fromDecimal(d: Decimal): Decimal128 {
         return new Decimal128(d.toFixed());
     }
 
-    log(): Decimal128
-    {
+    log(): Decimal128 {
         if (this.isZero()) {
             throw new RangeError("Cannot take logarithm of zero");
         }
