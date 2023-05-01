@@ -486,7 +486,7 @@ describe("exponential", () => {
         });
     });
     describe("integer base and exponent", () => {
-        describe('exponent is positive', () => {
+        describe("exponent is positive", () => {
             test("2^3", () => {
                 expect(
                     new Decimal128("2")
@@ -495,7 +495,7 @@ describe("exponential", () => {
                 );
             });
         });
-        describe('exponent is negative', () => {
+        describe("exponent is negative", () => {
             test("exact decimal representation exists", () => {
                 expect(
                     new Decimal128("2")
@@ -529,14 +529,20 @@ describe("Euler's constant", () => {
     });
 });
 
-describe('equality', () => {
-    test('equality works', () => {
-        expect(new Decimal128('123').equals(new Decimal128('123'))).toBeTruthy();
+describe("equality", () => {
+    test("equality works", () => {
+        expect(
+            new Decimal128("123").equals(new Decimal128("123"))
+        ).toBeTruthy();
     });
-    test('equality works with different number of digits', () => {
-        expect(new Decimal128('123').equals(new Decimal128('123.1'))).toBeFalsy();
+    test("equality works with different number of digits", () => {
+        expect(
+            new Decimal128("123").equals(new Decimal128("123.1"))
+        ).toBeFalsy();
     });
-    test('non-example', () => {
-       expect(new Decimal128("0.037").equals(new Decimal128('0.037037037037'))).toBeFalsy();
+    test("non-example", () => {
+        expect(
+            new Decimal128("0.037").equals(new Decimal128("0.037037037037"))
+        ).toBeFalsy();
     });
 });
