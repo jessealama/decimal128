@@ -1,6 +1,6 @@
 import { Decimal128 } from "../src/decimal128";
 
-describe("syntax tests", () => {
+describe("syntax", () => {
     test("sane string works", () => {
         expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
     });
@@ -94,7 +94,7 @@ describe("scale and significand", () => {
     });
 });
 
-describe("normalization tests", () => {
+describe("normalization", () => {
     test("zero on the left", () => {
         expect(new Decimal128("0123.456").toString()).toStrictEqual("123.456");
     });
@@ -486,21 +486,31 @@ describe("exponential", () => {
         });
     });
     describe("integer base and exponent", () => {
-        expect(
-            new Decimal128("2")
-                .exp(new Decimal128("3"))
-                .equals(new Decimal128("8"))
-        );
-        expect(
-            new Decimal128("2")
-                .exp(new Decimal128("-3"))
-                .equals(new Decimal128("0.125"))
-        );
-        expect(
-            new Decimal128("-2")
-                .exp(new Decimal128("3"))
-                .equals(new Decimal128("-8"))
-        );
+        describe('exponent is positive', () => {
+            test("2^3", () => {
+                expect(
+                    new Decimal128("2")
+                        .exp(new Decimal128("3"))
+                        .equals(new Decimal128("8"))
+                );
+            });
+        });
+        describe('exponent is negative', () => {
+            test("exact decimal representation exists", () => {
+                expect(
+                    new Decimal128("2")
+                        .exp(new Decimal128("-3"))
+                        .equals(new Decimal128("0.125"))
+                );
+            });
+            test("exact decimal representation does not exist", () => {
+                expect(
+                    new Decimal128("3")
+                        .exp(new Decimal128("-3"))
+                        .equals(new Decimal128("0.037037037037"))
+                );
+            });
+        });
     });
     describe("base is one", () => {
         expect(o.exp(new Decimal128("123")).equals(o));
@@ -516,5 +526,17 @@ describe("exponential", () => {
 describe("Euler's constant", () => {
     test("constant exists", () => {
         expect(Decimal128.E).toBeDefined();
+    });
+});
+
+describe('equality', () => {
+    test('equality works', () => {
+        expect(new Decimal128('123').equals(new Decimal128('123'))).toBeTruthy();
+    });
+    test('equality works with different number of digits', () => {
+        expect(new Decimal128('123').equals(new Decimal128('123.1'))).toBeFalsy();
+    });
+    test('non-example', () => {
+       expect(new Decimal128("0.037").equals(new Decimal128('0.037037037037'))).toBeFalsy();
     });
 });
