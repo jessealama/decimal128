@@ -13,7 +13,7 @@ describe("syntax", () => {
     test("integer works (decimal point unnecessary)", () => {
         expect(new Decimal128("123")).toBeInstanceOf(Decimal128);
     });
-    test("too many digits", () => {
+    test("more significant digits than we can store is OK (rounding)", () => {
         expect(
             () => new Decimal128("123456789123456789123456789123456789")
         ).toThrow(RangeError);
@@ -35,22 +35,6 @@ describe("syntax", () => {
                 "100000000000000000000000000000000000000000000000000"
             )
         ).toBeInstanceOf(Decimal128);
-    });
-    test("significant digits are counted, not total digits (2)", () => {
-        expect(
-            () =>
-                new Decimal128(
-                    "100000000000000000000000000000000000000000000000001"
-                )
-        ).toThrow(RangeError);
-    });
-    test("significant digits are counted, not total digits (3)", () => {
-        expect(
-            () =>
-                new Decimal128(
-                    "1.00000000000000000000000000000000000000000000000001"
-                )
-        ).toThrow(RangeError);
     });
     test("significant digits are counted, not total digits (4)", () => {
         expect(
@@ -127,53 +111,6 @@ describe("normalization", () => {
     });
 });
 
-// Taken from
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
-function getRandomInt(min: number, max: number): number {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
-}
-
-function getRandomArray(len: number, min: number, max: number) {
-    let values: number[] = [];
-    for (let i = 0; i < len; i++) {
-        values = values.concat([getRandomInt(min, max)]);
-    }
-    return values;
-}
-
-function digitArrayToString(digits: number[]): string {
-    return digits.reduce((a, b) => a + b, "");
-}
-
-const maxDigits = 34;
-
-describe("maximum digits", () => {
-    for (let i = 0; i + 1 < maxDigits; i++) {
-        let moreDigits = getRandomArray(i - 2, 0, 10);
-        let digits = [getRandomInt(1, 10)]
-            .concat(moreDigits)
-            .concat([getRandomInt(1, 10)]);
-        let digitString = digitArrayToString(digits);
-        test(`testing ${digitString.length}-digit string (positive)`, () => {
-            expect(new Decimal128(digitString)).toBeInstanceOf(Decimal128);
-        });
-        test(`testing ${digitString.length}-digit string (negative)`, () => {
-            expect(new Decimal128("-" + digitString)).toBeInstanceOf(
-                Decimal128
-            );
-        });
-    }
-    let hugeDigits = digitArrayToString(getRandomArray(maxDigits + 1, 1, 10));
-    test(`too many digits (${maxDigits + 1}, positive)`, () => {
-        expect(() => new Decimal128(hugeDigits)).toThrow(RangeError);
-    });
-    test(`too many digits (${maxDigits + 1}, negative)`, () => {
-        expect(() => new Decimal128("-" + hugeDigits)).toThrow(RangeError);
-    });
-});
-
 describe("addition", () => {
     let bigDigits = "9999999999999999999999999999999999";
     let big = new Decimal128(bigDigits);
@@ -216,7 +153,7 @@ describe("addition", () => {
 });
 
 describe("subtraction", () => {
-    let bigDigits = "9999999999999999999999999999999999";
+    let bigDigits = "9".repeat(34); // maximum number of significant digits
     test("subtract decimal part", () => {
         expect(
             new Decimal128("123.456")
@@ -544,5 +481,36 @@ describe("equality", () => {
         expect(
             new Decimal128("0.037").equals(new Decimal128("0.037037037037"))
         ).toBeFalsy();
+    });
+    describe("many digits", () => {
+        test("integer too large", () => {
+            expect(
+                () =>
+                    new Decimal128(
+                        "100000000000000000000000000000000000000000000000001"
+                    )
+            ).toThrow(RangeError);
+        });
+        test("non-integers get rounded", () => {
+            expect(
+                new Decimal128("0." + "4".repeat(50)).equals(
+                    new Decimal128("0." + "4".repeat(34))
+                )
+            );
+        });
+        test("non-equality within limits", () => {
+            expect(
+                new Decimal128("0." + "4".repeat(33)).equals(
+                    new Decimal128("0." + "4".repeat(34))
+                )
+            ).toBeFalsy();
+        });
+        test("non-integer works out to be integer", () => {
+            expect(
+                new Decimal128(
+                    "1.00000000000000000000000000000000000000000000000001"
+                ).equals(new Decimal128("1"))
+            );
+        });
     });
 });

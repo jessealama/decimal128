@@ -121,9 +121,21 @@ export class Decimal128 {
 
         let sg = significand(normalized);
         let sc = scale(normalized);
+        let isInteger = !!normalized.match(/^[0-9]+$/);
 
-        if (sg.length > maxSigDigits) {
-            throw new RangeError(`Too many significant digits (${sg.length})`);
+        let numSigDigits = sg.length;
+
+        if (isInteger && numSigDigits > maxSigDigits) {
+            throw new RangeError("Integer too large");
+        }
+
+        if (numSigDigits > maxSigDigits) {
+            let finalDigit = parseInt(sg.charAt(maxSigDigits));
+            if (finalDigit >= 5) {
+                sg = sg.substring(0, maxSigDigits - 1) + `${finalDigit + 1}`;
+            } else {
+                sg = sg.substring(0, maxSigDigits);
+            }
         }
 
         if (sc > scaleMax) {
