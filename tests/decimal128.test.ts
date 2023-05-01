@@ -1,5 +1,7 @@
 import { Decimal128 } from "../src/decimal128";
 
+const MAX_SIGNIFICANT_DIGITS = 34;
+
 describe("syntax", () => {
     test("sane string works", () => {
         expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
@@ -112,7 +114,7 @@ describe("normalization", () => {
 });
 
 describe("addition", () => {
-    let bigDigits = "9".repeat(34); // maximum number of significant digits
+    let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
     let big = new Decimal128(bigDigits);
     let zero = new Decimal128("0");
     let one = new Decimal128("1");
@@ -153,7 +155,7 @@ describe("addition", () => {
 });
 
 describe("subtraction", () => {
-    let bigDigits = "9".repeat(34); // maximum number of significant digits
+    let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
     test("subtract decimal part", () => {
         expect(
             new Decimal128("123.456")
@@ -494,14 +496,14 @@ describe("equality", () => {
         test("non-integers get rounded", () => {
             expect(
                 new Decimal128("0." + "4".repeat(50)).equals(
-                    new Decimal128("0." + "4".repeat(34))
+                    new Decimal128("0." + "4".repeat(MAX_SIGNIFICANT_DIGITS))
                 )
             );
         });
         test("non-equality within limits", () => {
             expect(
                 new Decimal128("0." + "4".repeat(33)).equals(
-                    new Decimal128("0." + "4".repeat(34))
+                    new Decimal128("0." + "4".repeat(MAX_SIGNIFICANT_DIGITS))
                 )
             ).toBeFalsy();
         });
