@@ -112,7 +112,7 @@ describe("normalization", () => {
 });
 
 describe("addition", () => {
-    let bigDigits = "9999999999999999999999999999999999";
+    let bigDigits = "9".repeat(34); // maximum number of significant digits
     let big = new Decimal128(bigDigits);
     let zero = new Decimal128("0");
     let one = new Decimal128("1");
@@ -175,7 +175,7 @@ describe("subtraction", () => {
                 .equals(new Decimal128("9999999999999999999999999999999990"))
         );
     });
-    test("overflow", () => {
+    test("integer overflow", () => {
         expect(() =>
             new Decimal128("-" + bigDigits).subtract(new Decimal128("9"))
         ).toThrow(RangeError);
