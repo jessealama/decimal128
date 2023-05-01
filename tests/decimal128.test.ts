@@ -508,7 +508,7 @@ describe("exponential", () => {
         expect(o.exp(new Decimal128("0")).equals(o));
     });
 
-    describe('cannot raise to non-integer power', () => {
+    describe("cannot raise to non-integer power", () => {
         expect(() => o.exp(new Decimal128("0.5"))).toThrow(RangeError);
     });
 });
