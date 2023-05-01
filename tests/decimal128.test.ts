@@ -467,9 +467,6 @@ describe("exponential", () => {
         test("exponent is positive integer", () => {
             expect(z.exp(new Decimal128("5")).equals(z));
         });
-        test("exponent is positive non-integer", () => {
-            expect(z.exp(new Decimal128("4.876")).equals(z));
-        });
         test("exponent is negative integer", () => {
             expect(() => z.exp(new Decimal128("-42"))).toThrow(RangeError);
         });
@@ -505,44 +502,14 @@ describe("exponential", () => {
                 .equals(new Decimal128("-8"))
         );
     });
-    describe("worked out examples (exact)", () => {
-        test("1", () => {
-            expect(
-                new Decimal128("1.234")
-                    .exp(new Decimal128("4.567"))
-                    .equals(new Decimal128("2.6123799045"))
-            );
-        });
-    });
     describe("base is one", () => {
         expect(o.exp(new Decimal128("123")).equals(o));
         expect(o.exp(new Decimal128("-42")).equals(o));
         expect(o.exp(new Decimal128("0")).equals(o));
-        expect(o.exp(new Decimal128("0.5")).equals(o));
     });
 
-    // give me five test cases for the log function
-    describe("log", () => {
-        test("log of zero", () => {
-            expect(() => z.log()).toThrow(RangeError);
-        });
-        test("log of negative", () => {
-            expect(() => new Decimal128("-42").log()).toThrow(RangeError);
-        });
-        test("log of positive integer", () => {
-            expect(
-                new Decimal128("123")
-                    .log()
-                    .equals(new Decimal128("4.8121843554"))
-            );
-        });
-        test("log of positive non-integer", () => {
-            expect(
-                new Decimal128("4.876")
-                    .log()
-                    .equals(new Decimal128("1.5843252116"))
-            );
-        });
+    describe('cannot raise to non-integer power', () => {
+        expect(() => o.exp(new Decimal128("0.5"))).toThrow(RangeError);
     });
 });
 

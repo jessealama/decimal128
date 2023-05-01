@@ -1,5 +1,4 @@
 import BigNumber from "bignumber.js";
-import Decimal from "decimal.js";
 
 const scaleMin = -6143;
 const scaleMax = 6144;
@@ -129,26 +128,6 @@ export class Decimal128 {
         return this.toDecimal128(this.b.absoluteValue());
     }
 
-    private toDecimal(): Decimal {
-        return new Decimal(this.b.toFixed());
-    }
-
-    private static fromDecimal(d: Decimal): Decimal128 {
-        return new Decimal128(d.toFixed());
-    }
-
-    log(): Decimal128 {
-        if (this.isZero()) {
-            throw new RangeError("Cannot take logarithm of zero");
-        }
-
-        if (this.isNegative) {
-            throw new RangeError("Cannot take logarithm of negative number");
-        }
-
-        return Decimal128.fromDecimal(this.toDecimal().log());
-    }
-
     exp(x: Decimal128): Decimal128 {
         if (this.isZero() && x.isNegative) {
             throw new RangeError("Cannot raise zero to negative power");
@@ -158,10 +137,7 @@ export class Decimal128 {
             return this.toDecimal128(this.b.exponentiatedBy(x.b));
         }
 
-        // use logarithmic exponentiation
-        return Decimal128.fromDecimal(
-            Decimal.exp(this.multiply(x.log()).toString())
-        );
+        throw new RangeError('Cannot raise to non-integer power');
     }
 
     toDecimalPlaces(n: number): Decimal128 {
