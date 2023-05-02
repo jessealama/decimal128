@@ -20,6 +20,35 @@ const scaleMax = 6144;
 const maxSigDigits = 34;
 const DIGITS_E = "2.718281828459045235360287471352662";
 
+function alignDivision(x: string, y: string): [string, string] {
+    let alignedX = x;
+    let alignedY = y;
+
+    while (alignedY.match(/[.]/)) {
+        alignedX = alignedX + "0";
+        let [lhs, rhs] = alignedY.split(".");
+        alignedY = lhs + rhs.substring(0, 1) + "." + rhs.substring(1);
+    }
+
+    return [alignedX, alignedY];
+}
+
+function fooBar(lhs: string | bigint, rhs: string | bigint): number {
+    if ("string" === typeof lhs) {
+        return fooBar(BigInt(lhs), rhs);
+    } else if ("string" === typeof rhs) {
+        let [truncated] = rhs.split(".");
+        return fooBar(lhs, BigInt(truncated));
+    } else if (lhs > rhs) {
+        return fooBar(lhs, rhs * BigInt("10"));
+    } else if (lhs === rhs) {
+        return 1;
+    } else {
+        return parseInt((rhs/lhs).toString());
+    }
+}
+
+
 /**
  * Normalize a digit string. This means:
  *
@@ -73,6 +102,10 @@ function significand(s: string): string {
     } else {
         return s;
     }
+}
+
+function countSignificantDigits(s: string): number {
+    return significand(normalize(s)).length;
 }
 
 /**
@@ -202,6 +235,14 @@ export class Decimal128 {
         return Decimal128.toDecimal128(this.b.minus(x.b));
     }
 
+    negate(): Decimal128 {
+        if (this.isNegative) {
+            return new Decimal128(this.toString().substring(1));
+        }
+
+        return new Decimal128("-" + this.toString());
+    }
+
     /**
      * Multiply this Decimal128 value by another.
      *
@@ -219,11 +260,41 @@ export class Decimal128 {
      * @param x
      */
     divide(x: Decimal128): Decimal128 {
-        if (x.b.isZero()) {
+        if (x.isZero()) {
             throw new RangeError("Cannot divide by zero");
         }
 
-        return Decimal128.toDecimal128(this.b.dividedBy(x.b));
+        if (this.isNegative) {
+            return this.negate().divide(x).negate();
+        }
+
+        if (x.isNegative) {
+            return this.divide(x.negate()).negate();
+        }
+
+        let [ dividend, divisor ] = alignDivision(this.toString(), x.toString());
+
+        let d = fooBar(dividend, divisor);
+
+        let result = "0.";
+
+        function* nextDigit(): Generator<number> {
+            yield 0;
+            yield 1;
+            yield 2;
+            return 0;
+        }
+
+        let digitGenerator = nextDigit();
+        let digit = digitGenerator.next();
+        while (!digit.done && countSignificantDigits(result) < maxSigDigits) {
+            result = result + digit.value;
+            digit = digitGenerator.next();
+        }
+
+        console.log("result: ", result);
+
+        return new Decimal128(result);
     }
 
     /**
