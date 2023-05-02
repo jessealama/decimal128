@@ -2,12 +2,15 @@ import { Decimal128 } from "../src/decimal128";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 
+const zero = new Decimal128("0");
+const one = new Decimal128("1");
+
 describe("syntax", () => {
     test("sane string works", () => {
         expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
     });
     test("zero works", () => {
-        expect(new Decimal128("0")).toBeInstanceOf(Decimal128);
+        expect(zero).toBeInstanceOf(Decimal128);
     });
     test("negative works", () => {
         expect(new Decimal128("-123.456")).toBeInstanceOf(Decimal128);
@@ -38,7 +41,12 @@ describe("syntax", () => {
             )
         ).toBeInstanceOf(Decimal128);
     });
-    test("significant digits are counted, not total digits (4)", () => {
+    test("too many significant digits", () => {
+        expect(
+            () => new Decimal128("-10000000000000000000000000000000008")
+        ).toThrow(RangeError);
+    });
+    test("significant digits are counted, not total digits (2)", () => {
         expect(
             new Decimal128(
                 "10000000000000000000000000000000000000000000.0000000"
@@ -52,7 +60,7 @@ describe("is-negative", () => {
         expect(new Decimal128("-123.456").isNegative);
     });
     test("zero is not negative", () => {
-        expect(new Decimal128("0").isNegative).toBeFalsy();
+        expect(zero.isNegative).toBeFalsy();
     });
     test("simple positive example", () => {
         expect(new Decimal128("123.456").isNegative).toBeFalsy();
@@ -77,6 +85,11 @@ describe("scale and significand", () => {
             expect(d.significand).toStrictEqual(sigDigits);
             expect(d.scale).toStrictEqual(scale);
         });
+    });
+    test("silently round up if too many significant digits", () => {
+        expect(
+            new Decimal128("1234.56789123456789123456789123456789").significand
+        ).toStrictEqual("1234567891234567891234567891234568");
     });
 });
 
@@ -116,8 +129,7 @@ describe("normalization", () => {
 describe("addition", () => {
     let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
     let big = new Decimal128(bigDigits);
-    let zero = new Decimal128("0");
-    let one = new Decimal128("1");
+    ("");
     let two = new Decimal128("2");
     let minusOne = new Decimal128("-1");
     test("big is at the limit (cannot add more digits)", () => {
@@ -174,7 +186,7 @@ describe("subtraction", () => {
         expect(
             new Decimal128(bigDigits)
                 .subtract(new Decimal128("9"))
-                .equals(new Decimal128("9999999999999999999999999999999990"))
+                .equals(new Decimal128("9".repeat(MAX_SIGNIFICANT_DIGITS - 1)))
         );
     });
     test("integer overflow", () => {
@@ -247,6 +259,15 @@ describe("divide", () => {
             new Decimal128("123.456").divide(new Decimal128("0.0"))
         ).toThrow(RangeError);
     });
+    test("one third", () => {
+        expect(
+            one
+                .divide(new Decimal128("3"))
+                .equals(
+                    new Decimal128("0." + "3".repeat(MAX_SIGNIFICANT_DIGITS))
+                )
+        );
+    });
 });
 
 describe("is-integer", () => {
@@ -257,7 +278,7 @@ describe("is-integer", () => {
         expect(new Decimal128("-456").isInteger());
     });
     test("zero is integer", () => {
-        expect(new Decimal128("0").isInteger());
+        expect(zero.isInteger());
     });
     test("zero point zero is integer", () => {
         expect(new Decimal128("0.0").isInteger());
@@ -306,7 +327,7 @@ describe("to decimal places", function () {
         expect(d.toDecimalPlaces(2).equals(new Decimal128("12")));
     });
     test("round if number has more digits than requested (5)", () => {
-        expect(d.toDecimalPlaces(1).equals(new Decimal128("1")));
+        expect(d.toDecimalPlaces(1).equals(one));
     });
     test("zero decimal places", () => {
         expect(() => d.toDecimalPlaces(0)).toThrow(RangeError);
@@ -333,7 +354,7 @@ describe("floor", function () {
         expect(new Decimal128("123").floor().equals(new Decimal128("123")));
     });
     test("floor of zero is unchanged", () => {
-        expect(new Decimal128("0").floor().equals(new Decimal128("0")));
+        expect(zero.floor().equals(zero));
     });
 });
 
@@ -377,9 +398,7 @@ describe("truncate", () => {
         );
     });
     test("between zero and one", () => {
-        expect(
-            new Decimal128("0.00765").truncate().equals(new Decimal128("0"))
-        );
+        expect(new Decimal128("0.00765").truncate().equals(zero));
     });
 });
 
@@ -400,28 +419,26 @@ describe("equals", () => {
 });
 
 describe("exponential", () => {
-    let z = new Decimal128("0");
-    let o = new Decimal128("1");
     describe("base is zero", () => {
         test("exponent is positive integer", () => {
-            expect(z.exp(new Decimal128("5")).equals(z));
+            expect(zero.exp(new Decimal128("5")).equals(zero));
         });
         test("exponent is negative integer", () => {
-            expect(() => z.exp(new Decimal128("-42"))).toThrow(RangeError);
+            expect(() => zero.exp(new Decimal128("-42"))).toThrow(RangeError);
         });
         test("exponent is negative non-integer", () => {
-            expect(() => z.exp(new Decimal128("-2.75"))).toThrow(RangeError);
+            expect(() => zero.exp(new Decimal128("-2.75"))).toThrow(RangeError);
         });
     });
     describe("exponent is zero", () => {
         test("base is positive integer", () => {
-            expect(new Decimal128("123").exp(z).equals(o));
+            expect(new Decimal128("123").exp(zero).equals(one));
         });
         test("base is positive non-integer", () => {
-            expect(new Decimal128("4.876").exp(z).equals(o));
+            expect(new Decimal128("4.876").exp(zero).equals(one));
         });
         test("base is negative integer", () => {
-            expect(new Decimal128("-42").exp(z).equals(o));
+            expect(new Decimal128("-42").exp(zero).equals(one));
         });
     });
     describe("integer base and exponent", () => {
@@ -452,13 +469,13 @@ describe("exponential", () => {
         });
     });
     describe("base is one", () => {
-        expect(o.exp(new Decimal128("123")).equals(o));
-        expect(o.exp(new Decimal128("-42")).equals(o));
-        expect(o.exp(new Decimal128("0")).equals(o));
+        expect(one.exp(new Decimal128("123")).equals(one));
+        expect(one.exp(new Decimal128("-42")).equals(one));
+        expect(one.exp(zero).equals(one));
     });
 
     describe("cannot raise to non-integer power", () => {
-        expect(() => o.exp(new Decimal128("0.5"))).toThrow(RangeError);
+        expect(() => one.exp(new Decimal128("0.5"))).toThrow(RangeError);
     });
 });
 
@@ -511,7 +528,7 @@ describe("equality", () => {
             expect(
                 new Decimal128(
                     "1.00000000000000000000000000000000000000000000000001"
-                ).equals(new Decimal128("1"))
+                ).equals(one)
             );
         });
     });
