@@ -44,10 +44,9 @@ function fooBar(lhs: string | bigint, rhs: string | bigint): number {
     } else if (lhs === rhs) {
         return 1;
     } else {
-        return parseInt((rhs/lhs).toString());
+        return parseInt((rhs / lhs).toString());
     }
 }
-
 
 /**
  * Normalize a digit string. This means:
@@ -274,7 +273,7 @@ export class Decimal128 {
             return this.divide(x.negate()).negate();
         }
 
-        let [ dividend, divisor ] = alignDivision(this.toString(), x.toString());
+        let [dividend, divisor] = alignDivision(this.toString(), x.toString());
 
         let d = fooBar(dividend, divisor);
 
