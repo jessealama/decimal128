@@ -121,7 +121,7 @@ export class Decimal128 {
 
         let sg = significand(normalized);
         let sc = scale(normalized);
-        let isInteger = !!normalized.match(/^[0-9]+$/);
+        let isInteger = !!normalized.match(/^-?[0-9]+$/);
 
         let numSigDigits = sg.length;
 
@@ -130,7 +130,7 @@ export class Decimal128 {
         }
 
         if (numSigDigits > maxSigDigits) {
-            let finalDigit = parseInt(sg.charAt(maxSigDigits));
+            let finalDigit = parseInt(sg.charAt(maxSigDigits - 1));
             if (finalDigit >= 5) {
                 sg = sg.substring(0, maxSigDigits - 1) + `${finalDigit + 1}`;
             } else {
