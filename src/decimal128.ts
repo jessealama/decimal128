@@ -264,6 +264,8 @@ export class Decimal128 {
             throw new RangeError("Cannot divide by zero");
         }
 
+        return Decimal128.toDecimal128(this.b.dividedBy(x.b));
+
         if (this.isNegative) {
             return this.negate().divide(x).negate();
         }
