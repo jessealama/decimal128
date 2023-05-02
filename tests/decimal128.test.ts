@@ -440,6 +440,9 @@ describe("exponential", () => {
         test("base is negative integer", () => {
             expect(new Decimal128("-42").exp(zero).equals(one));
         });
+        test("10^0", () => {
+            expect(new Decimal128("10").exp(zero).equals(one));
+        });
     });
     describe("integer base and exponent", () => {
         describe("exponent is positive", () => {
@@ -448,6 +451,18 @@ describe("exponential", () => {
                     new Decimal128("2")
                         .exp(new Decimal128("3"))
                         .equals(new Decimal128("8"))
+                );
+            });
+            test("1^100", () => {
+                expect(
+                    new Decimal128("1").exp(new Decimal128("100")).equals(one)
+                );
+            });
+            test("5^3", () => {
+                expect(
+                    new Decimal128("5")
+                        .exp(new Decimal128("3"))
+                        .equals(new Decimal128("125"))
                 );
             });
         });
@@ -459,13 +474,54 @@ describe("exponential", () => {
                         .equals(new Decimal128("0.125"))
                 );
             });
+            test("4^-1", () => {
+                expect(
+                    new Decimal128("4")
+                        .exp(new Decimal128("-1"))
+                        .equals(new Decimal128("0.25"))
+                );
+            });
             test("exact decimal representation does not exist", () => {
                 expect(
                     new Decimal128("3")
                         .exp(new Decimal128("-3"))
-                        .equals(new Decimal128("0.037037037037"))
+                        .equals(
+                            new Decimal128(
+                                "0.037037037037037037037037037037037"
+                            )
+                        )
                 );
             });
+        });
+    });
+    describe("non-integer base, integer exponent", () => {
+        test("0.5^-2", () => {
+            expect(
+                new Decimal128("0.5")
+                    .exp(new Decimal128("-2"))
+                    .equals(new Decimal128("4"))
+            );
+        });
+        test("1.5^2", () => {
+            expect(
+                new Decimal128("1.5")
+                    .exp(new Decimal128("2"))
+                    .equals(new Decimal128("2.25"))
+            );
+        });
+        test("0.125^3", () => {
+            expect(
+                new Decimal128("0.125")
+                    .exp(new Decimal128("3"))
+                    .equals(new Decimal128("0.001953125"))
+            );
+        });
+        test("0.8^4", () => {
+            expect(
+                new Decimal128("0.8")
+                    .exp(new Decimal128("4"))
+                    .equals(new Decimal128("0.4096"))
+            );
         });
     });
     describe("base is one", () => {
@@ -473,7 +529,6 @@ describe("exponential", () => {
         expect(one.exp(new Decimal128("-42")).equals(one));
         expect(one.exp(zero).equals(one));
     });
-
     describe("cannot raise to non-integer power", () => {
         expect(() => one.exp(new Decimal128("0.5"))).toThrow(RangeError);
     });

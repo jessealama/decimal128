@@ -178,7 +178,11 @@ export class Decimal128 {
      * @param x
      */
     equals(x: Decimal128): boolean {
-        return this.b.isEqualTo(x.b);
+        return (
+            this.significand === x.significand &&
+            this.scale === x.scale &&
+            this.isNegative === x.isNegative
+        );
     }
 
     /**
