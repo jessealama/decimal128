@@ -15,38 +15,12 @@ import BigNumber from "bignumber.js";
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-const scaleMin = -6143;
-const scaleMax = 6144;
+const exponentMin = -6143;
+const exponentMax = 6144;
 const maxSigDigits = 34;
 const DIGITS_E = "2.718281828459045235360287471352662";
 
-function alignDivision(x: string, y: string): [string, string] {
-    let alignedX = x;
-    let alignedY = y;
-
-    while (alignedY.match(/[.]/)) {
-        alignedX = alignedX + "0";
-        let [lhs, rhs] = alignedY.split(".");
-        alignedY = lhs + rhs.substring(0, 1) + "." + rhs.substring(1);
-    }
-
-    return [alignedX, alignedY];
-}
-
-function fooBar(lhs: string | bigint, rhs: string | bigint): number {
-    if ("string" === typeof lhs) {
-        return fooBar(BigInt(lhs), rhs);
-    } else if ("string" === typeof rhs) {
-        let [truncated] = rhs.split(".");
-        return fooBar(lhs, BigInt(truncated));
-    } else if (lhs > rhs) {
-        return fooBar(lhs, rhs * BigInt("10"));
-    } else if (lhs === rhs) {
-        return 1;
-    } else {
-        return parseInt((rhs / lhs).toString());
-    }
-}
+BigNumber.set({ DECIMAL_PLACES: 100 });
 
 /**
  * Normalize a digit string. This means:
@@ -103,83 +77,345 @@ function significand(s: string): string {
     }
 }
 
+/**
+ * Counts the number of significant digits in a digit string, assumed to be normalized.
+ *
+ * @param s
+ */
 function countSignificantDigits(s: string): number {
-    return significand(normalize(s)).length;
+    if (s.match(/^-/)) {
+        return countSignificantDigits(s.substring(1));
+    }
+
+    if (s.match(/^0[.]/)) {
+        let m = s.match(/[.]0+/);
+
+        if (m) {
+            return s.length - m[0].length - 2;
+        }
+
+        return s.length - 2;
+    }
+
+    if (s.match(/[.]/)) {
+        return s.length - 1;
+    }
+
+    let m = s.match(/0+$/);
+
+    if (m) {
+        return s.length - m[0].length;
+    }
+
+    return s.length;
 }
 
 /**
- * Return the scale of a digit string, assumed to be normalized.
+ * Get the n-th significant digit of a digit string, assumed to be normalized.
  *
- * Return an integer in all cases except one: if the digit string is zero, return undefined.
- *
- * @param s
- *
- * @example scale("123.456") // => 3
- * @example scale("0.000123") // => -3
- * @example scale("0.000000") // => undefined
- * @example scale("0.000001") // => -6
+ * @param s digit string (assumed to be normalized)
+ * @param n non-negative integer
  */
-function scale(s: string): number | undefined {
+function nthSignificantDigit(s: string, n: number): number {
+    if (n < 0) {
+        throw new RangeError("n must be non-negative");
+    }
+
+    let sg = significand(s);
+
+    return parseInt(sg.charAt(n));
+}
+
+function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
     if (s.match(/^-/)) {
-        return scale(s.substring(1));
-    } else if (s.match(/^0[.]/)) {
-        return 0 - scale(s.substring(2));
-    } else if (s.match(/[.]/)) {
-        let [lhs] = s.split(".");
-        return lhs.length;
-    } else if ("0" === s) {
-        return undefined;
+        return "-" + maybeRoundAfterNSignificantDigits(s.substring(1), n);
+    }
+
+    let [lhs, rhs] = s.split(".");
+
+    if ("" === rhs) {
+        throw new RangeError("Cannot round integers");
+    }
+
+    if (lhs.length > n) {
+        throw new RangeError("Cannot round the integer part of a number");
+    }
+
+    let finalDigit = nthSignificantDigit(s, n - 1);
+    let decidingDigit = nthSignificantDigit(s, n);
+
+    if (decidingDigit >= 5) {
+        if (9 === finalDigit) {
+            let cutoff = cutoffAfterSignificantDigits(s, n - 1);
+            let rounded = maybeRoundAfterNSignificantDigits(cutoff, n - 1);
+            return rounded + "0";
+        }
+
+        return cutoffAfterSignificantDigits(s, n - 1) + `${finalDigit + 1}`;
+    }
+
+    return cutoffAfterSignificantDigits(s, n);
+}
+
+function cutoffAfterSignificantDigits(s: string, n: number): string {
+    if (s.match(/^-/)) {
+        return "-" + cutoffAfterSignificantDigits(s.substring(1), n);
+    }
+
+    if (s.match(/^0[.]/)) {
+        let m = s.match(/^0[.]0+/);
+
+        if (m) {
+            return (
+                m[0] + cutoffAfterSignificantDigits(s.substring(m[0].length), n)
+            );
+        }
+
+        return s.substring(0, n + 2);
+    }
+
+    if (s.match(/[.]/)) {
+        let newS = s.substring(0, n + 1);
+        if (newS.match(/[.]$/)) {
+            return newS.substring(0, newS.length - 1);
+        } else {
+            return newS;
+        }
+    }
+
+    return s.substring(0, n);
+}
+
+function ensureDecimalPoint(s: string): string {
+    if (s.match(/[.]/)) {
+        return s;
     } else {
-        return s.length;
+        return s + ".0";
+    }
+}
+
+/**
+ * Given two digit strings, return a pair of digit strings where
+ *
+ * + the number of digits before the decimal point is the same
+ * + the number of digits after the decimal point is the same
+ *
+ * This means that one of the strings may have some zeros prepended to it,
+ * and possibly prepended to it.
+ *
+ * It is assumed that both digits are non-negative.
+ *
+ * @example padDigits("123.456", "9.9") // => ["123.456", "009.900"]
+ * @example padDigits("123.456", "9.99") // => ["123.456", "009.990"]
+ *
+ * @param s1
+ * @param s2
+ */
+function padDigits(s1: string, s2: string): [string, string] {
+    let [lhs1, rhs1] = ensureDecimalPoint(s1).split(".");
+    let [lhs2, rhs2] = ensureDecimalPoint(s2).split(".");
+
+    let numIntegerDigits1 = lhs1.length;
+    let numIntegerDigits2 = lhs2.length;
+    let numDecimalDigits1 = rhs1.length;
+    let numDecimalDigits2 = rhs2.length;
+
+    let result1 = `${lhs1}.${rhs1}`;
+    let result2 = `${lhs2}.${rhs2}`;
+
+    if (numIntegerDigits1 < numIntegerDigits2) {
+        result1 = "0".repeat(numIntegerDigits2 - numIntegerDigits1) + result1;
+    } else {
+        result2 = "0".repeat(numIntegerDigits1 - numIntegerDigits2) + result2;
+    }
+
+    if (numDecimalDigits1 < numDecimalDigits2) {
+        result1 = result1 + "0".repeat(numDecimalDigits2 - numDecimalDigits1);
+    } else {
+        result2 = result2 + "0".repeat(numDecimalDigits1 - numDecimalDigits2);
+    }
+
+    return [result1, result2];
+}
+
+/**
+ * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
+ * return a generator that successively yields the digits of the sum of the two numbers.
+ *
+ * Yields -1 to signal that the generator is moving from the integer part to the decimal part.
+ *
+ * @param x
+ * @param y
+ */
+function* nextDigitForAddition(x: string, y: string): Generator<number> {
+    let [alignedX, alignedY] = padDigits(x, y);
+    let [integerDigitsX, decimalDigitsX] = alignedX.split(".");
+    let [integerDigitsY, decimalDigitsY] = alignedY.split(".");
+
+    let carry = 0;
+    let numIntegerDigits = integerDigitsX.length;
+    let numDecimalDigits = decimalDigitsX.length;
+
+    for (let i = 0; i < numIntegerDigits; i++) {
+        let d1 = parseInt(integerDigitsX.charAt(numIntegerDigits - i - 1));
+        let d2 = parseInt(integerDigitsY.charAt(numIntegerDigits - i - 1));
+        let d = carry + d1 + d2;
+
+        if (d > 9) {
+            carry = 1;
+            yield d - 10;
+        } else {
+            carry = 0;
+            yield d;
+        }
+    }
+
+    yield carry;
+
+    carry = 0;
+
+    yield -1; // done with integer part
+
+    for (let i = 0; i < numDecimalDigits; i++) {
+        let d1 = parseInt(decimalDigitsX.charAt(i));
+        let d2 = parseInt(decimalDigitsY.charAt(i));
+        let d = carry + d1 + d2;
+
+        if (d > 9) {
+            carry = 1;
+            yield d - 10;
+        } else {
+            carry = 0;
+            yield d;
+        }
+    }
+
+    yield carry;
+
+    return 0;
+}
+
+/**
+ * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
+ * return a generator that successively yields the digits of the subtraction of the second from the first.
+ *
+ * Yields -1 to signal that the generator is moving from the decimal part to the integer part.
+ *
+ * @param x
+ * @param y
+ */
+function* nextDigitForSubtraction(x: string, y: string): Generator<number> {
+    let [alignedX, alignedY] = padDigits(x, y);
+    let [integerDigitsX, decimalDigitsX] = alignedX.split(".");
+    let [integerDigitsY, decimalDigitsY] = alignedY.split(".");
+
+    let carry = 0;
+    let numIntegerDigits = integerDigitsX.length;
+    let numDecimalDigits = decimalDigitsX.length;
+
+    for (let i = 0; i < numDecimalDigits; i++) {
+        let d1 = parseInt(decimalDigitsX.charAt(numDecimalDigits - 1 - i));
+        let d2 = parseInt(decimalDigitsY.charAt(numDecimalDigits - 1 - i));
+        let d = d2 - d1 - carry;
+
+        if (d < 0) {
+            carry = -1;
+            yield 10 - d;
+        } else {
+            carry = 0;
+            yield d;
+        }
+    }
+
+    yield -1; // decimal point
+
+    for (let i = 0; i < numIntegerDigits; i++) {
+        let d1 = parseInt(integerDigitsX.charAt(numIntegerDigits - 1 - i));
+        let d2 = parseInt(integerDigitsY.charAt(numIntegerDigits - 1 - i));
+        let d = d2 - d1 - carry;
+
+        if (d < 0) {
+            carry = -1;
+            yield 10 - d;
+        } else {
+            carry = 0;
+            yield d;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Return the exponent of a digit string, assumed to be normalized. It is the number of digits
+ * to the left or right that the significand needs to be shifted to recover the original (normalized)
+ * digit string.
+ *
+ * @param s string of digits (assumed to be normalized)
+ */
+function exponent(s: string): number | undefined {
+    if (s.match(/^-/)) {
+        return exponent(s.substring(1));
+    } else if (s.match(/[.]/)) {
+        let rhs = s.split(".")[1];
+        return 0 - rhs.length;
+    } else if (s === "0") {
+        return 0;
+    } else if (s.match(/0+$/)) {
+        let m = s.match(/0+$/);
+        return m[0].length;
+    } else {
+        return 0;
     }
 }
 
 export class Decimal128 {
     public static E = new Decimal128(DIGITS_E);
     public readonly significand: string;
-    public readonly scale: number | undefined;
+    public readonly exponent: number;
     public readonly isNegative: boolean;
     private readonly b: BigNumber;
     private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
+    private readonly digits: string;
 
     constructor(n: string) {
         if (!n.match(this.digitStrRegExp)) {
             throw new SyntaxError(`Illegal number format "${n}"`);
         }
 
-        this.isNegative = !!n.match(/^-/);
-
         let normalized = normalize(n);
 
+        this.isNegative = !!normalized.match(/^-/);
+
         let sg = significand(normalized);
-        let sc = scale(normalized);
+        let exp = exponent(normalized);
         let isInteger = !!normalized.match(/^-?[0-9]+$/);
 
-        let numSigDigits = sg.length;
+        let numSigDigits = countSignificantDigits(normalized);
 
         if (isInteger && numSigDigits > maxSigDigits) {
             throw new RangeError("Integer too large");
         }
 
         if (numSigDigits > maxSigDigits) {
-            let finalDigit = parseInt(sg.charAt(maxSigDigits - 1));
-            if (finalDigit >= 5) {
-                sg = sg.substring(0, maxSigDigits - 1) + `${finalDigit + 1}`;
-            } else {
-                sg = sg.substring(0, maxSigDigits);
-            }
+            let rounded = maybeRoundAfterNSignificantDigits(
+                normalized,
+                maxSigDigits
+            );
+            return new Decimal128(rounded);
         }
 
-        if (sc > scaleMax) {
-            throw new RangeError(`Scale too big (${sc})`);
+        if (exp > exponentMax) {
+            throw new RangeError(`Exponent too big (${exp})`);
         }
 
-        if (sc < scaleMin) {
-            throw new RangeError(`Scale too small (${sc})`);
+        if (exp < exponentMin) {
+            throw new RangeError(`Exponent too small (${exp})`);
         }
 
+        this.digits = n;
         this.significand = sg;
-        this.scale = sc;
+        this.exponent = exp;
         this.b = new BigNumber(normalized);
     }
 
@@ -187,7 +423,38 @@ export class Decimal128 {
      * Returns a digit string representing this Decimal128.
      */
     toString(): string {
-        return normalize(this.b.toFixed());
+        let prefix = this.isNegative ? "-" : "";
+
+        if (this.exponent === 0) {
+            return prefix + ("" === this.significand ? "0" : this.significand);
+        }
+
+        if (this.exponent > 0) {
+            return prefix + "0".repeat(this.exponent);
+        }
+
+        if (this.significand.length === -this.exponent) {
+            return prefix + "0." + this.significand;
+        }
+
+        if (this.significand.length < -this.exponent) {
+            return (
+                prefix +
+                "0." +
+                "0".repeat(-this.exponent - this.significand.length) +
+                this.significand
+            );
+        }
+
+        return (
+            prefix +
+            this.significand.substring(
+                0,
+                this.significand.length + this.exponent
+            ) +
+            "." +
+            this.significand.substring(this.significand.length + this.exponent)
+        );
     }
 
     /**
@@ -212,7 +479,7 @@ export class Decimal128 {
     equals(x: Decimal128): boolean {
         return (
             this.significand === x.significand &&
-            this.scale === x.scale &&
+            this.exponent === x.exponent &&
             this.isNegative === x.isNegative
         );
     }
@@ -222,7 +489,40 @@ export class Decimal128 {
      * @param x
      */
     add(x: Decimal128): Decimal128 {
-        return Decimal128.toDecimal128(this.b.plus(x.b));
+        if (this.isNegative && x.isNegative) {
+            return this.negate().add(x.negate()).negate();
+        }
+
+        let ourDigits = this.toString();
+        let theirDigits = x.toString();
+        let result = "";
+
+        if (this.isNegative) {
+            return x.subtract(this.negate());
+        }
+
+        if (x.isNegative) {
+            return this.subtract(x.negate());
+        }
+
+        let digitGenerator = nextDigitForAddition(ourDigits, theirDigits);
+        let digit = digitGenerator.next();
+        let integerPartDone = false;
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                integerPartDone = true;
+                result = result + ".";
+            } else if (integerPartDone) {
+                result = result + `${v}`;
+            } else {
+                result = `${v}` + result;
+            }
+
+            digit = digitGenerator.next();
+        }
+
+        return new Decimal128(result);
     }
 
     /**
@@ -231,7 +531,27 @@ export class Decimal128 {
      * @param x
      */
     subtract(x: Decimal128): Decimal128 {
-        return Decimal128.toDecimal128(this.b.minus(x.b));
+        if (x.isNegative) {
+            return this.add(x.negate());
+        }
+
+        if (this.isNegative) {
+            return this.negate().add(x).negate();
+        }
+
+        let ourDigits = this.toString();
+        let theirDigits = x.toString();
+        let result = "";
+
+        let digitGenerator = nextDigitForSubtraction(theirDigits, ourDigits);
+        let digit = digitGenerator.next();
+        while (!digit.done) {
+            let v = digit.value;
+            result = (-1 === v ? "." : `${v}`) + result;
+            digit = digitGenerator.next();
+        }
+
+        return new Decimal128(result);
     }
 
     negate(): Decimal128 {
@@ -263,8 +583,6 @@ export class Decimal128 {
             throw new RangeError("Cannot divide by zero");
         }
 
-        return Decimal128.toDecimal128(this.b.dividedBy(x.b));
-
         if (this.isNegative) {
             return this.negate().divide(x).negate();
         }
@@ -273,29 +591,7 @@ export class Decimal128 {
             return this.divide(x.negate()).negate();
         }
 
-        let [dividend, divisor] = alignDivision(this.toString(), x.toString());
-
-        let d = fooBar(dividend, divisor);
-
-        let result = "0.";
-
-        function* nextDigit(): Generator<number> {
-            yield 0;
-            yield 1;
-            yield 2;
-            return 0;
-        }
-
-        let digitGenerator = nextDigit();
-        let digit = digitGenerator.next();
-        while (!digit.done && countSignificantDigits(result) < maxSigDigits) {
-            result = result + digit.value;
-            digit = digitGenerator.next();
-        }
-
-        console.log("result: ", result);
-
-        return new Decimal128(result);
+        return Decimal128.toDecimal128(this.b.dividedBy(x.b));
     }
 
     /**

@@ -4,6 +4,10 @@ const MAX_SIGNIFICANT_DIGITS = 34;
 
 const zero = new Decimal128("0");
 const one = new Decimal128("1");
+const two = new Decimal128("2");
+const three = new Decimal128("3");
+const minusThree = new Decimal128("-3");
+const four = new Decimal128("4");
 
 describe("syntax", () => {
     test("sane string works", () => {
@@ -53,6 +57,13 @@ describe("syntax", () => {
             )
         ).toBeInstanceOf(Decimal128);
     });
+    test("ton of digits gets rounded", () => {
+        expect(
+            new Decimal128(
+                "0.3666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667"
+            ).toString()
+        ).toStrictEqual("0.3666666666666666666666666666666667");
+    });
 });
 
 describe("is-negative", () => {
@@ -67,70 +78,62 @@ describe("is-negative", () => {
     });
 });
 
-describe("scale and significand", () => {
+describe("exponent and significand", () => {
     let data = {
-        "123.456": ["123456", 3],
-        "0": ["", undefined],
-        "0.0": ["", undefined],
-        "-123.456": ["123456", 3],
+        "123.456": ["123456", -3],
+        "0": ["", 0],
+        "0.0": ["", 0],
+        "5": ["5", 0],
+        "-123.456": ["123456", -3],
         "0.0042": ["42", -4],
         "0.00000000000000000000000000000000000001": ["1", -38],
-        "1000": ["1", 4],
+        "1000": ["1", 3],
+        "0.5": ["5", -1],
+        "0.000001": ["1", -6],
+        "0.0000012": ["12", -7],
     };
     Object.keys(data).forEach((n) => {
         test(`simple example (${n})`, () => {
             let d = new Decimal128(n);
             let sigDigits = data[n][0];
-            let scale = data[n][1];
+            let exponent = data[n][1];
             expect(d.significand).toStrictEqual(sigDigits);
-            expect(d.scale).toStrictEqual(scale);
+            expect(d.exponent).toStrictEqual(exponent);
         });
     });
     test("silently round up if too many significant digits", () => {
         expect(
-            new Decimal128("1234.56789123456789123456789123456789").significand
-        ).toStrictEqual("1234567891234567891234567891234568");
+            new Decimal128("1234.56789123456789123456789123456789").toString()
+        ).toStrictEqual("1234.567891234567891234567891234568");
     });
 });
 
 describe("normalization", () => {
-    test("zero on the left", () => {
-        expect(new Decimal128("0123.456").toString()).toStrictEqual("123.456");
-    });
-    test("zero on the right", () => {
-        expect(new Decimal128("123.4560").toString()).toStrictEqual("123.456");
-    });
-    test("point zero gets dropped", () => {
-        expect(new Decimal128("123.0").toString()).toStrictEqual("123");
-    });
-    test("multiple initial zeros gets squeezed to single zero", () => {
-        expect(new Decimal128("00.123").toString()).toStrictEqual("0.123");
-    });
-    test("zero point zero is zero", () => {
-        expect(new Decimal128("0.0").toString()).toStrictEqual("0");
-    });
-    test("minus zero point zero is zero", () => {
-        expect(new Decimal128("-0.0").toString()).toStrictEqual("0");
-    });
-    test("zero zero point zero is zero", () => {
-        expect(new Decimal128("00.0").toString()).toStrictEqual("0");
-    });
-    test("minus zero zero point zero is zero", () => {
-        expect(new Decimal128("-00.0").toString()).toStrictEqual("0");
-    });
-    test("zero point zero zero is zero", () => {
-        expect(new Decimal128("0.00").toString()).toStrictEqual("0");
-    });
-    test("minus zero point zero zero is zero", () => {
-        expect(new Decimal128("-0.00").toString()).toStrictEqual("0");
-    });
+    let tests = {
+        "zero on the left": ["0123.456", "123.456"],
+        "zero on the right": ["123.4560", "123.456"],
+        "point zero gets dropped": ["123.0", "123"],
+        "multiple initial zeros gets squeezed to single zero": [
+            "00.123",
+            "0.123",
+        ],
+        "zero point zero is zero": ["0.0", "0"],
+        "minus zero point zero is zero": ["-0.0", "0"],
+        "zero zero point zero is zero": ["00.0", "0"],
+        "minus zero zero point zero is zero": ["-00.0", "0"],
+        "zero point zero zero is zero": ["0.00", "0"],
+        "minus zero point zero zero is zero": ["-0.00", "0"],
+    };
+    for (let [name, [a, b]] of Object.entries(tests)) {
+        test(name, () => {
+            expect(new Decimal128(a).toString()).toStrictEqual(b);
+        });
+    }
 });
 
 describe("addition", () => {
     let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
     let big = new Decimal128(bigDigits);
-    ("");
-    let two = new Decimal128("2");
     let minusOne = new Decimal128("-1");
     test("big is at the limit (cannot add more digits)", () => {
         expect(() => new Decimal128("9" + bigDigits)).toThrow(RangeError);
@@ -158,6 +161,9 @@ describe("addition", () => {
     test("big plus one is OK", () => {
         expect(big.add(one).equals(one.add(big)));
     });
+    // test("two plus big is not OK (too many significant digits)", () => {
+    //     expect(two.add(big).toString()).toStrictEqual("100002");
+    // });
     test("two plus big is not OK (too many significant digits)", () => {
         expect(() => two.add(big)).toThrow(RangeError);
     });
@@ -236,14 +242,15 @@ describe("divide", () => {
         "infinite decimal representation": [
             "0.11",
             "0.3",
-            "0.36666666666666666666666",
+            "0.3666666666666666666666666666666667",
         ],
         "many digits, few significant": [
             "0.00000000000000000000000000000000000001",
             "2",
             "0.000000000000000000000000000000000000005",
         ],
-        "one third": ["1", "3", "0." + "3".repeat(MAX_SIGNIFICANT_DIGITS)],
+        "one third": ["1", "3", "0.3333333333333333333333333333333333"],
+        "one tenth": ["1", "10", "0.1"],
     };
     for (let [name, [a, b, c]] of Object.entries(tests)) {
         test(name, () => {
@@ -332,7 +339,7 @@ describe("to decimal places", function () {
 describe("floor", function () {
     test("floor works (positive)", () => {
         expect(new Decimal128("123.456").floor().equals(new Decimal128("123")));
-        expect(new Decimal128("-2.5").floor().equals(new Decimal128("-3")));
+        expect(new Decimal128("-2.5").floor().equals(minusThree));
     });
     test("floor works (negative)", () => {
         expect(
@@ -436,49 +443,31 @@ describe("exponential", () => {
     describe("integer base and exponent", () => {
         describe("exponent is positive", () => {
             test("2^3", () => {
-                expect(
-                    new Decimal128("2")
-                        .exp(new Decimal128("3"))
-                        .equals(new Decimal128("8"))
-                );
+                expect(two.exp(three).equals(new Decimal128("8")));
             });
             test("1^100", () => {
-                expect(
-                    new Decimal128("1").exp(new Decimal128("100")).equals(one)
-                );
+                expect(one.exp(new Decimal128("100")).equals(one));
             });
             test("5^3", () => {
                 expect(
-                    new Decimal128("5")
-                        .exp(new Decimal128("3"))
-                        .equals(new Decimal128("125"))
+                    new Decimal128("5").exp(three).equals(new Decimal128("125"))
                 );
             });
         });
         describe("exponent is negative", () => {
             test("exact decimal representation exists", () => {
-                expect(
-                    new Decimal128("2")
-                        .exp(new Decimal128("-3"))
-                        .equals(new Decimal128("0.125"))
-                );
+                expect(two.exp(minusThree).equals(new Decimal128("0.125")));
             });
             test("4^-1", () => {
                 expect(
-                    new Decimal128("4")
+                    four
                         .exp(new Decimal128("-1"))
                         .equals(new Decimal128("0.25"))
                 );
             });
             test("exact decimal representation does not exist", () => {
-                expect(
-                    new Decimal128("3")
-                        .exp(new Decimal128("-3"))
-                        .equals(
-                            new Decimal128(
-                                "0.037037037037037037037037037037037"
-                            )
-                        )
+                expect(three.exp(minusThree).toString()).toStrictEqual(
+                    "0.03703703703703703703703703703703704"
                 );
             });
         });
@@ -486,30 +475,24 @@ describe("exponential", () => {
     describe("non-integer base, integer exponent", () => {
         test("0.5^-2", () => {
             expect(
-                new Decimal128("0.5")
-                    .exp(new Decimal128("-2"))
-                    .equals(new Decimal128("4"))
+                new Decimal128("0.5").exp(new Decimal128("-2")).equals(four)
             );
         });
         test("1.5^2", () => {
             expect(
-                new Decimal128("1.5")
-                    .exp(new Decimal128("2"))
-                    .equals(new Decimal128("2.25"))
+                new Decimal128("1.5").exp(two).equals(new Decimal128("2.25"))
             );
         });
         test("0.125^3", () => {
             expect(
                 new Decimal128("0.125")
-                    .exp(new Decimal128("3"))
+                    .exp(three)
                     .equals(new Decimal128("0.001953125"))
             );
         });
         test("0.8^4", () => {
             expect(
-                new Decimal128("0.8")
-                    .exp(new Decimal128("4"))
-                    .equals(new Decimal128("0.4096"))
+                new Decimal128("0.8").exp(four).equals(new Decimal128("0.4096"))
             );
         });
     });
