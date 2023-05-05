@@ -64,6 +64,35 @@ describe("syntax", () => {
             ).toString()
         ).toStrictEqual("0.3666666666666666666666666666666667");
     });
+    test("lots of digits gets rounded to 1", () => {
+        expect(new Decimal128("0." + "9".repeat(100)).toString()).toStrictEqual(
+            "1"
+        );
+    });
+    test("lots of digits gets rounded to minus 1", () => {
+        expect(
+            new Decimal128("-0." + "9".repeat(100)).toString()
+        ).toStrictEqual("-1");
+    });
+    test("lots of digits gets rounded to 10", () => {
+        expect(new Decimal128("9." + "9".repeat(100)).toString()).toStrictEqual(
+            "10"
+        );
+    });
+    test("rounding at the limit of significant digits", () => {
+        expect(
+            new Decimal128(
+                "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS) + "9"
+            ).toString()
+        ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS - 1) + "2");
+    });
+    test("rounding occurs beyond the limit of significant digits", () => {
+        expect(
+            new Decimal128(
+                "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS + 100) + "9"
+            ).toString()
+        ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS));
+    });
 });
 
 describe("is-negative", () => {

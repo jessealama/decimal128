@@ -36,8 +36,14 @@ BigNumber.set({ DECIMAL_PLACES: 100 });
  * @example normalize("000000.100000") // => "0.1"
  */
 function normalize(s: string): string {
-    let minus = !!s.match(/^-/);
-    let a = minus ? s.replace(/^-0+/, "-") : s.replace(/^0+/, "");
+    if (s.match(/^-/)) {
+        let n = normalize(s.substring(1));
+        if ("0" === n) {
+            return "0";
+        }
+        return "-" + n;
+    }
+    let a = s.replace(/^0+/, "");
     let b = a.match(/[.]/) ? a.replace(/0+$/, "") : a;
     if (b.match(/^[.]/)) {
         b = "0" + b;
@@ -45,7 +51,7 @@ function normalize(s: string): string {
     if (b.match(/[.]$/)) {
         b = b.substring(0, b.length - 1);
     }
-    if ("-" === b || "" === b) {
+    if ("" === b) {
         b = "0";
     }
     return b;
@@ -117,13 +123,51 @@ function countSignificantDigits(s: string): number {
  * @param n non-negative integer
  */
 function nthSignificantDigit(s: string, n: number): number {
-    if (n < 0) {
-        throw new RangeError("n must be non-negative");
+    return parseInt(significand(s).charAt(n));
+}
+
+function propogateCarryFromRight(s: string): string {
+    let [left, right] = s.split(/[.]/);
+
+    if (undefined === right) {
+        let lastDigit = parseInt(left.charAt(left.length - 1));
+        if (lastDigit === 9) {
+            if (1 === left.length) {
+                return "10";
+            }
+
+            return (
+                propogateCarryFromRight(left.substring(0, left.length - 1)) +
+                "0"
+            );
+        }
+        return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
     }
 
-    let sg = significand(s);
+    let m = right.match(/^0*[1-9]/);
 
-    return parseInt(sg.charAt(n));
+    if (null === m) {
+        return s;
+    }
+
+    let digits = m[0];
+
+    let len = digits.length;
+
+    if (1 === len) {
+        let lastDigit = parseInt(right.charAt(0));
+        if (9 === lastDigit) {
+            return propogateCarryFromRight(left);
+        }
+        return left + "." + `${lastDigit + 1}`;
+    } else {
+        return (
+            left +
+            "." +
+            right.substring(0, len - 1) +
+            `${parseInt(right.charAt(len - 1)) + 1}`
+        );
+    }
 }
 
 function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
@@ -131,14 +175,8 @@ function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
         return "-" + maybeRoundAfterNSignificantDigits(s.substring(1), n);
     }
 
-    let [lhs, rhs] = s.split(".");
-
-    if ("" === rhs) {
-        throw new RangeError("Cannot round integers");
-    }
-
-    if (lhs.length > n) {
-        throw new RangeError("Cannot round the integer part of a number");
+    if (n < 1) {
+        return propogateCarryFromRight(s);
     }
 
     let finalDigit = nthSignificantDigit(s, n - 1);
@@ -146,9 +184,8 @@ function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
 
     if (decidingDigit >= 5) {
         if (9 === finalDigit) {
-            let cutoff = cutoffAfterSignificantDigits(s, n - 1);
-            let rounded = maybeRoundAfterNSignificantDigits(cutoff, n - 1);
-            return rounded + "0";
+            let cutoff = cutoffAfterSignificantDigits(s, n);
+            return maybeRoundAfterNSignificantDigits(cutoff, n - 1);
         }
 
         return cutoffAfterSignificantDigits(s, n - 1) + `${finalDigit + 1}`;
@@ -158,10 +195,6 @@ function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
 }
 
 function cutoffAfterSignificantDigits(s: string, n: number): string {
-    if (s.match(/^-/)) {
-        return "-" + cutoffAfterSignificantDigits(s.substring(1), n);
-    }
-
     if (s.match(/^0[.]/)) {
         let m = s.match(/^0[.]0+/);
 
@@ -430,7 +463,7 @@ export class Decimal128 {
         }
 
         if (this.exponent > 0) {
-            return prefix + "0".repeat(this.exponent);
+            return prefix + this.significand + "0".repeat(this.exponent);
         }
 
         if (this.significand.length === -this.exponent) {
