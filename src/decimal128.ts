@@ -227,7 +227,6 @@ function ensureDecimalPoint(s: string): string {
     }
 }
 
-
 /**
  * Given a pure digit string (no decimal point), return a new digit string by pushing the decimal point
  * to the left or right by n places. A negative n pushes the decimal point to the left, and a positive
@@ -236,8 +235,7 @@ function ensureDecimalPoint(s: string): string {
  * @param s
  * @param n
  */
-function pushDecimalPointLeft(s: string, n: number): string
-{
+function pushDecimalPointLeft(s: string, n: number): string {
     if (0 === n) {
         return s;
     }
@@ -411,7 +409,7 @@ function* nextDigitForMultiplication(x: string, y: number): Generator<number> {
 
     for (let i = 0; i < numDigits; i++) {
         let d = parseInt(x.charAt(numDigits - 1 - i));
-        let product = (d * y) + carry;
+        let product = d * y + carry;
         carry = Math.floor(product / 10);
         yield product % 10;
     }
@@ -437,7 +435,10 @@ function doMultiplication(x: string, y: string): string {
     let numbersToAdd: Decimal128[] = [];
 
     for (let i = 0; i < numYDigits; i++) {
-        let digitGenerator = nextDigitForMultiplication(x, parseInt(y.charAt(numYDigits - 1 - i)));
+        let digitGenerator = nextDigitForMultiplication(
+            x,
+            parseInt(y.charAt(numYDigits - 1 - i))
+        );
         let d = digitGenerator.next();
         let digits = [];
         for (let j = 0; j < i; j++) {
@@ -688,7 +689,9 @@ export class Decimal128 {
 
         let result = doMultiplication(this.significand, x.significand);
 
-        return new Decimal128(pushDecimalPointLeft(result, this.exponent + x.exponent));
+        return new Decimal128(
+            pushDecimalPointLeft(result, this.exponent + x.exponent)
+        );
     }
 
     /**
