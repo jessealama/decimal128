@@ -227,6 +227,32 @@ function ensureDecimalPoint(s: string): string {
     }
 }
 
+
+/**
+ * Given a pure digit string (no decimal point), return a new digit string by pushing the decimal point
+ * to the left or right by n places. A negative n pushes the decimal point to the left, and a positive
+ * n pushes the decimal point to the right. If n is zero, return the given string.
+ *
+ * @param s
+ * @param n
+ */
+function pushDecimalPointLeft(s: string, n: number): string
+{
+    if (0 === n) {
+        return s;
+    }
+
+    if (n < 0) {
+        if (s.length <= -n) {
+            return "0." + "0".repeat(-n - s.length) + s;
+        }
+
+        return s.substring(0, s.length + n) + "." + s.substring(s.length + n);
+    }
+
+    return s + "." + "0".repeat(n);
+}
+
 /**
  * Given two digit strings, return a pair of digit strings where
  *
@@ -379,6 +405,57 @@ function* nextDigitForSubtraction(x: string, y: string): Generator<number> {
     return 0;
 }
 
+function* nextDigitForMultiplication(x: string, y: number): Generator<number> {
+    let carry = 0;
+    let numDigits = x.length;
+
+    for (let i = 0; i < numDigits; i++) {
+        let d = parseInt(x.charAt(numDigits - 1 - i));
+        let product = (d * y) + carry;
+        carry = Math.floor(product / 10);
+        yield product % 10;
+    }
+
+    return carry;
+}
+
+/**
+ * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
+ * and neither having a decimal point, return a generator that successively yields the digits
+ * of the multiplication of the two numbers.
+ *
+ * @param x
+ * @param y
+ */
+function doMultiplication(x: string, y: string): string {
+    if (y.length > x.length) {
+        return doMultiplication(y, x);
+    }
+
+    let numYDigits = y.length;
+
+    let numbersToAdd: Decimal128[] = [];
+
+    for (let i = 0; i < numYDigits; i++) {
+        let digitGenerator = nextDigitForMultiplication(x, parseInt(y.charAt(numYDigits - 1 - i)));
+        let d = digitGenerator.next();
+        let digits = [];
+        for (let j = 0; j < i; j++) {
+            digits.push("0");
+        }
+        while (!d.done) {
+            digits.push(`${d.value}`);
+            d = digitGenerator.next();
+        }
+        digits.push(`${d.value}`);
+        numbersToAdd.push(new Decimal128(digits.reverse().join("")));
+    }
+
+    let sum = numbersToAdd.reduce((a, b) => a.add(b));
+
+    return sum.toString();
+}
+
 /**
  * Return the exponent of a digit string, assumed to be normalized. It is the number of digits
  * to the left or right that the significand needs to be shifted to recover the original (normalized)
@@ -411,18 +488,18 @@ export class Decimal128 {
     private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
     private readonly digits: string;
 
-    constructor(n: string) {
-        if (!n.match(this.digitStrRegExp)) {
-            throw new SyntaxError(`Illegal number format "${n}"`);
+    constructor(s: string, e?: number) {
+        if (!s.match(this.digitStrRegExp)) {
+            throw new SyntaxError(`Illegal number format "${s}"`);
         }
 
-        let normalized = normalize(n);
+        let normalized = normalize(s);
 
         this.isNegative = !!normalized.match(/^-/);
 
         let sg = significand(normalized);
-        let exp = exponent(normalized);
-        let isInteger = !!normalized.match(/^-?[0-9]+$/);
+        let exp = undefined === e ? exponent(normalized) : e;
+        let isInteger = exp >= 0;
 
         let numSigDigits = countSignificantDigits(normalized);
 
@@ -446,7 +523,7 @@ export class Decimal128 {
             throw new RangeError(`Exponent too small (${exp})`);
         }
 
-        this.digits = n;
+        this.digits = s;
         this.significand = sg;
         this.exponent = exp;
         this.b = new BigNumber(normalized);
@@ -601,7 +678,17 @@ export class Decimal128 {
      * @param x
      */
     multiply(x: Decimal128): Decimal128 {
-        return Decimal128.toDecimal128(this.b.multipliedBy(x.b));
+        if (this.isNegative) {
+            return this.negate().multiply(x).negate();
+        }
+
+        if (x.isNegative) {
+            return this.multiply(x.negate()).negate();
+        }
+
+        let result = doMultiplication(this.significand, x.significand);
+
+        return new Decimal128(pushDecimalPointLeft(result, this.exponent + x.exponent));
     }
 
     /**
