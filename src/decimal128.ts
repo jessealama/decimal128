@@ -626,14 +626,14 @@ export class Decimal128 {
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
     isInteger(): boolean {
-        return this.b.isInteger();
+        return this.exponent >= 0;
     }
 
     /**
      * Is this Decimal128 zero?
      */
     isZero(): boolean {
-        return this.b.isZero();
+        return this.significand === "";
     }
 
     /**
@@ -801,7 +801,11 @@ export class Decimal128 {
      * Return the absolute value of this Decimal128 value.
      */
     abs(): Decimal128 {
-        return Decimal128.toDecimal128(this.b.absoluteValue());
+        if (this.isNegative) {
+            return this.negate();
+        }
+
+        return this;
     }
 
     /**
@@ -834,11 +838,19 @@ export class Decimal128 {
             throw new TypeError("Argument must be an integer");
         }
 
-        if (n <= 0) {
-            throw new RangeError("Argument must be positive");
+        if (n < 0) {
+            throw new RangeError("Argument must be non-negative");
         }
 
-        return new Decimal128(this.b.toFixed(n));
+        let s = this.toString();
+
+        let [lhs, rhs] = s.split(".");
+
+        if (0 === n || undefined === rhs) {
+            return new Decimal128(lhs);
+        }
+
+        return new Decimal128(lhs + "." + rhs.substring(0, n));
     }
 
     /**
@@ -871,7 +883,32 @@ export class Decimal128 {
      * @param x
      */
     cmp(x: Decimal128): number {
-        return this.b.comparedTo(x.b);
+        let [s1, s2] = padDigits(this.toString(), x.toString());
+        let [lhs1, rhs1] = s1.split(".");
+        let [lhs2, rhs2] = s2.split(".");
+
+        let bigLhs1 = BigNumber(lhs1);
+        let bigLhs2 = BigNumber(lhs2);
+        let bigRhs1 = BigNumber(rhs1);
+        let bigRhs2 = BigNumber(rhs2);
+
+        if (bigLhs1.isLessThan(bigLhs2)) {
+            return -1;
+        }
+
+        if (bigLhs2.isLessThan(bigLhs1)) {
+            return 1;
+        }
+
+        if (bigRhs1.isLessThan(bigRhs2)) {
+            return -1;
+        }
+
+        if (bigRhs2.isLessThan(bigRhs1)) {
+            return 1;
+        }
+
+        return 0;
     }
 
     /**
@@ -879,7 +916,9 @@ export class Decimal128 {
      * @return {Decimal128} An integer (as a Decimal128 value).
      */
     truncate(): Decimal128 {
-        return new Decimal128(this.b.integerValue().toString());
+        let s = this.toString();
+        let [lhs] = s.split(".");
+        return new Decimal128(lhs);
     }
 
     /**

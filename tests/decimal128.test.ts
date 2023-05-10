@@ -386,7 +386,7 @@ describe("to decimal places", function () {
         expect(d.toDecimalPlaces(1).equals(one));
     });
     test("zero decimal places", () => {
-        expect(() => d.toDecimalPlaces(0)).toThrow(RangeError);
+        expect(d.toDecimalPlaces(0).equals(new Decimal128("123")));
     });
     test("negative number of decimal places", () => {
         expect(() => d.toDecimalPlaces(-1)).toThrow(RangeError);
@@ -439,6 +439,18 @@ describe("cmp", function () {
     });
     test("cmp is minus one", () => {
         expect(d2.cmp(d1)).toStrictEqual(-1);
+    });
+    test("negative numbers", () => {
+        let a = new Decimal128("-123.456");
+        let b = new Decimal128("-987.654");
+        expect(a.cmp(b)).toStrictEqual(1);
+        expect(b.cmp(a)).toStrictEqual(-1);
+    });
+    test("integer part is the same, decimal part is not", () => {
+        let a = new Decimal128("42.678");
+        let b = new Decimal128("42.6789");
+        expect(a.cmp(b)).toStrictEqual(-1);
+        expect(b.cmp(a)).toStrictEqual(1);
     });
 });
 
