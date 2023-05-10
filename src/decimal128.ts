@@ -531,7 +531,6 @@ function exponent(s: string): number | undefined {
 }
 
 export class Decimal128 {
-    public static E = new Decimal128(DIGITS_E);
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;

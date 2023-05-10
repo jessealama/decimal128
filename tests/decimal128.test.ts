@@ -578,12 +578,6 @@ describe("exponential", () => {
     });
 });
 
-describe("Euler's constant", () => {
-    test("constant exists", () => {
-        expect(Decimal128.E).toBeDefined();
-    });
-});
-
 describe("equality", () => {
     test("equality works", () => {
         expect(
