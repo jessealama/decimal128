@@ -538,7 +538,7 @@ export class Decimal128 {
     private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
     private readonly digits: string;
 
-    constructor(s: string, e?: number) {
+    constructor(s: string) {
         if (!s.match(this.digitStrRegExp)) {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
@@ -548,7 +548,7 @@ export class Decimal128 {
         this.isNegative = !!normalized.match(/^-/);
 
         let sg = significand(normalized);
-        let exp = undefined === e ? exponent(normalized) : e;
+        let exp = exponent(normalized);
         let isInteger = exp >= 0;
 
         let numSigDigits = countSignificantDigits(normalized);
