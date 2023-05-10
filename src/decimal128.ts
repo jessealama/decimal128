@@ -13,8 +13,8 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-const exponentMin = -6143;
-const exponentMax = 6144;
+const EXPONENT_MIN = -6143;
+const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
 const DIGITS_E = "2.718281828459045235360287471352662";
 
@@ -565,11 +565,11 @@ export class Decimal128 {
             return new Decimal128(rounded);
         }
 
-        if (exp > exponentMax) {
+        if (exp > EXPONENT_MAX) {
             throw new RangeError(`Exponent too big (${exp})`);
         }
 
-        if (exp < exponentMin) {
+        if (exp < EXPONENT_MIN) {
             throw new RangeError(`Exponent too small (${exp})`);
         }
 
