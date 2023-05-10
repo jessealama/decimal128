@@ -15,7 +15,7 @@
 
 const exponentMin = -6143;
 const exponentMax = 6144;
-const maxSigDigits = 34;
+const MAX_SIGNIFICANT_DIGITS = 34;
 const DIGITS_E = "2.718281828459045235360287471352662";
 
 /**
@@ -368,7 +368,7 @@ function* nextDigitForDivision(x: string, y: string): Generator<number> {
     let zero = BigInt("0");
     let ten = BigInt("10");
 
-    while (!done && countSignificantDigits(result) <= maxSigDigits) {
+    while (!done && countSignificantDigits(result) <= MAX_SIGNIFICANT_DIGITS) {
         if (bigX === zero) {
             done = true;
         } else if (bigX < bigY) {
@@ -553,14 +553,14 @@ export class Decimal128 {
 
         let numSigDigits = countSignificantDigits(normalized);
 
-        if (isInteger && numSigDigits > maxSigDigits) {
+        if (isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
             throw new RangeError("Integer too large");
         }
 
-        if (numSigDigits > maxSigDigits) {
+        if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
             let rounded = maybeRoundAfterNSignificantDigits(
                 normalized,
-                maxSigDigits
+                MAX_SIGNIFICANT_DIGITS
             );
             return new Decimal128(rounded);
         }
