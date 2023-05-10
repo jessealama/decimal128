@@ -1,5 +1,3 @@
-import BigNumber from "bignumber.js";
-
 /**
  * decimal128.js -- Decimal128 implementation in JavaScript
  *
@@ -19,8 +17,6 @@ const exponentMin = -6143;
 const exponentMax = 6144;
 const maxSigDigits = 34;
 const DIGITS_E = "2.718281828459045235360287471352662";
-
-BigNumber.set({ DECIMAL_PLACES: 100 });
 
 /**
  * Normalize a digit string. This means:
@@ -97,7 +93,7 @@ function countSignificantDigits(s: string): number {
         let m = s.match(/[.]0+/);
 
         if (m) {
-            return s.length - m[0].length - 2;
+            return s.length - m[0].length - 1;
         }
 
         return s.length - 2;
@@ -539,7 +535,6 @@ export class Decimal128 {
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;
-    private readonly b: BigNumber;
     private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
     private readonly digits: string;
 
@@ -581,7 +576,6 @@ export class Decimal128 {
         this.digits = s;
         this.significand = sg;
         this.exponent = exp;
-        this.b = new BigNumber(normalized);
     }
 
     /**
@@ -797,6 +791,10 @@ export class Decimal128 {
         return new Decimal128(result);
     }
 
+    reciprocal(): Decimal128 {
+        return new Decimal128("1").divide(this);
+    }
+
     /**
      * Return the absolute value of this Decimal128 value.
      */
@@ -820,11 +818,42 @@ export class Decimal128 {
             throw new RangeError("Cannot raise zero to negative power");
         }
 
-        if (x.isInteger()) {
-            return Decimal128.toDecimal128(this.b.exponentiatedBy(x.b));
+        if (this.isZero() && x.isZero()) {
+            throw new RangeError("Cannot raise zero to zero power");
         }
 
-        throw new RangeError("Cannot raise to non-integer power");
+        if (!x.isInteger()) {
+            throw new RangeError("Cannot raise to non-integer power");
+        }
+
+        let zero = new Decimal128("0");
+        let one = new Decimal128("1");
+
+        if (x.isNegative) {
+            return this.exp(x.negate()).reciprocal();
+        }
+
+        if (this.isZero()) {
+            return zero;
+        }
+
+        if (x.isZero()) {
+            return one;
+        }
+
+        let result = one;
+        let i = new Decimal128("0");
+        let done = false;
+        while (!done) {
+            if (i.cmp(x) >= 0) {
+                done = true;
+            } else {
+                result = result.multiply(this);
+                i = i.add(one);
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -887,24 +916,24 @@ export class Decimal128 {
         let [lhs1, rhs1] = s1.split(".");
         let [lhs2, rhs2] = s2.split(".");
 
-        let bigLhs1 = BigNumber(lhs1);
-        let bigLhs2 = BigNumber(lhs2);
-        let bigRhs1 = BigNumber(rhs1);
-        let bigRhs2 = BigNumber(rhs2);
+        let bigLhs1 = BigInt(lhs1);
+        let bigLhs2 = BigInt(lhs2);
+        let bigRhs1 = BigInt(rhs1);
+        let bigRhs2 = BigInt(rhs2);
 
-        if (bigLhs1.isLessThan(bigLhs2)) {
+        if (bigLhs1 < bigLhs2) {
             return -1;
         }
 
-        if (bigLhs2.isLessThan(bigLhs1)) {
+        if (bigLhs2 < bigLhs1) {
             return 1;
         }
 
-        if (bigRhs1.isLessThan(bigRhs2)) {
+        if (bigRhs1 < bigRhs2) {
             return -1;
         }
 
-        if (bigRhs2.isLessThan(bigRhs1)) {
+        if (bigRhs2 < bigRhs1) {
             return 1;
         }
 
@@ -919,15 +948,5 @@ export class Decimal128 {
         let s = this.toString();
         let [lhs] = s.split(".");
         return new Decimal128(lhs);
-    }
-
-    /**
-     * Convert a BigNumber to a Decimal128.
-     *
-     * @param x
-     * @private
-     */
-    private static toDecimal128(x: BigNumber): Decimal128 {
-        return new Decimal128(x.toFixed());
     }
 }
