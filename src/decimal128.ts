@@ -248,7 +248,17 @@ function pushDecimalPointLeft(s: string, n: number): string {
         return s.substring(0, s.length + n) + "." + s.substring(s.length + n);
     }
 
-    return s + "." + "0".repeat(n);
+    let [left, right] = s.split(/[.]/);
+
+    if (undefined === right) {
+        return s + "0".repeat(n);
+    }
+
+    if (right.length <= n) {
+        return left + right + "0".repeat(n - right.length);
+    }
+
+    return left + right.substring(0, n) + "." + right.substring(n);
 }
 
 /**
@@ -348,6 +358,50 @@ function* nextDigitForAddition(x: string, y: string): Generator<number> {
     }
 
     yield carry;
+
+    return 0;
+}
+
+function* nextDigitForDivision(x: string, y: string): Generator<number> {
+    let result = "0";
+    let queuedZeroes = "";
+    let bigX = BigInt(x);
+    let bigY = BigInt(y);
+    let emittedDecimalPoint = false;
+    let done = false;
+    let zero = BigInt("0");
+    let ten = BigInt("10");
+
+    while (!done && countSignificantDigits(result) <= maxSigDigits) {
+        if (bigX === zero) {
+            done = true;
+        } else if (bigX < bigY) {
+            if (emittedDecimalPoint) {
+                bigX = bigX * ten;
+                if (bigX < bigY) {
+                    // look ahead: are we still a power of 10 behind?
+                    result = result + "0";
+                    yield 0;
+                }
+            } else {
+                emittedDecimalPoint = true;
+                result = result + ".";
+                bigX = bigX * ten;
+                yield -1;
+                if (bigX < bigY) {
+                    // look ahead: are we still a power of 10 behind?
+                    result = result + "0";
+                    yield 0;
+                }
+            }
+        } else {
+            let q = bigX / bigY;
+            let r = bigX % bigY;
+            bigX = r;
+            result = result + q.toString();
+            yield parseInt(q.toString().charAt(0));
+        }
+    }
 
     return 0;
 }
@@ -714,7 +768,33 @@ export class Decimal128 {
             return this.divide(x.negate()).negate();
         }
 
-        return Decimal128.toDecimal128(this.b.dividedBy(x.b));
+        if (!this.isInteger() || !x.isInteger()) {
+            let ten = new Decimal128("10");
+            return this.multiply(ten).divide(x.multiply(ten));
+        }
+
+        let digitGenerator = nextDigitForDivision(
+            this.toString(),
+            x.toString()
+        );
+        let digit = digitGenerator.next();
+        let integerPartDone = false;
+        let result = "";
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                integerPartDone = true;
+                result = ("" === result ? "0" : result) + ".";
+            } else if (integerPartDone) {
+                result = result + `${v}`;
+            } else {
+                result = `${v}` + result;
+            }
+
+            digit = digitGenerator.next();
+        }
+
+        return new Decimal128(result);
     }
 
     /**

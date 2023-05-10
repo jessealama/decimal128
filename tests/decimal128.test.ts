@@ -240,6 +240,7 @@ describe("multiplication", () => {
         ["123.456", "789.789", "97504.190784"],
         ["2", "3", "6"],
         ["4", "0.5", "2"],
+        ["10", "100", "1000"],
         ["0.1", "0.2", "0.02"],
         ["0.25", "1.5", "0.375"],
         ["0.12345", "0.67890", "0.083810205"],
@@ -296,6 +297,7 @@ describe("multiplication", () => {
 
 describe("divide", () => {
     let tests = {
+        simple: ["4.1", "1.25", "3.28"],
         "finite decimal representation": ["0.654", "0.12", "5.45"],
         "infinite decimal representation": [
             "0.11",
