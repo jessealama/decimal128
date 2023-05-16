@@ -8,6 +8,7 @@ const two = new Decimal128("2");
 const three = new Decimal128("3");
 const minusThree = new Decimal128("-3");
 const four = new Decimal128("4");
+const ten = new Decimal128("10");
 
 describe("syntax", () => {
     test("sane string works", () => {
@@ -167,7 +168,7 @@ describe("normalization", () => {
     }
 });
 
-describe("addition", () => {
+describe("addition" + "", () => {
     let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
     let big = new Decimal128(bigDigits);
     let minusOne = new Decimal128("-1");
@@ -203,6 +204,12 @@ describe("addition", () => {
     test("big plus two is not OK (too many significant digits)", () => {
         expect(() => big.add(two)).toThrow(RangeError);
     });
+    test("zero arguments", () => {
+        expect(one.add().equals(one));
+    });
+    test("four arguments", () => {
+        expect(one.add(two, three, four).equals(ten));
+    });
 });
 
 describe("subtraction", () => {
@@ -232,6 +239,12 @@ describe("subtraction", () => {
         expect(() =>
             new Decimal128("-" + bigDigits).subtract(new Decimal128("9"))
         ).toThrow(RangeError);
+    });
+    test("zero arguments", () => {
+        expect(one.subtract().equals(one));
+    });
+    test("four arguments", () => {
+        expect(ten.subtract(two, three, four).equals(one));
     });
 });
 
@@ -293,9 +306,15 @@ describe("multiplication", () => {
             )
         ).toThrow(RangeError);
     });
+    test("zero arguments", () => {
+        expect(one.multiply().equals(one));
+    });
+    test("four arguments", () => {
+        expect(ten.multiply(two, three, four).equals(new Decimal128("240")));
+    });
 });
 
-describe("divide", () => {
+describe("division", () => {
     let tests = {
         simple: ["4.1", "1.25", "3.28"],
         "finite decimal representation": ["0.654", "0.12", "5.45"],
@@ -323,6 +342,14 @@ describe("divide", () => {
         expect(() =>
             new Decimal128("123.456").divide(new Decimal128("0.0"))
         ).toThrow(RangeError);
+    });
+    test("zero arguments", () => {
+        expect(one.divide().equals(one));
+    });
+    test("four arguments", () => {
+        expect(ten.divide(two, three, four).toString()).toStrictEqual(
+            "0.4166666666666666666666666666666667"
+        );
     });
 });
 
@@ -483,6 +510,20 @@ describe("equals", () => {
         expect(
             new Decimal128("-123.456").equals(new Decimal128("123.456"))
         ).toBeFalsy();
+    });
+    test("limit of significant digits", () => {
+        expect(
+            new Decimal128("0.4166666666666666666666666666666667").equals(
+                new Decimal128("0.4166666666666666666666666666666666")
+            )
+        ).toBeFalsy();
+    });
+    test("beyond limit of significant digits", () => {
+        expect(
+            new Decimal128("0.41666666666666666666666666666666667").equals(
+                new Decimal128("0.41666666666666666666666666666666666")
+            )
+        );
     });
 });
 

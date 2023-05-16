@@ -635,18 +635,16 @@ export class Decimal128 {
      * @param x
      */
     equals(x: Decimal128): boolean {
-        return (
-            this.significand === x.significand &&
-            this.exponent === x.exponent &&
-            this.isNegative === x.isNegative
-        );
+        return this.toString() === x.toString();
     }
 
     /**
-     * Add this Decimal128 value to another.
+     * Add two Decimal128 values.
+     *
      * @param x
+     * @private
      */
-    add(x: Decimal128): Decimal128 {
+    private _add(x: Decimal128): Decimal128 {
         if (this.isNegative && x.isNegative) {
             return this.negate().add(x.negate()).negate();
         }
@@ -684,11 +682,29 @@ export class Decimal128 {
     }
 
     /**
+     * Add this Decimal128 value to an arbitrary number of other Decimal128 values.
+     *
+     * If zero arguments are provided, this value is returned.
+     *
+     * @param theArgs An array of Decimal128 values to add to this one.
+     */
+    add(...theArgs: Decimal128[]): Decimal128 {
+        let result: Decimal128 = this;
+
+        for (let x of theArgs) {
+            result = result._add(x);
+        }
+
+        return result;
+    }
+
+    /**
      * Subtract another Decimal128 value from this one.
      *
      * @param x
+     * @private
      */
-    subtract(x: Decimal128): Decimal128 {
+    private _subtract(x: Decimal128): Decimal128 {
         if (x.isNegative) {
             return this.add(x.negate());
         }
@@ -712,6 +728,26 @@ export class Decimal128 {
         return new Decimal128(result);
     }
 
+    /**
+     * Subtract another Decimal128 value from an arbitrary number of other
+     * Decimal128 values.
+     *
+     * Association is to the left: `a.subtract(b, c, d)` is the same as
+     * `((a.subtract(b)).subtract(c)).subtract(d)`, and so one for any number
+     * of arguments.
+     *
+     * @param theArgs
+     */
+    subtract(...theArgs: Decimal128[]): Decimal128 {
+        let result: Decimal128 = this;
+
+        for (let x of theArgs) {
+            result = result._subtract(x);
+        }
+
+        return result;
+    }
+
     negate(): Decimal128 {
         if (this.isNegative) {
             return new Decimal128(this.toString().substring(1));
@@ -725,13 +761,13 @@ export class Decimal128 {
      *
      * @param x
      */
-    multiply(x: Decimal128): Decimal128 {
+    private _multiply(x: Decimal128): Decimal128 {
         if (this.isNegative) {
-            return this.negate().multiply(x).negate();
+            return this.negate()._multiply(x).negate();
         }
 
         if (x.isNegative) {
-            return this.multiply(x.negate()).negate();
+            return this._multiply(x.negate()).negate();
         }
 
         let result = doMultiplication(this.significand, x.significand);
@@ -742,28 +778,45 @@ export class Decimal128 {
     }
 
     /**
+     * Multiply this Decimal128 value by an array of other Decimal128 values.
+     *
+     * If no arguments are given, return this value.
+     *
+     * @param theArgs
+     */
+    multiply(...theArgs: Decimal128[]): Decimal128 {
+        let result: Decimal128 = this;
+
+        for (let x of theArgs) {
+            result = result._multiply(x);
+        }
+
+        return result;
+    }
+
+    /**
      * Divide this Decimal128 value by another.
      *
      * Throws a RangeError if the divisor is zero.
      *
      * @param x
      */
-    divide(x: Decimal128): Decimal128 {
+    private _divide(x: Decimal128): Decimal128 {
         if (x.isZero()) {
             throw new RangeError("Cannot divide by zero");
         }
 
         if (this.isNegative) {
-            return this.negate().divide(x).negate();
+            return this.negate()._divide(x).negate();
         }
 
         if (x.isNegative) {
-            return this.divide(x.negate()).negate();
+            return this._divide(x.negate()).negate();
         }
 
         if (!this.isInteger() || !x.isInteger()) {
             let ten = new Decimal128("10");
-            return this.multiply(ten).divide(x.multiply(ten));
+            return this._multiply(ten)._divide(x._multiply(ten));
         }
 
         let digitGenerator = nextDigitForDivision(
@@ -788,6 +841,25 @@ export class Decimal128 {
         }
 
         return new Decimal128(result);
+    }
+
+    /**
+     * Divide this Decimal128 value by an array of other Decimal128 values.
+     *
+     * Association is to the left: 1/2/3 is (1/2)/3
+     *
+     * If no arguments are given, just return this value.
+     *
+     * @param theArgs
+     */
+    divide(...theArgs: Decimal128[]): Decimal128 {
+        if (theArgs.length === 0) {
+            return this;
+        }
+
+        let q = theArgs[0].multiply(...theArgs.slice(1));
+
+        return this._divide(q);
     }
 
     reciprocal(): Decimal128 {
