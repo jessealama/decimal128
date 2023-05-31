@@ -15,36 +15,36 @@ describe("syntax", () => {
         expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
     });
     test("string with underscores in integer part", () => {
-        expect(new Decimal128("123_456.789").toString()).toStrictEqual("123456.789");
+        expect(new Decimal128("123_456.789").toString()).toStrictEqual(
+            "123456.789"
+        );
     });
     test("multiple underscores in integer part", () => {
-       expect(
-           () => new Decimal128("123__456.789")
-       ).toThrow(SyntaxError);
+        expect(() => new Decimal128("123__456.789")).toThrow(SyntaxError);
     });
     test("multiple underscores in decimal part", () => {
-        expect(
-            () => new Decimal128("123.789__456")
-        ).toThrow(SyntaxError);
+        expect(() => new Decimal128("123.789__456")).toThrow(SyntaxError);
     });
     test("leading underscore", () => {
-        expect(
-            () => new Decimal128("_123")
-        ).toThrow(SyntaxError);
+        expect(() => new Decimal128("_123")).toThrow(SyntaxError);
     });
     test("trailing underscore", () => {
-        expect(
-            () => new Decimal128("123_")
-        ).toThrow(SyntaxError);
+        expect(() => new Decimal128("123_")).toThrow(SyntaxError);
     });
     test("string with multiple underscores in integer part", () => {
-        expect(new Decimal128("123_456_789.123").toString()).toStrictEqual("123456789.123");
+        expect(new Decimal128("123_456_789.123").toString()).toStrictEqual(
+            "123456789.123"
+        );
     });
     test("string with underscore in decimal part", () => {
-        expect(new Decimal128("123.456_789").toString()).toStrictEqual("123.456789");
+        expect(new Decimal128("123.456_789").toString()).toStrictEqual(
+            "123.456789"
+        );
     });
     test("string with underscores in both integer and decimal part", () => {
-        expect(new Decimal128("123_456.789_123").toString()).toStrictEqual("123456.789123");
+        expect(new Decimal128("123_456.789_123").toString()).toStrictEqual(
+            "123456.789123"
+        );
     });
     test("negative works", () => {
         expect(new Decimal128("-123.456")).toBeInstanceOf(Decimal128);
