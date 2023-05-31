@@ -10,7 +10,7 @@ const minusThree = new Decimal128("-3");
 const four = new Decimal128("4");
 const ten = new Decimal128("10");
 
-describe("syntax", () => {
+describe("digit string syntax", () => {
     test("sane string works", () => {
         expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
     });
@@ -122,6 +122,59 @@ describe("syntax", () => {
                 "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS + 100) + "9"
             ).toString()
         ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS));
+    });
+});
+
+describe("exponential string syntax", () => {
+    test("sane string works (big E)", () => {
+        expect(new Decimal128("123E456")).toBeInstanceOf(Decimal128);
+    });
+    test("sane string works (little E)", () => {
+        expect(new Decimal128("123e456")).toBeInstanceOf(Decimal128);
+    });
+    test("negative works", () => {
+        expect(new Decimal128("-123E456")).toBeInstanceOf(Decimal128);
+    });
+    test("negative exponent works", () => {
+        expect(new Decimal128("123E-456")).toBeInstanceOf(Decimal128);
+    });
+    test("negative significant and negative exponent works", () => {
+        expect(new Decimal128("-123E-456")).toBeInstanceOf(Decimal128);
+    });
+    test("leading zero works", () => {
+        expect(new Decimal128("0123E10")).toBeInstanceOf(Decimal128);
+    });
+    test("leading zero in exponent works", () => {
+        expect(new Decimal128("123E05")).toBeInstanceOf(Decimal128);
+    });
+    test("whitespace plus number not OK", () => {
+        expect(() => new Decimal128(" 42E10")).toThrow(SyntaxError);
+    });
+    test("many significant digits", () => {
+        expect(
+            new Decimal128("3666666666666666666666666666666667E10")
+        ).toBeInstanceOf(Decimal128);
+    });
+    test("too many significant digits", () => {
+        expect(
+            () => new Decimal128("-10000000000000000000000000000000008E5")
+        ).toThrow(RangeError);
+    });
+    test("exponent too big", () => {
+       expect(
+           () => new Decimal128("123E100000")
+       ).toThrow(RangeError);
+    });
+    test("exponent too small", () => {
+        expect(
+            () => new Decimal128("123E-100000")
+        ).toThrow(RangeError);
+    });
+    test("max exponent", () => {
+       expect(new Decimal128("123E6144")).toBeInstanceOf(Decimal128)
+    });
+    test("min exponent", () => {
+        expect(new Decimal128("123E-6144")).toBeInstanceOf(Decimal128)
     });
 });
 
