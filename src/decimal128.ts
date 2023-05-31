@@ -533,7 +533,7 @@ export class Decimal128 {
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;
-    private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
+    private readonly digitStrRegExp = /^-?[0-9]+(_?[0-9]+)*([.][0-9](_?[0-9]+)*)?$/;
     private readonly digits: string;
 
     constructor(s: string) {
@@ -541,7 +541,7 @@ export class Decimal128 {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
 
-        let normalized = normalize(s);
+        let normalized = normalize(s.replace(/_/g, ""));
 
         this.isNegative = !!normalized.match(/^-/);
 
