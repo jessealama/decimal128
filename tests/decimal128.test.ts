@@ -14,8 +14,37 @@ describe("syntax", () => {
     test("sane string works", () => {
         expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
     });
-    test("zero works", () => {
-        expect(zero).toBeInstanceOf(Decimal128);
+    test("string with underscores in integer part", () => {
+        expect(new Decimal128("123_456.789").toString()).toStrictEqual(
+            "123456.789"
+        );
+    });
+    test("multiple underscores in integer part", () => {
+        expect(() => new Decimal128("123__456.789")).toThrow(SyntaxError);
+    });
+    test("multiple underscores in decimal part", () => {
+        expect(() => new Decimal128("123.789__456")).toThrow(SyntaxError);
+    });
+    test("leading underscore", () => {
+        expect(() => new Decimal128("_123")).toThrow(SyntaxError);
+    });
+    test("trailing underscore", () => {
+        expect(() => new Decimal128("123_")).toThrow(SyntaxError);
+    });
+    test("string with multiple underscores in integer part", () => {
+        expect(new Decimal128("123_456_789.123").toString()).toStrictEqual(
+            "123456789.123"
+        );
+    });
+    test("string with underscore in decimal part", () => {
+        expect(new Decimal128("123.456_789").toString()).toStrictEqual(
+            "123.456789"
+        );
+    });
+    test("string with underscores in both integer and decimal part", () => {
+        expect(new Decimal128("123_456.789_123").toString()).toStrictEqual(
+            "123456.789123"
+        );
     });
     test("negative works", () => {
         expect(new Decimal128("-123.456")).toBeInstanceOf(Decimal128);
@@ -524,98 +553,6 @@ describe("equals", () => {
                 new Decimal128("0.41666666666666666666666666666666666")
             )
         );
-    });
-});
-
-describe("exponential", () => {
-    describe("base is zero", () => {
-        test("exponent is positive integer", () => {
-            expect(zero.exp(new Decimal128("5")).equals(zero));
-        });
-        test("exponent is negative integer", () => {
-            expect(() => zero.exp(new Decimal128("-42"))).toThrow(RangeError);
-        });
-        test("exponent is negative non-integer", () => {
-            expect(() => zero.exp(new Decimal128("-2.75"))).toThrow(RangeError);
-        });
-    });
-    describe("exponent is zero", () => {
-        test("base is positive integer", () => {
-            expect(new Decimal128("123").exp(zero).equals(one));
-        });
-        test("base is positive non-integer", () => {
-            expect(new Decimal128("4.876").exp(zero).equals(one));
-        });
-        test("base is negative integer", () => {
-            expect(new Decimal128("-42").exp(zero).equals(one));
-        });
-        test("10^0", () => {
-            expect(new Decimal128("10").exp(zero).equals(one));
-        });
-    });
-    describe("integer base and exponent", () => {
-        describe("exponent is positive", () => {
-            test("2^3", () => {
-                expect(two.exp(three).equals(new Decimal128("8")));
-            });
-            test("1^100", () => {
-                expect(one.exp(new Decimal128("100")).equals(one));
-            });
-            test("5^3", () => {
-                expect(
-                    new Decimal128("5").exp(three).equals(new Decimal128("125"))
-                );
-            });
-        });
-        describe("exponent is negative", () => {
-            test("exact decimal representation exists", () => {
-                expect(two.exp(minusThree).equals(new Decimal128("0.125")));
-            });
-            test("4^-1", () => {
-                expect(
-                    four
-                        .exp(new Decimal128("-1"))
-                        .equals(new Decimal128("0.25"))
-                );
-            });
-            test("exact decimal representation does not exist", () => {
-                expect(three.exp(minusThree).toString()).toStrictEqual(
-                    "0.03703703703703703703703703703703704"
-                );
-            });
-        });
-    });
-    describe("non-integer base, integer exponent", () => {
-        test("0.5^-2", () => {
-            expect(
-                new Decimal128("0.5").exp(new Decimal128("-2")).equals(four)
-            );
-        });
-        test("1.5^2", () => {
-            expect(
-                new Decimal128("1.5").exp(two).equals(new Decimal128("2.25"))
-            );
-        });
-        test("0.125^3", () => {
-            expect(
-                new Decimal128("0.125")
-                    .exp(three)
-                    .equals(new Decimal128("0.001953125"))
-            );
-        });
-        test("0.8^4", () => {
-            expect(
-                new Decimal128("0.8").exp(four).equals(new Decimal128("0.4096"))
-            );
-        });
-    });
-    describe("base is one", () => {
-        expect(one.exp(new Decimal128("123")).equals(one));
-        expect(one.exp(new Decimal128("-42")).equals(one));
-        expect(one.exp(zero).equals(one));
-    });
-    describe("cannot raise to non-integer power", () => {
-        expect(() => one.exp(new Decimal128("0.5"))).toThrow(RangeError);
     });
 });
 

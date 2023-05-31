@@ -16,7 +16,6 @@
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
-const DIGITS_E = "2.718281828459045235360287471352662";
 
 /**
  * Normalize a digit string. This means:
@@ -534,7 +533,8 @@ export class Decimal128 {
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;
-    private readonly digitStrRegExp = /^-?[0-9]+([.][0-9]+)?$/;
+    private readonly digitStrRegExp =
+        /^-?[0-9]+(_?[0-9]+)*([.][0-9](_?[0-9]+)*)?$/;
     private readonly digits: string;
 
     constructor(s: string) {
@@ -542,7 +542,7 @@ export class Decimal128 {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
 
-        let normalized = normalize(s);
+        let normalized = normalize(s.replace(/_/g, ""));
 
         this.isNegative = !!normalized.match(/^-/);
 
@@ -862,10 +862,6 @@ export class Decimal128 {
         return this._divide(q);
     }
 
-    reciprocal(): Decimal128 {
-        return new Decimal128("1").divide(this);
-    }
-
     /**
      * Return the absolute value of this Decimal128 value.
      */
@@ -875,56 +871,6 @@ export class Decimal128 {
         }
 
         return this;
-    }
-
-    /**
-     * Raise this number to the power of another
-     *
-     * @param x Should be an integer (in the sense of isInteger)
-     * @throws RangeError If we try to raise zero to a negative power
-     * @throws RangeError If we try to raise to a non-integer power
-     */
-    exp(x: Decimal128): Decimal128 {
-        if (this.isZero() && x.isNegative) {
-            throw new RangeError("Cannot raise zero to negative power");
-        }
-
-        if (this.isZero() && x.isZero()) {
-            throw new RangeError("Cannot raise zero to zero power");
-        }
-
-        if (!x.isInteger()) {
-            throw new RangeError("Cannot raise to non-integer power");
-        }
-
-        let zero = new Decimal128("0");
-        let one = new Decimal128("1");
-
-        if (x.isNegative) {
-            return this.exp(x.negate()).reciprocal();
-        }
-
-        if (this.isZero()) {
-            return zero;
-        }
-
-        if (x.isZero()) {
-            return one;
-        }
-
-        let result = one;
-        let i = new Decimal128("0");
-        let done = false;
-        while (!done) {
-            if (i.cmp(x) >= 0) {
-                done = true;
-            } else {
-                result = result.multiply(this);
-                i = i.add(one);
-            }
-        }
-
-        return result;
     }
 
     /**
