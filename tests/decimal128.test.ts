@@ -141,11 +141,11 @@ describe("exponential string syntax", () => {
     test("negative significant and negative exponent works", () => {
         expect(new Decimal128("-123E-456")).toBeInstanceOf(Decimal128);
     });
-    test("leading zero works", () => {
-        expect(new Decimal128("0123E10")).toBeInstanceOf(Decimal128);
+    test("leading zero does not work", () => {
+        expect(() => new Decimal128("0123E10")).toThrow(SyntaxError);
     });
-    test("leading zero in exponent works", () => {
-        expect(new Decimal128("123E05")).toBeInstanceOf(Decimal128);
+    test("leading zero in exponent does not work", () => {
+        expect(() => new Decimal128("123E05")).toThrow(SyntaxError);
     });
     test("whitespace plus number not OK", () => {
         expect(() => new Decimal128(" 42E10")).toThrow(SyntaxError);
@@ -161,20 +161,23 @@ describe("exponential string syntax", () => {
         ).toThrow(RangeError);
     });
     test("exponent too big", () => {
-       expect(
-           () => new Decimal128("123E100000")
-       ).toThrow(RangeError);
+        expect(() => new Decimal128("123E100000")).toThrow(RangeError);
     });
     test("exponent too small", () => {
-        expect(
-            () => new Decimal128("123E-100000")
-        ).toThrow(RangeError);
+        expect(() => new Decimal128("123E-100000")).toThrow(RangeError);
     });
     test("max exponent", () => {
-       expect(new Decimal128("123E6144")).toBeInstanceOf(Decimal128)
+        expect(new Decimal128("123E6144")).toBeInstanceOf(Decimal128);
+        expect(() => new Decimal128("123E6145")).toThrow(RangeError);
     });
     test("min exponent", () => {
-        expect(new Decimal128("123E-6144")).toBeInstanceOf(Decimal128)
+        expect(new Decimal128("123E-6143")).toBeInstanceOf(Decimal128);
+        expect(() => new Decimal128("123E-6144")).toThrow(RangeError);
+    });
+    test("integer too big", () => {
+        expect(
+            () => new Decimal128("1234567890123456789012345678901234567890E10")
+        ).toThrow(RangeError);
     });
 });
 
