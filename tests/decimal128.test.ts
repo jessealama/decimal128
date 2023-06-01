@@ -660,3 +660,27 @@ describe("equality", () => {
         });
     });
 });
+
+describe("to exponential string", () => {
+    test("exponential input yields same as output", () => {
+        expect(new Decimal128("123456E-2").toExponentialString()).toStrictEqual(
+            "123456E-2"
+        );
+    });
+    test("basic example", () => {
+        expect(new Decimal128("123.456").toExponentialString()).toStrictEqual(
+            "123456E-3"
+        );
+    });
+    test("negative", () => {
+        expect(new Decimal128("-123.456").toExponentialString()).toStrictEqual(
+            "-123456E-3"
+        );
+    });
+    test("zero", () => {
+        expect(zero.toExponentialString()).toStrictEqual("0E0");
+    });
+    test("one", () => {
+        expect(one.toExponentialString()).toStrictEqual("1E0");
+    });
+});
