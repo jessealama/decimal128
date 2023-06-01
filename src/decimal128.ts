@@ -647,6 +647,15 @@ export class Decimal128 {
         );
     }
 
+    toExponentialString(): string {
+        return (
+            (this.isNegative ? "-" : "") +
+            (this.significand === "" ? "0" : this.significand) +
+            "E" +
+            this.exponent
+        );
+    }
+
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
