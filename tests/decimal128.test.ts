@@ -52,7 +52,7 @@ describe("digit string syntax", () => {
     test("integer works (decimal point unnecessary)", () => {
         expect(new Decimal128("123")).toBeInstanceOf(Decimal128);
     });
-    test("more significant digits than we can store is OK (rounding)", () => {
+    test("more significant digits than we can store is not OK for integers", () => {
         expect(
             () => new Decimal128("123456789123456789123456789123456789")
         ).toThrow(RangeError);
