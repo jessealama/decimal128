@@ -529,6 +529,77 @@ function exponent(s: string): number | undefined {
     }
 }
 
+interface Decimal128Constructor {
+    significand: string;
+    exponent: bigint;
+    isNegative: boolean;
+}
+
+function isInteger(x: Decimal128Constructor): boolean {
+    if (x.exponent >= 0) {
+        return true;
+    }
+
+    let numDigits = x.significand.length;
+
+    return BigInt(numDigits) + x.exponent >= 0;
+}
+
+function validateConstructorData(x: Decimal128Constructor): void {
+    let numSigDigits = countSignificantDigits(x.significand);
+
+    if (isInteger(x) && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+        throw new RangeError("Integer too large");
+    }
+
+    if (x.exponent > EXPONENT_MAX) {
+        throw new RangeError(`Exponent too big (${exponent})`);
+    }
+
+    if (x.exponent < EXPONENT_MIN) {
+        throw new RangeError(`Exponent too small (${exponent})`);
+    }
+}
+
+function handleExponentialNotation(s: string): Decimal128Constructor {
+    let [sg, exp] = s.match(/e/) ? s.split("e") : s.split("E");
+
+    let isNegative = false;
+    if (sg.match(/^-/)) {
+        isNegative = true;
+        sg = sg.substring(1);
+    }
+
+    return {
+        significand: sg,
+        exponent: BigInt(exp),
+        isNegative: isNegative,
+    };
+}
+
+function handleDecimalNotation(s: string): Decimal128Constructor {
+    let normalized = normalize(s.replace(/_/g, ""));
+    let isNegative = !!normalized.match(/^-/);
+    let sg = significand(normalized);
+    let exp = exponent(normalized);
+    let numSigDigits = countSignificantDigits(normalized);
+    let isInteger = exp >= 0;
+
+    if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+        let rounded = maybeRoundAfterNSignificantDigits(
+            normalized,
+            MAX_SIGNIFICANT_DIGITS
+        );
+        return handleDecimalNotation(rounded);
+    }
+
+    return {
+        significand: sg,
+        exponent: BigInt(exp),
+        isNegative: isNegative,
+    };
+}
+
 export class Decimal128 {
     public readonly significand: string;
     public readonly exponent: number;
@@ -538,75 +609,21 @@ export class Decimal128 {
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
 
     constructor(s: string) {
+        let data = undefined;
+
         if (s.match(this.exponentRegExp)) {
-            let [sg, exp] = s.match(/e/) ? s.split("e") : s.split("E");
-
-            let expBig = BigInt(exp);
-
-            this.isNegative = !!sg.match(/^-/);
-
-            let isInteger = true;
-
-            if (exp.match(/^-/)) {
-                let positiveExpBig = BigInt(exp.substring(1));
-                let numDigitsBig = BigInt(sg.length);
-                if (positiveExpBig > numDigitsBig) {
-                    isInteger = false;
-                }
-            }
-
-            let numSigDigits = countSignificantDigits(sg);
-
-            if (isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-                throw new RangeError("Integer too large");
-            }
-
-            if (expBig > EXPONENT_MAX) {
-                throw new RangeError(`Exponent too big (${exp})`);
-            }
-
-            if (expBig < EXPONENT_MIN) {
-                throw new RangeError(`Exponent too small (${exp})`);
-            }
-
-            this.significand = sg;
-            this.exponent = parseInt(exp); // safe because the min & max are less than 10000
+            data = handleExponentialNotation(s);
         } else if (s.match(this.digitStrRegExp)) {
-            let normalized = normalize(s.replace(/_/g, ""));
-
-            this.isNegative = !!normalized.match(/^-/);
-
-            let sg = significand(normalized);
-            let exp = exponent(normalized);
-            let isInteger = exp >= 0;
-
-            let numSigDigits = countSignificantDigits(normalized);
-
-            if (isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-                throw new RangeError("Integer too large");
-            }
-
-            if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-                let rounded = maybeRoundAfterNSignificantDigits(
-                    normalized,
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                return new Decimal128(rounded);
-            }
-
-            if (exp > EXPONENT_MAX) {
-                throw new RangeError(`Exponent too big (${exp})`);
-            }
-
-            if (exp < EXPONENT_MIN) {
-                throw new RangeError(`Exponent too small (${exp})`);
-            }
-
-            this.significand = sg;
-            this.exponent = exp;
+            data = handleDecimalNotation(s);
         } else {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
+
+        validateConstructorData(data);
+
+        this.significand = data.significand;
+        this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
+        this.isNegative = data.isNegative;
     }
 
     /**
