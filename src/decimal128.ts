@@ -300,6 +300,8 @@ function padDigits(s1: string, s2: string): [string, string] {
     return [result1, result2];
 }
 
+type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
+
 /**
  * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
  * return a generator that successively yields the digits of the sum of the two numbers.
@@ -309,7 +311,7 @@ function padDigits(s1: string, s2: string): [string, string] {
  * @param x
  * @param y
  */
-function* nextDigitForAddition(x: string, y: string): Generator<number> {
+function* nextDigitForAddition(x: string, y: string): Generator<Digit> {
     let [alignedX, alignedY] = padDigits(x, y);
     let [integerDigitsX, decimalDigitsX] = alignedX.split(".");
     let [integerDigitsY, decimalDigitsY] = alignedY.split(".");
@@ -325,18 +327,18 @@ function* nextDigitForAddition(x: string, y: string): Generator<number> {
 
         if (d > 9) {
             carry = 1;
-            yield d - 10;
+            yield (d - 10) as Digit;
         } else {
             carry = 0;
-            yield d;
+            yield d as Digit;
         }
     }
 
-    yield carry;
+    yield carry as Digit;
 
     carry = 0;
 
-    yield -1; // done with integer part
+    yield -1 as Digit; // done with integer part
 
     for (let i = 0; i < numDecimalDigits; i++) {
         let d1 = parseInt(decimalDigitsX.charAt(i));
@@ -345,19 +347,19 @@ function* nextDigitForAddition(x: string, y: string): Generator<number> {
 
         if (d > 9) {
             carry = 1;
-            yield d - 10;
+            yield (d - 10) as Digit;
         } else {
             carry = 0;
-            yield d;
+            yield d as Digit;
         }
     }
 
-    yield carry;
+    yield carry as Digit;
 
     return 0;
 }
 
-function* nextDigitForDivision(x: string, y: string): Generator<number> {
+function* nextDigitForDivision(x: string, y: string): Generator<Digit> {
     let result = "0";
     let bigX = BigInt(x);
     let bigY = BigInt(y);
@@ -392,7 +394,7 @@ function* nextDigitForDivision(x: string, y: string): Generator<number> {
             let q = bigX / bigY;
             bigX = bigX % bigY;
             result = result + q.toString();
-            yield parseInt(q.toString().charAt(0));
+            yield parseInt(q.toString().charAt(0)) as Digit;
         }
     }
 
@@ -408,7 +410,7 @@ function* nextDigitForDivision(x: string, y: string): Generator<number> {
  * @param x
  * @param y
  */
-function* nextDigitForSubtraction(x: string, y: string): Generator<number> {
+function* nextDigitForSubtraction(x: string, y: string): Generator<Digit> {
     let [alignedX, alignedY] = padDigits(x, y);
     let [integerDigitsX, decimalDigitsX] = alignedX.split(".");
     let [integerDigitsY, decimalDigitsY] = alignedY.split(".");
@@ -424,14 +426,14 @@ function* nextDigitForSubtraction(x: string, y: string): Generator<number> {
 
         if (d < 0) {
             carry = -1;
-            yield 10 - d;
+            yield (10 - d) as Digit;
         } else {
             carry = 0;
-            yield d;
+            yield d as Digit;
         }
     }
 
-    yield -1; // decimal point
+    yield -1 as Digit; // decimal point
 
     for (let i = 0; i < numIntegerDigits; i++) {
         let d1 = parseInt(integerDigitsX.charAt(numIntegerDigits - 1 - i));
@@ -440,17 +442,17 @@ function* nextDigitForSubtraction(x: string, y: string): Generator<number> {
 
         if (d < 0) {
             carry = -1;
-            yield 10 - d;
+            yield (10 - d) as Digit;
         } else {
             carry = 0;
-            yield d;
+            yield d as Digit;
         }
     }
 
     return 0;
 }
 
-function* nextDigitForMultiplication(x: string, y: number): Generator<number> {
+function* nextDigitForMultiplication(x: string, y: number): Generator<Digit> {
     let carry = 0;
     let numDigits = x.length;
 
@@ -458,7 +460,7 @@ function* nextDigitForMultiplication(x: string, y: number): Generator<number> {
         let d = parseInt(x.charAt(numDigits - 1 - i));
         let product = d * y + carry;
         carry = Math.floor(product / 10);
-        yield product % 10;
+        yield (product % 10) as Digit;
     }
 
     return carry;
