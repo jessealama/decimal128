@@ -15,7 +15,7 @@
 
 ## Implementation
 
-This package is built on top of the excellent [`bignumber.js` package](https://mikemcl.github.io/bignumber.js/) for arbitrary-precision arithmetic. It is written in TypeScript. Unit tests are in Jest.
+This package is written in TypeScript. Unit tests are in Jest. There are no other external dependencies.
 
 ## Data model
 
@@ -29,9 +29,9 @@ This package is not literally an implementation of Decimal128. In time, it may _
 
 #### Lack of support for specifying context
 
-Decimal128 allows one to specify, globally, some configuration values (such as precision) that control all mathematical operations on Decimal128 values.
+IEEE 754 Decimal128 allows one to globally specify configuration values (e.g., precision) that control all mathematical operations on Decimal128 values. This JavaScript package does not support that. Calculations are always done using all available digits.
 
-Think of this package as providing, basically, arbitrary-precision decimal numbers limited to those that fit into 128 bits the way that Decimal128 does it. No need to specify context. Just imagine that you're working in an ideal arbitrary-precision world, do the operation, and enjoy the results. (Of course, this can't _always_ work. But this suggestion is being offered to help you clear you mind of any "arithmetic context" cobwebs, if you have any.)
+Think of this package as providing, basically, arbitrary-precision decimal numbers limited to those that fit into 128 bits the way that Decimal128 does it. No need to specify context. Just imagine that you're working in an ideal arbitrary-precision world, do the operation, and enjoy the results. If you need to cut off a calculation after a certain point, just perform the operation (e.g., addition) and then use `toDecimalDigits` on the result. 
 
 #### Values always normalized
 
@@ -40,12 +40,3 @@ Decimal128 is a universe of **unnormalized** values. In the Decimal128 world, `1
 #### Missing operations
 
 This package focuses on the bread and butter of arithmetic: addition, multiplication, subtraction, and division. To round things out from there (ha!), we have the absolute value function, trunction, floor/ceiling.
-
-## In-scope but not yet implemented
-
--   Exponential notation (e.g., `1.234E99`)
--   Options for operations, such as cutting off calculation after a certain number of digits
-
-## Potentially in-scope, but currently unimplemented
-
--   A variant for unnormalized Decimal128 values. Decimal128 values are, out-of-the-box, not normalized.
