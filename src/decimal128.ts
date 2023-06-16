@@ -747,7 +747,9 @@ export class Decimal128 {
             return new Decimal128(lhs + "." + rhs.substring(0, n));
         }
 
-        return new Decimal128(lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`);
+        return new Decimal128(
+            lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`
+        );
     }
 
     /**

@@ -41,9 +41,11 @@ describe("to exponential string", () => {
         "123.456": "123456E-3",
         "-123.456": "-123456E-3",
         "0": "0E0",
-        "1": "1E0"
+        "1": "1E0",
     };
     for (let [input, output] of Object.entries(data)) {
-        expect(new Decimal128(input).toExponentialString()).toStrictEqual(output);
+        expect(new Decimal128(input).toExponentialString()).toStrictEqual(
+            output
+        );
     }
 });
