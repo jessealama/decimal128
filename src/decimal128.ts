@@ -501,7 +501,7 @@ function doMultiplication(x: string, y: string): string {
         numbersToAdd.push(new Decimal128(digits.reverse().join("")));
     }
 
-    let sum = numbersToAdd.reduce((a, b) => add(a, b));
+    let sum = numbersToAdd.reduce((a, b) => Decimal128.add(a, b));
 
     return sum.toString();
 }
@@ -749,7 +749,7 @@ export class Decimal128 {
             return this;
         }
 
-        return add(
+        return Decimal128.add(
             this.truncate(),
             new Decimal128(this.isNegative ? "-1" : "1")
         );
@@ -809,220 +809,219 @@ export class Decimal128 {
         let [lhs] = s.split(".");
         return new Decimal128(lhs);
     }
-}
 
-/**
- * Add two Decimal128 values.
- *
- * @param x
- * @param y
- * @private
- */
-function _add(x: Decimal128, y: Decimal128): Decimal128 {
-    if (x.isNegative && y.isNegative) {
-        return add(x.negate(), y.negate()).negate();
-    }
-
-    if (x.isNegative) {
-        return subtract(y, x.negate());
-    }
-
-    if (y.isNegative) {
-        return subtract(x, y.negate());
-    }
-
-    let ourDigits = x.toString();
-    let theirDigits = y.toString();
-    let result = "";
-
-    let digitGenerator = nextDigitForAddition(ourDigits, theirDigits);
-    let digit = digitGenerator.next();
-    let integerPartDone = false;
-    while (!digit.done) {
-        let v = digit.value;
-        if (-1 === v) {
-            integerPartDone = true;
-            result = result + ".";
-        } else if (integerPartDone) {
-            result = result + `${v}`;
-        } else {
-            result = `${v}` + result;
+    /**
+     * Add two Decimal128 values.
+     *
+     * @param x
+     * @param y
+     * @private
+     */
+    private static _add(x: Decimal128, y: Decimal128): Decimal128 {
+        if (x.isNegative && y.isNegative) {
+            return Decimal128._add(x.negate(), y.negate()).negate();
         }
 
-        digit = digitGenerator.next();
+        if (x.isNegative) {
+            return Decimal128.subtract(y, x.negate());
+        }
+
+        if (y.isNegative) {
+            return Decimal128.subtract(x, y.negate());
+        }
+
+        let ourDigits = x.toString();
+        let theirDigits = y.toString();
+        let result = "";
+
+        let digitGenerator = nextDigitForAddition(ourDigits, theirDigits);
+        let digit = digitGenerator.next();
+        let integerPartDone = false;
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                integerPartDone = true;
+                result = result + ".";
+            } else if (integerPartDone) {
+                result = result + `${v}`;
+            } else {
+                result = `${v}` + result;
+            }
+
+            digit = digitGenerator.next();
+        }
+
+        return new Decimal128(result);
     }
 
-    return new Decimal128(result);
-}
-
-/**
- * Add this Decimal128 value to one or more Decimal128 values.
- *
- * @param x
- * @param theArgs An array of Decimal128 values to add to this one.
- */
-export function add(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-    if (theArgs.length) {
+    /**
+     * Add this Decimal128 value to one or more Decimal128 values.
+     *
+     * @param x
+     * @param theArgs An array of Decimal128 values to add to this one.
+     */
+    static add(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
         let result = x;
 
         for (let y of theArgs) {
-            result = _add(result, y);
+            result = Decimal128._add(result, y);
         }
 
         return result;
     }
 
-    return x;
-}
-
-/**
- * Subtract another Decimal128 value from this one.
- *
- * @param x
- * @param y
- * @private
- */
-function _subtract(x: Decimal128, y: Decimal128): Decimal128 {
-    if (y.isNegative) {
-        return add(x, y.negate());
-    }
-
-    if (x.isNegative) {
-        return add(x.negate(), y).negate();
-    }
-
-    let ourDigits = x.toString();
-    let theirDigits = y.toString();
-    let result = "";
-
-    let digitGenerator = nextDigitForSubtraction(theirDigits, ourDigits);
-    let digit = digitGenerator.next();
-    while (!digit.done) {
-        let v = digit.value;
-        result = (-1 === v ? "." : `${v}`) + result;
-        digit = digitGenerator.next();
-    }
-
-    return new Decimal128(result);
-}
-
-/**
- * Subtract another Decimal128 value from one or more Decimal128 values.
- *
- * Association is to the left: `a.subtract(b, c, d)` is the same as
- * `((a.subtract(b)).subtract(c)).subtract(d)`, and so one for any number
- * of arguments.
- *
- * @param x
- * @param theArgs
- */
-export function subtract(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-    let result = x;
-
-    for (let y of theArgs) {
-        result = _subtract(result, y);
-    }
-
-    return result;
-}
-
-function _multiply(x: Decimal128, y: Decimal128): Decimal128 {
-    if (x.isNegative) {
-        return _multiply(x.negate(), y).negate();
-    }
-
-    if (y.isNegative) {
-        return _multiply(x, y.negate()).negate();
-    }
-
-    let result = doMultiplication(x.significand, y.significand);
-
-    return new Decimal128(
-        pushDecimalPointLeft(result, x.exponent + y.exponent)
-    );
-}
-
-/**
- * Multiply this Decimal128 value by an array of other Decimal128 values.
- *
- * If no arguments are given, return this value.
- *
- * @param x
- * @param theArgs
- */
-export function multiply(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-    let result = x;
-
-    for (let y of theArgs) {
-        result = _multiply(result, y);
-    }
-
-    return result;
-}
-
-/**
- * Divide this Decimal128 value by another.
- *
- * Throws a RangeError if the divisor is zero.
- *
- * @param x
- * @param y
- */
-function _divide(x: Decimal128, y: Decimal128): Decimal128 {
-    if (y.isZero()) {
-        throw new RangeError("Cannot divide by zero");
-    }
-
-    if (x.isNegative) {
-        return _divide(x.negate(), y).negate();
-    }
-
-    if (y.isNegative) {
-        return _divide(x, y.negate()).negate();
-    }
-
-    if (!x.isInteger() || !y.isInteger()) {
-        let ten = new Decimal128("10");
-        return _divide(_multiply(x, ten), _multiply(y, ten));
-    }
-
-    let digitGenerator = nextDigitForDivision(x.toString(), y.toString());
-    let digit = digitGenerator.next();
-    let integerPartDone = false;
-    let result = "";
-    while (!digit.done) {
-        let v = digit.value;
-        if (-1 === v) {
-            integerPartDone = true;
-            result = ("" === result ? "0" : result) + ".";
-        } else if (integerPartDone) {
-            result = result + `${v}`;
-        } else {
-            result = `${v}` + result;
+    /**
+     * Subtract another Decimal128 value from this one.
+     *
+     * @param x
+     * @param y
+     * @private
+     */
+    private static _subtract(x: Decimal128, y: Decimal128): Decimal128 {
+        if (y.isNegative) {
+            return Decimal128.add(x, y.negate());
         }
 
-        digit = digitGenerator.next();
+        if (x.isNegative) {
+            return Decimal128.add(x.negate(), y).negate();
+        }
+
+        let ourDigits = x.toString();
+        let theirDigits = y.toString();
+        let result = "";
+
+        let digitGenerator = nextDigitForSubtraction(theirDigits, ourDigits);
+        let digit = digitGenerator.next();
+        while (!digit.done) {
+            let v = digit.value;
+            result = (-1 === v ? "." : `${v}`) + result;
+            digit = digitGenerator.next();
+        }
+
+        return new Decimal128(result);
     }
 
-    return new Decimal128(result);
-}
+    /**
+     * Subtract another Decimal128 value from one or more Decimal128 values.
+     *
+     * Association is to the left: `a.subtract(b, c, d)` is the same as
+     * `((a.subtract(b)).subtract(c)).subtract(d)`, and so one for any number
+     * of arguments.
+     *
+     * @param x
+     * @param theArgs
+     */
+    static subtract(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
+        let result = x;
 
-/**
- * Divide this Decimal128 value by an array of other Decimal128 values.
- *
- * Association is to the left: 1/2/3 is (1/2)/3
- *
- * If only one argument is given, just return the first argument.
- *
- * @param x
- * @param theArgs
- */
-export function divide(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-    if (theArgs.length) {
-        let q = multiply(theArgs[0], ...theArgs.slice(1));
+        for (let y of theArgs) {
+            result = Decimal128._subtract(result, y);
+        }
 
-        return _divide(x, q);
+        return result;
     }
 
-    return x;
+    private static _multiply(x: Decimal128, y: Decimal128): Decimal128 {
+        if (x.isNegative) {
+            return Decimal128._multiply(x.negate(), y).negate();
+        }
+
+        if (y.isNegative) {
+            return Decimal128._multiply(x, y.negate()).negate();
+        }
+
+        let result = doMultiplication(x.significand, y.significand);
+
+        return new Decimal128(
+            pushDecimalPointLeft(result, x.exponent + y.exponent)
+        );
+    }
+
+    /**
+     * Multiply this Decimal128 value by an array of other Decimal128 values.
+     *
+     * If no arguments are given, return this value.
+     *
+     * @param x
+     * @param theArgs
+     */
+    static multiply(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
+        let result = x;
+
+        for (let y of theArgs) {
+            result = Decimal128._multiply(result, y);
+        }
+
+        return result;
+    }
+
+    /**
+     * Divide this Decimal128 value by another.
+     *
+     * Throws a RangeError if the divisor is zero.
+     *
+     * @param x
+     * @param y
+     */
+    private static _divide(x: Decimal128, y: Decimal128): Decimal128 {
+        if (y.isZero()) {
+            throw new RangeError("Cannot divide by zero");
+        }
+
+        if (x.isNegative) {
+            return Decimal128._divide(x.negate(), y).negate();
+        }
+
+        if (y.isNegative) {
+            return Decimal128._divide(x, y.negate()).negate();
+        }
+
+        if (!x.isInteger() || !y.isInteger()) {
+            let ten = new Decimal128("10");
+            return Decimal128._divide(
+                Decimal128._multiply(x, ten),
+                Decimal128._multiply(y, ten)
+            );
+        }
+
+        let digitGenerator = nextDigitForDivision(x.toString(), y.toString());
+        let digit = digitGenerator.next();
+        let integerPartDone = false;
+        let result = "";
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                integerPartDone = true;
+                result = ("" === result ? "0" : result) + ".";
+            } else if (integerPartDone) {
+                result = result + `${v}`;
+            } else {
+                result = `${v}` + result;
+            }
+
+            digit = digitGenerator.next();
+        }
+
+        return new Decimal128(result);
+    }
+
+    /**
+     * Divide this Decimal128 value by an array of other Decimal128 values.
+     *
+     * Association is to the left: 1/2/3 is (1/2)/3
+     *
+     * If only one argument is given, just return the first argument.
+     *
+     * @param x
+     * @param theArgs
+     */
+    static divide(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
+        if (theArgs.length) {
+            let q = Decimal128.multiply(theArgs[0], ...theArgs.slice(1));
+
+            return Decimal128._divide(x, q);
+        }
+
+        return x;
+    }
 }
