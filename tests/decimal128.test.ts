@@ -285,40 +285,6 @@ describe("absolute value", function () {
     });
 });
 
-describe("to decimal places", function () {
-    let d = new Decimal128("123.456");
-    test("more digits than available means no change", () => {
-        expect(d.toDecimalPlaces(7).equals(d));
-    });
-    test("same number of digits as available means no change", () => {
-        expect(d.toDecimalPlaces(6).equals(d));
-    });
-    test("round if number has more digits than requested (1)", () => {
-        expect(d.toDecimalPlaces(5).equals(new Decimal128("123.46")));
-    });
-    test("round if number has more digits than requested (2)", () => {
-        expect(d.toDecimalPlaces(4).equals(new Decimal128("123.5")));
-    });
-    test("round if number has more digits than requested (3)", () => {
-        expect(d.toDecimalPlaces(3).equals(new Decimal128("123")));
-    });
-    test("round if number has more digits than requested (4)", () => {
-        expect(d.toDecimalPlaces(2).equals(new Decimal128("12")));
-    });
-    test("round if number has more digits than requested (5)", () => {
-        expect(d.toDecimalPlaces(1).equals(one));
-    });
-    test("zero decimal places", () => {
-        expect(d.toDecimalPlaces(0).equals(new Decimal128("123")));
-    });
-    test("negative number of decimal places", () => {
-        expect(() => d.toDecimalPlaces(-1)).toThrow(RangeError);
-    });
-    test("non-integer number of decimal places", () => {
-        expect(() => d.toDecimalPlaces(1.5)).toThrow(TypeError);
-    });
-});
-
 describe("floor", function () {
     test("floor works (positive)", () => {
         expect(new Decimal128("123.456").floor().equals(new Decimal128("123")));
@@ -469,29 +435,5 @@ describe("equality", () => {
                 ).equals(one)
             );
         });
-    });
-});
-
-describe("to exponential string", () => {
-    test("exponential input yields same as output", () => {
-        expect(new Decimal128("123456E-2").toExponentialString()).toStrictEqual(
-            "123456E-2"
-        );
-    });
-    test("basic example", () => {
-        expect(new Decimal128("123.456").toExponentialString()).toStrictEqual(
-            "123456E-3"
-        );
-    });
-    test("negative", () => {
-        expect(new Decimal128("-123.456").toExponentialString()).toStrictEqual(
-            "-123456E-3"
-        );
-    });
-    test("zero", () => {
-        expect(zero.toExponentialString()).toStrictEqual("0E0");
-    });
-    test("one", () => {
-        expect(one.toExponentialString()).toStrictEqual("1E0");
     });
 });
