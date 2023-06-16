@@ -31,7 +31,7 @@ This package is not literally an implementation of Decimal128. In time, it may _
 
 IEEE 754 Decimal128 allows one to globally specify configuration values (e.g., precision) that control all mathematical operations on Decimal128 values. This JavaScript package does not support that. Calculations are always done using all available digits.
 
-Think of this package as providing, basically, arbitrary-precision decimal numbers limited to those that fit into 128 bits the way that Decimal128 does it. No need to specify context. Just imagine that you're working in an ideal arbitrary-precision world, do the operation, and enjoy the results. If you need to cut off a calculation after a certain point, just perform the operation (e.g., addition) and then use `toDecimalDigits` on the result. 
+Think of this package as providing, basically, arbitrary-precision decimal numbers limited to those that fit into 128 bits the way that Decimal128 does it. No need to specify context. Just imagine that you're working in an ideal arbitrary-precision world, do the operation, and enjoy the results. If you need to cut off a calculation after a certain point, just perform the operation (e.g., addition) and then use `toDecimalDigits` on the result.
 
 #### Values always normalized
 
