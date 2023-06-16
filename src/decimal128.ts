@@ -730,15 +730,24 @@ export class Decimal128 {
             throw new RangeError("Argument must be non-negative");
         }
 
-        let s = this.toString();
+        let [lhs, rhs] = this.toString().split(".");
 
-        let [lhs, rhs] = s.split(".");
-
-        if (0 === n || undefined === rhs) {
+        if (undefined === rhs || 0 === n) {
             return new Decimal128(lhs);
         }
 
-        return new Decimal128(lhs + "." + rhs.substring(0, n));
+        if (rhs.length <= n) {
+            return this;
+        }
+
+        let penultimateDigit = parseInt(rhs.charAt(n - 1));
+        let lastDigit = parseInt(rhs.charAt(n));
+
+        if (lastDigit < 5) {
+            return new Decimal128(lhs + "." + rhs.substring(0, n));
+        }
+
+        return new Decimal128(lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`);
     }
 
     /**
