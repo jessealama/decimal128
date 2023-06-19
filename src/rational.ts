@@ -79,35 +79,19 @@ export class Rational {
     }
 
     public static add(x: Rational, ...theArgs: Rational[]): Rational {
-        let sum = x;
-        for (let i = 0; i < theArgs.length; i++) {
-            sum = Rational._add(sum, theArgs[i]);
-        }
-        return sum;
+        return theArgs.reduce((acc, cur) => Rational._add(acc, cur), x);
     }
 
     public static subtract(x: Rational, ...theArgs: Rational[]): Rational {
-        let diff = x;
-        for (let i = 0; i < theArgs.length; i++) {
-            diff = Rational._subtract(diff, theArgs[i]);
-        }
-        return diff;
+        return theArgs.reduce((acc, cur) => Rational._subtract(acc, cur), x);
     }
 
     public static multiply(x: Rational, ...theArgs: Rational[]): Rational {
-        let prod = x;
-        for (let i = 0; i < theArgs.length; i++) {
-            prod = Rational._multiply(prod, theArgs[i]);
-        }
-        return prod;
+        return theArgs.reduce((acc, cur) => Rational._multiply(acc, cur), x);
     }
 
     public static divide(x: Rational, ...theArgs: Rational[]): Rational {
-        let quot = x;
-        for (let i = 0; i < theArgs.length; i++) {
-            quot = Rational._divide(quot, theArgs[i]);
-        }
-        return quot;
+        return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
 
     public negate(): Rational {
