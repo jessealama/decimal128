@@ -190,28 +190,26 @@ describe("is-negative", () => {
 });
 
 describe("exponent and significand", () => {
-    let data = {
-        "123.456": ["123456", -3],
-        "0": ["", 0],
-        "0.0": ["", 0],
-        "5": ["5", 0],
-        "-123.456": ["123456", -3],
-        "0.0042": ["42", -4],
-        "0.00000000000000000000000000000000000001": ["1", -38],
-        "1000": ["1", 3],
-        "0.5": ["5", -1],
-        "0.000001": ["1", -6],
-        "0.0000012": ["12", -7],
-    };
-    Object.keys(data).forEach((n) => {
+    let data: [string, string, number][] = [
+        ["123.456", "123456", -3],
+        ["0", "", 0],
+        ["0.0", "", 0],
+        ["5", "5", 0],
+        ["-123.456", "123456", -3],
+        ["0.0042", "42", -4],
+        ["0.00000000000000000000000000000000000001", "1", -38],
+        ["1000", "1", 3],
+        ["0.5", "5", -1],
+        ["0.000001", "1", -6],
+        ["0.0000012", "12", -7],
+    ];
+    for (const [n, sigDigits, exponent] of data) {
         test(`simple example (${n})`, () => {
             let d = new Decimal128(n);
-            let sigDigits = data[n][0];
-            let exponent = data[n][1];
             expect(d.significand).toStrictEqual(sigDigits);
             expect(d.exponent).toStrictEqual(exponent);
         });
-    });
+    }
     test("silently round up if too many significant digits", () => {
         expect(
             new Decimal128("1234.56789123456789123456789123456789").toString()
