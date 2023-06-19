@@ -13,6 +13,8 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
+import { Rational } from "./rational";
+
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
@@ -523,7 +525,11 @@ function exponent(s: string): number | undefined {
         return 0;
     } else if (s.match(/0+$/)) {
         let m = s.match(/0+$/);
-        return m[0].length;
+        if (m) {
+            return m[0].length;
+        } else {
+            return 0;
+        }
     } else {
         return 0;
     }
@@ -536,7 +542,7 @@ interface Decimal128Constructor {
 }
 
 function isInteger(x: Decimal128Constructor): boolean {
-    if (x.exponent >= 0) {
+    if (x.exponent >= BigInt(0)) {
         return true;
     }
 
@@ -583,7 +589,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     let sg = significand(normalized);
     let exp = exponent(normalized);
     let numSigDigits = countSignificantDigits(normalized);
-    let isInteger = exp >= 0;
+    let isInteger = typeof exp === "number" ? exp >= 0 : false;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
         let rounded = maybeRoundAfterNSignificantDigits(
@@ -595,7 +601,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
 
     return {
         significand: sg,
-        exponent: BigInt(exp),
+        exponent: BigInt(typeof exp === "number" ? exp : 0),
         isNegative: isNegative,
     };
 }
@@ -607,6 +613,7 @@ export class Decimal128 {
     private readonly digitStrRegExp =
         /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
+    private readonly rat;
 
     constructor(s: string) {
         let data = undefined;
@@ -624,6 +631,19 @@ export class Decimal128 {
         this.significand = data.significand;
         this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
         this.isNegative = data.isNegative;
+
+        if (this.exponent < 0) {
+            this.rat = new Rational(
+                BigInt(this.isNegative ? -1 : 1),
+                BigInt(this.significand) * (BigInt(10) ** BigInt(0 - this.exponent))
+            );
+        } else {
+            this.rat = new Rational(
+                BigInt((this.isNegative ? "-" : "") + this.significand),
+                BigInt(10) ** BigInt(this.exponent)
+            );
+        }
+
     }
 
     /**
