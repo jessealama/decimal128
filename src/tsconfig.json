@@ -1,13 +1,9 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "ES2020",
-    "sourceMap": true,
-      "lib": [
-          "ES2020", "esnext"
-      ]
-  },
-  "exclude": [
-    "node_modules"
-  ]
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2020",
+        "sourceMap": true,
+        "lib": ["ES2020", "esnext"]
+    },
+    "exclude": ["node_modules"]
 }
