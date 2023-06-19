@@ -635,7 +635,8 @@ export class Decimal128 {
         if (this.exponent < 0) {
             this.rat = new Rational(
                 BigInt(this.isNegative ? -1 : 1),
-                BigInt(this.significand) * (BigInt(10) ** BigInt(0 - this.exponent))
+                BigInt(this.significand) *
+                    BigInt(10) ** BigInt(0 - this.exponent)
             );
         } else {
             this.rat = new Rational(
@@ -643,7 +644,6 @@ export class Decimal128 {
                 BigInt(10) ** BigInt(this.exponent)
             );
         }
-
     }
 
     /**

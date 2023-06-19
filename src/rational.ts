@@ -16,7 +16,9 @@ export class Rational {
 
     constructor(p: bigint, q: bigint) {
         if (q === zero) {
-            throw new RangeError("Cannot construct rational whose denominator is zero");
+            throw new RangeError(
+                "Cannot construct rational whose denominator is zero"
+            );
         }
 
         let num = p;
