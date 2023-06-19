@@ -10,7 +10,9 @@ function gcd(a, b) {
 export class Rational {
     constructor(p, q) {
         if (q === zero) {
-            throw new RangeError("Cannot construct rational whose denominator is zero");
+            throw new RangeError(
+                "Cannot construct rational whose denominator is zero"
+            );
         }
         let num = p;
         let den = q;
@@ -19,13 +21,11 @@ export class Rational {
             if (q < zero) {
                 num = -p;
                 den = -q;
-            }
-            else {
+            } else {
                 num = -p;
                 neg = true;
             }
-        }
-        else if (q < zero) {
+        } else if (q < zero) {
             den = -q;
             neg = true;
         }
@@ -35,19 +35,33 @@ export class Rational {
         this.isNegative = neg;
     }
     toString() {
-        return `${this.isNegative ? "-" : ""}${this.numerator}/${this.denominator}`;
+        return `${this.isNegative ? "-" : ""}${this.numerator}/${
+            this.denominator
+        }`;
     }
     static _add(x, y) {
-        return new Rational(x.numerator * y.denominator + y.numerator * x.denominator, x.denominator * y.denominator);
+        return new Rational(
+            x.numerator * y.denominator + y.numerator * x.denominator,
+            x.denominator * y.denominator
+        );
     }
     static _subtract(x, y) {
-        return new Rational(x.numerator * y.denominator - y.numerator * x.denominator, x.denominator * y.denominator);
+        return new Rational(
+            x.numerator * y.denominator - y.numerator * x.denominator,
+            x.denominator * y.denominator
+        );
     }
     static _multiply(x, y) {
-        return new Rational(x.numerator * y.numerator, x.denominator * y.denominator);
+        return new Rational(
+            x.numerator * y.numerator,
+            x.denominator * y.denominator
+        );
     }
     static _divide(x, y) {
-        return new Rational(x.numerator * y.denominator, x.denominator * y.numerator);
+        return new Rational(
+            x.numerator * y.denominator,
+            x.denominator * y.numerator
+        );
     }
     static add(x, ...theArgs) {
         let sum = x;
@@ -82,10 +96,14 @@ export class Rational {
     }
     toDecimalPlaces(n) {
         if (!Number.isInteger(n)) {
-            throw new TypeError("Cannot round to non-integer number of decimal places");
+            throw new TypeError(
+                "Cannot round to non-integer number of decimal places"
+            );
         }
         if (n < 0) {
-            throw new RangeError("Cannot round to negative number of decimal places");
+            throw new RangeError(
+                "Cannot round to negative number of decimal places"
+            );
         }
         throw new Error("Not implemented");
     }

@@ -63,20 +63,15 @@ function normalize(s) {
 function significand(s) {
     if (s.match(/^-/)) {
         return significand(s.substring(1));
-    }
-    else if (s.match(/^0[.]/)) {
+    } else if (s.match(/^0[.]/)) {
         return significand(s.substring(2));
-    }
-    else if (s.match(/[.]/)) {
+    } else if (s.match(/[.]/)) {
         return significand(s.replace(/[.]/, ""));
-    }
-    else if (s.match(/^0+/)) {
+    } else if (s.match(/^0+/)) {
         return significand(s.replace(/^0+/, ""));
-    }
-    else if (s.match(/0+$/)) {
+    } else if (s.match(/0+$/)) {
         return significand(s.replace(/0+$/, ""));
-    }
-    else {
+    } else {
         return s;
     }
 }
@@ -122,8 +117,10 @@ function propogateCarryFromRight(s) {
             if (1 === left.length) {
                 return "10";
             }
-            return (propogateCarryFromRight(left.substring(0, left.length - 1)) +
-                "0");
+            return (
+                propogateCarryFromRight(left.substring(0, left.length - 1)) +
+                "0"
+            );
         }
         return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
     }
@@ -139,12 +136,13 @@ function propogateCarryFromRight(s) {
             return propogateCarryFromRight(left);
         }
         return left + "." + `${lastDigit + 1}`;
-    }
-    else {
-        return (left +
+    } else {
+        return (
+            left +
             "." +
             right.substring(0, len - 1) +
-            `${parseInt(right.charAt(len - 1)) + 1}`);
+            `${parseInt(right.charAt(len - 1)) + 1}`
+        );
     }
 }
 function maybeRoundAfterNSignificantDigits(s, n) {
@@ -169,7 +167,9 @@ function cutoffAfterSignificantDigits(s, n) {
     if (s.match(/^0[.]/)) {
         let m = s.match(/^0[.]0+/);
         if (m) {
-            return (m[0] + cutoffAfterSignificantDigits(s.substring(m[0].length), n));
+            return (
+                m[0] + cutoffAfterSignificantDigits(s.substring(m[0].length), n)
+            );
         }
         return s.substring(0, n + 2);
     }
@@ -177,8 +177,7 @@ function cutoffAfterSignificantDigits(s, n) {
         let newS = s.substring(0, n + 1);
         if (newS.match(/[.]$/)) {
             return newS.substring(0, newS.length - 1);
-        }
-        else {
+        } else {
             return newS;
         }
     }
@@ -187,8 +186,7 @@ function cutoffAfterSignificantDigits(s, n) {
 function ensureDecimalPoint(s) {
     if (s.match(/[.]/)) {
         return s;
-    }
-    else {
+    } else {
         return s + ".0";
     }
 }
@@ -247,14 +245,12 @@ function padDigits(s1, s2) {
     let result2 = `${lhs2}.${rhs2}`;
     if (numIntegerDigits1 < numIntegerDigits2) {
         result1 = "0".repeat(numIntegerDigits2 - numIntegerDigits1) + result1;
-    }
-    else {
+    } else {
         result2 = "0".repeat(numIntegerDigits1 - numIntegerDigits2) + result2;
     }
     if (numDecimalDigits1 < numDecimalDigits2) {
         result1 = result1 + "0".repeat(numDecimalDigits2 - numDecimalDigits1);
-    }
-    else {
+    } else {
         result2 = result2 + "0".repeat(numDecimalDigits1 - numDecimalDigits2);
     }
     return [result1, result2];
@@ -281,9 +277,8 @@ function* nextDigitForAddition(x, y) {
         let d = carry + d1 + d2;
         if (d > 9) {
             carry = 1;
-            yield (d - 10);
-        }
-        else {
+            yield d - 10;
+        } else {
             carry = 0;
             yield d;
         }
@@ -297,9 +292,8 @@ function* nextDigitForAddition(x, y) {
         let d = carry + d1 + d2;
         if (d > 9) {
             carry = 1;
-            yield (d - 10);
-        }
-        else {
+            yield d - 10;
+        } else {
             carry = 0;
             yield d;
         }
@@ -318,8 +312,7 @@ function* nextDigitForDivision(x, y) {
     while (!done && countSignificantDigits(result) <= MAX_SIGNIFICANT_DIGITS) {
         if (bigX === zero) {
             done = true;
-        }
-        else if (bigX < bigY) {
+        } else if (bigX < bigY) {
             if (emittedDecimalPoint) {
                 bigX = bigX * ten;
                 if (bigX < bigY) {
@@ -327,8 +320,7 @@ function* nextDigitForDivision(x, y) {
                     result = result + "0";
                     yield 0;
                 }
-            }
-            else {
+            } else {
                 emittedDecimalPoint = true;
                 result = result + ".";
                 bigX = bigX * ten;
@@ -339,8 +331,7 @@ function* nextDigitForDivision(x, y) {
                     yield 0;
                 }
             }
-        }
-        else {
+        } else {
             let q = bigX / bigY;
             bigX = bigX % bigY;
             result = result + q.toString();
@@ -371,9 +362,8 @@ function* nextDigitForSubtraction(x, y) {
         let d = d2 - d1 - carry;
         if (d < 0) {
             carry = -1;
-            yield (10 - d);
-        }
-        else {
+            yield 10 - d;
+        } else {
             carry = 0;
             yield d;
         }
@@ -385,9 +375,8 @@ function* nextDigitForSubtraction(x, y) {
         let d = d2 - d1 - carry;
         if (d < 0) {
             carry = -1;
-            yield (10 - d);
-        }
-        else {
+            yield 10 - d;
+        } else {
             carry = 0;
             yield d;
         }
@@ -401,7 +390,7 @@ function* nextDigitForMultiplication(x, y) {
         let d = parseInt(x.charAt(numDigits - 1 - i));
         let product = d * y + carry;
         carry = Math.floor(product / 10);
-        yield (product % 10);
+        yield product % 10;
     }
     return carry;
 }
@@ -420,7 +409,10 @@ function doMultiplication(x, y) {
     let numYDigits = y.length;
     let numbersToAdd = [];
     for (let i = 0; i < numYDigits; i++) {
-        let digitGenerator = nextDigitForMultiplication(x, parseInt(y.charAt(numYDigits - 1 - i)));
+        let digitGenerator = nextDigitForMultiplication(
+            x,
+            parseInt(y.charAt(numYDigits - 1 - i))
+        );
         let d = digitGenerator.next();
         let digits = [];
         for (let j = 0; j < i; j++) {
@@ -446,24 +438,19 @@ function doMultiplication(x, y) {
 function exponent(s) {
     if (s.match(/^-/)) {
         return exponent(s.substring(1));
-    }
-    else if (s.match(/[.]/)) {
+    } else if (s.match(/[.]/)) {
         let rhs = s.split(".")[1];
         return 0 - rhs.length;
-    }
-    else if (s === "0") {
+    } else if (s === "0") {
         return 0;
-    }
-    else if (s.match(/0+$/)) {
+    } else if (s.match(/0+$/)) {
         let m = s.match(/0+$/);
         if (m) {
             return m[0].length;
-        }
-        else {
+        } else {
             return 0;
         }
-    }
-    else {
+    } else {
         return 0;
     }
 }
@@ -507,7 +494,10 @@ function handleDecimalNotation(s) {
     let numSigDigits = countSignificantDigits(normalized);
     let isInteger = typeof exp === "number" ? exp >= 0 : false;
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        let rounded = maybeRoundAfterNSignificantDigits(normalized, MAX_SIGNIFICANT_DIGITS);
+        let rounded = maybeRoundAfterNSignificantDigits(
+            normalized,
+            MAX_SIGNIFICANT_DIGITS
+        );
         return handleDecimalNotation(rounded);
     }
     return {
@@ -523,11 +513,9 @@ export class Decimal128 {
         let data = undefined;
         if (s.match(this.exponentRegExp)) {
             data = handleExponentialNotation(s);
-        }
-        else if (s.match(this.digitStrRegExp)) {
+        } else if (s.match(this.digitStrRegExp)) {
             data = handleDecimalNotation(s);
-        }
-        else {
+        } else {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
         validateConstructorData(data);
@@ -535,11 +523,16 @@ export class Decimal128 {
         this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
         this.isNegative = data.isNegative;
         if (this.exponent < 0) {
-            this.rat = new Rational(BigInt(this.isNegative ? -1 : 1), BigInt(this.significand) *
-                BigInt(10) ** BigInt(0 - this.exponent));
-        }
-        else {
-            this.rat = new Rational(BigInt((this.isNegative ? "-" : "") + this.significand), BigInt(10) ** BigInt(this.exponent));
+            this.rat = new Rational(
+                BigInt(this.isNegative ? -1 : 1),
+                BigInt(this.significand) *
+                    BigInt(10) ** BigInt(0 - this.exponent)
+            );
+        } else {
+            this.rat = new Rational(
+                BigInt((this.isNegative ? "-" : "") + this.significand),
+                BigInt(10) ** BigInt(this.exponent)
+            );
         }
     }
     /**
@@ -557,21 +550,30 @@ export class Decimal128 {
             return prefix + "0." + this.significand;
         }
         if (this.significand.length < -this.exponent) {
-            return (prefix +
+            return (
+                prefix +
                 "0." +
                 "0".repeat(-this.exponent - this.significand.length) +
-                this.significand);
+                this.significand
+            );
         }
-        return (prefix +
-            this.significand.substring(0, this.significand.length + this.exponent) +
+        return (
+            prefix +
+            this.significand.substring(
+                0,
+                this.significand.length + this.exponent
+            ) +
             "." +
-            this.significand.substring(this.significand.length + this.exponent));
+            this.significand.substring(this.significand.length + this.exponent)
+        );
     }
     toExponentialString() {
-        return ((this.isNegative ? "-" : "") +
+        return (
+            (this.isNegative ? "-" : "") +
             (this.significand === "" ? "0" : this.significand) +
             "E" +
-            this.exponent);
+            this.exponent
+        );
     }
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
@@ -633,7 +635,9 @@ export class Decimal128 {
         if (lastDigit < 5) {
             return new Decimal128(lhs + "." + rhs.substring(0, n));
         }
-        return new Decimal128(lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`);
+        return new Decimal128(
+            lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`
+        );
     }
     /**
      * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
@@ -642,7 +646,10 @@ export class Decimal128 {
         if (this.isInteger()) {
             return this;
         }
-        return Decimal128.add(this.truncate(), new Decimal128(this.isNegative ? "-1" : "1"));
+        return Decimal128.add(
+            this.truncate(),
+            new Decimal128(this.isNegative ? "-1" : "1")
+        );
     }
     /**
      * Return the floor of this number. That is: the largest integer less than or equal to this number.
@@ -718,11 +725,9 @@ export class Decimal128 {
             if (-1 === v) {
                 integerPartDone = true;
                 result = result + ".";
-            }
-            else if (integerPartDone) {
+            } else if (integerPartDone) {
                 result = result + `${v}`;
-            }
-            else {
+            } else {
                 result = `${v}` + result;
             }
             digit = digitGenerator.next();
@@ -793,7 +798,9 @@ export class Decimal128 {
             return Decimal128._multiply(x, y.negate()).negate();
         }
         let result = doMultiplication(x.significand, y.significand);
-        return new Decimal128(pushDecimalPointLeft(result, x.exponent + y.exponent));
+        return new Decimal128(
+            pushDecimalPointLeft(result, x.exponent + y.exponent)
+        );
     }
     /**
      * Multiply this Decimal128 value by an array of other Decimal128 values.
@@ -830,7 +837,10 @@ export class Decimal128 {
         }
         if (!x.isInteger() || !y.isInteger()) {
             let ten = new Decimal128("10");
-            return Decimal128._divide(Decimal128._multiply(x, ten), Decimal128._multiply(y, ten));
+            return Decimal128._divide(
+                Decimal128._multiply(x, ten),
+                Decimal128._multiply(y, ten)
+            );
         }
         let digitGenerator = nextDigitForDivision(x.toString(), y.toString());
         let digit = digitGenerator.next();
@@ -841,11 +851,9 @@ export class Decimal128 {
             if (-1 === v) {
                 integerPartDone = true;
                 result = ("" === result ? "0" : result) + ".";
-            }
-            else if (integerPartDone) {
+            } else if (integerPartDone) {
                 result = result + `${v}`;
-            }
-            else {
+            } else {
                 result = `${v}` + result;
             }
             digit = digitGenerator.next();
