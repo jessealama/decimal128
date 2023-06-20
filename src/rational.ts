@@ -1,4 +1,7 @@
 const zero = BigInt(0);
+const ten = BigInt(10);
+
+type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
 
 function gcd(a: bigint, b: bigint): bigint {
     while (b !== zero) {
@@ -7,6 +10,88 @@ function gcd(a: bigint, b: bigint): bigint {
         a = t;
     }
     return a;
+}
+
+function countSignificantDigits(s: string): number {
+    if (s.match(/^-/)) {
+        return countSignificantDigits(s.substring(1));
+    }
+
+    if (s.match(/^0+[1-9]$/)) {
+        return countSignificantDigits(s.replace(/^0+/, ""));
+    }
+
+    if (s.match(/^0[.]/)) {
+        let m = s.match(/[.]0+/);
+
+        if (m) {
+            return s.length - m[0].length - 1;
+        }
+
+        return s.length - 2;
+    }
+
+    if (s.match(/[.]/)) {
+        return s.length - 1;
+    }
+
+    let m = s.match(/0+$/);
+
+    if (m) {
+        return s.length - m[0].length;
+    }
+
+    return s.length;
+}
+
+function* nextDigitForDivision(
+    x: bigint,
+    y: bigint,
+    n: number
+): Generator<Digit> {
+    let result = "0";
+    let emittedDecimalPoint = false;
+    let done = false;
+
+    while (
+        !done &&
+        countSignificantDigits(
+            result.match(/[.]$/) ? result.replace(".", "") : result
+        ) < n
+    ) {
+        if (x === zero) {
+            done = true;
+        } else if (x < y) {
+            if (emittedDecimalPoint) {
+                x = x * ten;
+                if (x < y) {
+                    // look ahead: are we still a power of 10 behind?
+                    result = result + "0";
+                    yield 0;
+                }
+            } else {
+                emittedDecimalPoint = true;
+                result = result + ".";
+                x = x * ten;
+                yield -1;
+                if (x < y) {
+                    // look ahead: are we still a power of 10 behind?
+                    result = result + "0";
+                    yield 0;
+                }
+            }
+        } else {
+            let q = x / y;
+            x = x % y;
+            let qString = q.toString();
+            result = result + qString;
+            for (let i = 0; i < qString.length; i++) {
+                yield parseInt(qString.charAt(i)) as Digit;
+            }
+        }
+    }
+
+    return 0;
 }
 
 export class Rational {
@@ -111,6 +196,38 @@ export class Rational {
             );
         }
 
-        throw new Error("Not implemented");
+        let numerator = this.numerator;
+        let denominator = this.denominator;
+
+        if (numerator === zero) {
+            return "0";
+        }
+
+        if (numerator < 0) {
+            if (denominator < 0) {
+                numerator = -numerator;
+                denominator = -denominator;
+            } else {
+                numerator = -numerator;
+            }
+        } else if (denominator < 0) {
+            denominator = -denominator;
+        }
+
+        let digitGenerator = nextDigitForDivision(numerator, denominator, n);
+        let digit = digitGenerator.next();
+        let result = "";
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                result = ("" === result ? "0" : result) + ".";
+            } else {
+                result = result + `${v}`;
+            }
+
+            digit = digitGenerator.next();
+        }
+
+        return (this.isNegative ? "-" : "") + result;
     }
 }
