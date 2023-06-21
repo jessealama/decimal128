@@ -24,6 +24,9 @@ describe("toString", () => {
     test("simple", () => {
         expect(new Rational(1n, 2n).toString()).toStrictEqual("1/2");
     });
+    test("negative", () => {
+        expect(new Rational(-3n, 7n).toString()).toStrictEqual("-3/7");
+    });
 });
 
 describe("toDecimalPlaces", () => {
@@ -47,5 +50,15 @@ describe("toDecimalPlaces", () => {
     });
     test("not exactly representable, greater than one", () => {
         expect(new Rational(5n, 3n).toDecimalPlaces(2)).toStrictEqual("1.6");
+    });
+    test("non-integer value not OK", () => {
+        expect(() => new Rational(1n, 2n).toDecimalPlaces(1.6)).toThrow(
+            TypeError
+        );
+    });
+    test("negative integer not OK", () => {
+        expect(() => new Rational(1n, 2n).toDecimalPlaces(-1)).toThrow(
+            RangeError
+        );
     });
 });

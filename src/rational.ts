@@ -1,4 +1,6 @@
 const zero = BigInt(0);
+const one = BigInt(1);
+const minusOne = BigInt(-1);
 const ten = BigInt(10);
 
 type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
@@ -13,10 +15,6 @@ function gcd(a: bigint, b: bigint): bigint {
 }
 
 function countSignificantDigits(s: string): number {
-    if (s.match(/^-/)) {
-        return countSignificantDigits(s.substring(1));
-    }
-
     if (s.match(/^0+[1-9]$/)) {
         return countSignificantDigits(s.replace(/^0+/, ""));
     }
@@ -124,8 +122,8 @@ export class Rational {
         }
 
         let g = gcd(num, den);
-        this.numerator = p / g;
-        this.denominator = q / g;
+        this.numerator = num / g;
+        this.denominator = den / g;
         this.isNegative = neg;
     }
 
@@ -135,7 +133,31 @@ export class Rational {
         }`;
     }
 
+    private negate(): Rational {
+        if (this.isNegative) {
+            return new Rational(this.numerator, this.denominator);
+        }
+
+        return new Rational(this.numerator * minusOne, this.denominator);
+    }
+
+    private reciprocal(): Rational {
+        return new Rational(this.denominator, this.numerator);
+    }
+
     private static _add(x: Rational, y: Rational): Rational {
+        if (x.isNegative) {
+            if (y.isNegative) {
+                return Rational._add(x.negate(), y.negate()).negate();
+            }
+
+            return Rational._subtract(y, x.negate());
+        }
+
+        if (y.isNegative) {
+            return Rational._subtract(x, y.negate());
+        }
+
         return new Rational(
             x.numerator * y.denominator + y.numerator * x.denominator,
             x.denominator * y.denominator
@@ -143,6 +165,18 @@ export class Rational {
     }
 
     private static _subtract(x: Rational, y: Rational): Rational {
+        if (x.isNegative) {
+            if (y.isNegative) {
+                return Rational.subtract(y.negate(), x.negate());
+            }
+
+            return Rational._add(x.negate(), y).negate();
+        }
+
+        if (y.isNegative) {
+            return Rational._add(x, y.negate());
+        }
+
         return new Rational(
             x.numerator * y.denominator - y.numerator * x.denominator,
             x.denominator * y.denominator
@@ -150,17 +184,15 @@ export class Rational {
     }
 
     private static _multiply(x: Rational, y: Rational): Rational {
+        let neg = x.isNegative !== y.isNegative;
         return new Rational(
-            x.numerator * y.numerator,
+            (neg ? minusOne : one) * x.numerator * y.numerator,
             x.denominator * y.denominator
         );
     }
 
     private static _divide(x: Rational, y: Rational): Rational {
-        return new Rational(
-            x.numerator * y.denominator,
-            x.denominator * y.numerator
-        );
+        return Rational._multiply(x, y.reciprocal());
     }
 
     public static add(x: Rational, ...theArgs: Rational[]): Rational {
@@ -179,10 +211,6 @@ export class Rational {
         return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
 
-    public negate(): Rational {
-        return new Rational(-this.numerator, this.denominator);
-    }
-
     public toDecimalPlaces(n: number): string {
         if (!Number.isInteger(n)) {
             throw new TypeError(
@@ -196,25 +224,15 @@ export class Rational {
             );
         }
 
-        let numerator = this.numerator;
-        let denominator = this.denominator;
-
-        if (numerator === zero) {
+        if (this.numerator === zero) {
             return "0";
         }
 
-        if (numerator < 0) {
-            if (denominator < 0) {
-                numerator = -numerator;
-                denominator = -denominator;
-            } else {
-                numerator = -numerator;
-            }
-        } else if (denominator < 0) {
-            denominator = -denominator;
-        }
-
-        let digitGenerator = nextDigitForDivision(numerator, denominator, n);
+        let digitGenerator = nextDigitForDivision(
+            this.numerator,
+            this.denominator,
+            n
+        );
         let digit = digitGenerator.next();
         let result = "";
         while (!digit.done) {

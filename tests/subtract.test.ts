@@ -27,6 +27,14 @@ describe("subtraction", () => {
             ).toString()
         ).toStrictEqual("0.3");
     });
+    test("subtract two negatives", () => {
+        expect(
+            Decimal128.subtract(
+                new Decimal128("-1.9"),
+                new Decimal128("-2.7")
+            ).toString()
+        ).toStrictEqual("0.8");
+    });
     test("close to range limit", () => {
         expect(
             Decimal128.subtract(
