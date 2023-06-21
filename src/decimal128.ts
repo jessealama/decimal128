@@ -13,6 +13,8 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
+import { Rational } from "./rational";
+
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
@@ -223,40 +225,6 @@ function ensureDecimalPoint(s: string): string {
 }
 
 /**
- * Given a pure digit string (no decimal point), return a new digit string by pushing the decimal point
- * to the left or right by n places. A negative n pushes the decimal point to the left, and a positive
- * n pushes the decimal point to the right. If n is zero, return the given string.
- *
- * @param s
- * @param n
- */
-function pushDecimalPointLeft(s: string, n: number): string {
-    if (0 === n) {
-        return s;
-    }
-
-    if (n < 0) {
-        if (s.length <= -n) {
-            return "0." + "0".repeat(-n - s.length) + s;
-        }
-
-        return s.substring(0, s.length + n) + "." + s.substring(s.length + n);
-    }
-
-    let [left, right] = s.split(/[.]/);
-
-    if (undefined === right) {
-        return s + "0".repeat(n);
-    }
-
-    if (right.length <= n) {
-        return left + right + "0".repeat(n - right.length);
-    }
-
-    return left + right.substring(0, n) + "." + right.substring(n);
-}
-
-/**
  * Given two digit strings, return a pair of digit strings where
  *
  * + the number of digits before the decimal point is the same
@@ -300,212 +268,6 @@ function padDigits(s1: string, s2: string): [string, string] {
     return [result1, result2];
 }
 
-type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
-
-/**
- * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
- * return a generator that successively yields the digits of the sum of the two numbers.
- *
- * Yields -1 to signal that the generator is moving from the integer part to the decimal part.
- *
- * @param x
- * @param y
- */
-function* nextDigitForAddition(x: string, y: string): Generator<Digit> {
-    let [alignedX, alignedY] = padDigits(x, y);
-    let [integerDigitsX, decimalDigitsX] = alignedX.split(".");
-    let [integerDigitsY, decimalDigitsY] = alignedY.split(".");
-
-    let carry = 0;
-    let numIntegerDigits = integerDigitsX.length;
-    let numDecimalDigits = decimalDigitsX.length;
-
-    for (let i = 0; i < numIntegerDigits; i++) {
-        let d1 = parseInt(integerDigitsX.charAt(numIntegerDigits - i - 1));
-        let d2 = parseInt(integerDigitsY.charAt(numIntegerDigits - i - 1));
-        let d = carry + d1 + d2;
-
-        if (d > 9) {
-            carry = 1;
-            yield (d - 10) as Digit;
-        } else {
-            carry = 0;
-            yield d as Digit;
-        }
-    }
-
-    yield carry as Digit;
-
-    carry = 0;
-
-    yield -1 as Digit; // done with integer part
-
-    for (let i = 0; i < numDecimalDigits; i++) {
-        let d1 = parseInt(decimalDigitsX.charAt(i));
-        let d2 = parseInt(decimalDigitsY.charAt(i));
-        let d = carry + d1 + d2;
-
-        if (d > 9) {
-            carry = 1;
-            yield (d - 10) as Digit;
-        } else {
-            carry = 0;
-            yield d as Digit;
-        }
-    }
-
-    yield carry as Digit;
-
-    return 0;
-}
-
-function* nextDigitForDivision(x: string, y: string): Generator<Digit> {
-    let result = "0";
-    let bigX = BigInt(x);
-    let bigY = BigInt(y);
-    let emittedDecimalPoint = false;
-    let done = false;
-    let zero = BigInt("0");
-    let ten = BigInt("10");
-
-    while (!done && countSignificantDigits(result) <= MAX_SIGNIFICANT_DIGITS) {
-        if (bigX === zero) {
-            done = true;
-        } else if (bigX < bigY) {
-            if (emittedDecimalPoint) {
-                bigX = bigX * ten;
-                if (bigX < bigY) {
-                    // look ahead: are we still a power of 10 behind?
-                    result = result + "0";
-                    yield 0;
-                }
-            } else {
-                emittedDecimalPoint = true;
-                result = result + ".";
-                bigX = bigX * ten;
-                yield -1;
-                if (bigX < bigY) {
-                    // look ahead: are we still a power of 10 behind?
-                    result = result + "0";
-                    yield 0;
-                }
-            }
-        } else {
-            let q = bigX / bigY;
-            bigX = bigX % bigY;
-            result = result + q.toString();
-            yield parseInt(q.toString().charAt(0)) as Digit;
-        }
-    }
-
-    return 0;
-}
-
-/**
- * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
- * return a generator that successively yields the digits of the subtraction of the second from the first.
- *
- * Yields -1 to signal that the generator is moving from the decimal part to the integer part.
- *
- * @param x
- * @param y
- */
-function* nextDigitForSubtraction(x: string, y: string): Generator<Digit> {
-    let [alignedX, alignedY] = padDigits(x, y);
-    let [integerDigitsX, decimalDigitsX] = alignedX.split(".");
-    let [integerDigitsY, decimalDigitsY] = alignedY.split(".");
-
-    let carry = 0;
-    let numIntegerDigits = integerDigitsX.length;
-    let numDecimalDigits = decimalDigitsX.length;
-
-    for (let i = 0; i < numDecimalDigits; i++) {
-        let d1 = parseInt(decimalDigitsX.charAt(numDecimalDigits - 1 - i));
-        let d2 = parseInt(decimalDigitsY.charAt(numDecimalDigits - 1 - i));
-        let d = d2 - d1 - carry;
-
-        if (d < 0) {
-            carry = -1;
-            yield (10 - d) as Digit;
-        } else {
-            carry = 0;
-            yield d as Digit;
-        }
-    }
-
-    yield -1 as Digit; // decimal point
-
-    for (let i = 0; i < numIntegerDigits; i++) {
-        let d1 = parseInt(integerDigitsX.charAt(numIntegerDigits - 1 - i));
-        let d2 = parseInt(integerDigitsY.charAt(numIntegerDigits - 1 - i));
-        let d = d2 - d1 - carry;
-
-        if (d < 0) {
-            carry = -1;
-            yield (10 - d) as Digit;
-        } else {
-            carry = 0;
-            yield d as Digit;
-        }
-    }
-
-    return 0;
-}
-
-function* nextDigitForMultiplication(x: string, y: number): Generator<Digit> {
-    let carry = 0;
-    let numDigits = x.length;
-
-    for (let i = 0; i < numDigits; i++) {
-        let d = parseInt(x.charAt(numDigits - 1 - i));
-        let product = d * y + carry;
-        carry = Math.floor(product / 10);
-        yield (product % 10) as Digit;
-    }
-
-    return carry;
-}
-
-/**
- * Given two digit strings, both assumed to be non-negative (neither has a negative sign),
- * and neither having a decimal point, return a generator that successively yields the digits
- * of the multiplication of the two numbers.
- *
- * @param x
- * @param y
- */
-function doMultiplication(x: string, y: string): string {
-    if (y.length > x.length) {
-        return doMultiplication(y, x);
-    }
-
-    let numYDigits = y.length;
-
-    let numbersToAdd: Decimal128[] = [];
-
-    for (let i = 0; i < numYDigits; i++) {
-        let digitGenerator = nextDigitForMultiplication(
-            x,
-            parseInt(y.charAt(numYDigits - 1 - i))
-        );
-        let d = digitGenerator.next();
-        let digits = [];
-        for (let j = 0; j < i; j++) {
-            digits.push("0");
-        }
-        while (!d.done) {
-            digits.push(`${d.value}`);
-            d = digitGenerator.next();
-        }
-        digits.push(`${d.value}`);
-        numbersToAdd.push(new Decimal128(digits.reverse().join("")));
-    }
-
-    let sum = numbersToAdd.reduce((a, b) => Decimal128.add(a, b));
-
-    return sum.toString();
-}
-
 /**
  * Return the exponent of a digit string, assumed to be normalized. It is the number of digits
  * to the left or right that the significand needs to be shifted to recover the original (normalized)
@@ -523,7 +285,11 @@ function exponent(s: string): number | undefined {
         return 0;
     } else if (s.match(/0+$/)) {
         let m = s.match(/0+$/);
-        return m[0].length;
+        if (m) {
+            return m[0].length;
+        } else {
+            return 0;
+        }
     } else {
         return 0;
     }
@@ -536,7 +302,7 @@ interface Decimal128Constructor {
 }
 
 function isInteger(x: Decimal128Constructor): boolean {
-    if (x.exponent >= 0) {
+    if (x.exponent >= BigInt(0)) {
         return true;
     }
 
@@ -583,7 +349,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     let sg = significand(normalized);
     let exp = exponent(normalized);
     let numSigDigits = countSignificantDigits(normalized);
-    let isInteger = exp >= 0;
+    let isInteger = typeof exp === "number" ? exp >= 0 : false;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
         let rounded = maybeRoundAfterNSignificantDigits(
@@ -595,7 +361,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
 
     return {
         significand: sg,
-        exponent: BigInt(exp),
+        exponent: BigInt(typeof exp === "number" ? exp : 0),
         isNegative: isNegative,
     };
 }
@@ -607,6 +373,7 @@ export class Decimal128 {
     private readonly digitStrRegExp =
         /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
+    private readonly rat;
 
     constructor(s: string) {
         let data = undefined;
@@ -624,6 +391,49 @@ export class Decimal128 {
         this.significand = data.significand;
         this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
         this.isNegative = data.isNegative;
+
+        if ("1" === this.significand) {
+            // power of ten
+            if (this.exponent < 0) {
+                this.rat = new Rational(
+                    BigInt(1),
+                    BigInt(
+                        (this.isNegative ? "-" : "") +
+                            "1" +
+                            "0".repeat(0 - this.exponent)
+                    )
+                );
+            } else if (this.exponent === 0) {
+                this.rat = new Rational(
+                    BigInt(this.isNegative ? -1 : 1),
+                    BigInt(1)
+                );
+            } else {
+                this.rat = new Rational(
+                    BigInt(
+                        (this.isNegative ? "-" : "") +
+                            "1" +
+                            "0".repeat(this.exponent)
+                    ),
+                    BigInt(1)
+                );
+            }
+        } else if (this.exponent < 0) {
+            this.rat = new Rational(
+                BigInt((this.isNegative ? "-" : "") + this.significand),
+                BigInt(10) ** BigInt(0 - this.exponent)
+            );
+        } else if (this.exponent === 1) {
+            this.rat = new Rational(
+                BigInt((this.isNegative ? "-" : "") + this.significand),
+                BigInt(1)
+            );
+        } else {
+            this.rat = new Rational(
+                BigInt((this.isNegative ? "-" : "") + this.significand),
+                BigInt(10) ** BigInt(this.exponent)
+            );
+        }
     }
 
     /**
@@ -678,13 +488,6 @@ export class Decimal128 {
      */
     isInteger(): boolean {
         return this.exponent >= 0;
-    }
-
-    /**
-     * Is this Decimal128 zero?
-     */
-    isZero(): boolean {
-        return this.significand === "";
     }
 
     /**
@@ -822,94 +625,17 @@ export class Decimal128 {
     }
 
     /**
-     * Add two Decimal128 values.
-     *
-     * @param x
-     * @param y
-     * @private
-     */
-    private static _add(x: Decimal128, y: Decimal128): Decimal128 {
-        if (x.isNegative && y.isNegative) {
-            return Decimal128._add(x.negate(), y.negate()).negate();
-        }
-
-        if (x.isNegative) {
-            return Decimal128.subtract(y, x.negate());
-        }
-
-        if (y.isNegative) {
-            return Decimal128.subtract(x, y.negate());
-        }
-
-        let ourDigits = x.toString();
-        let theirDigits = y.toString();
-        let result = "";
-
-        let digitGenerator = nextDigitForAddition(ourDigits, theirDigits);
-        let digit = digitGenerator.next();
-        let integerPartDone = false;
-        while (!digit.done) {
-            let v = digit.value;
-            if (-1 === v) {
-                integerPartDone = true;
-                result = result + ".";
-            } else if (integerPartDone) {
-                result = result + `${v}`;
-            } else {
-                result = `${v}` + result;
-            }
-
-            digit = digitGenerator.next();
-        }
-
-        return new Decimal128(result);
-    }
-
-    /**
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
      * @param theArgs An array of Decimal128 values to add to this one.
      */
     static add(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let result = x;
-
-        for (let y of theArgs) {
-            result = Decimal128._add(result, y);
-        }
-
-        return result;
-    }
-
-    /**
-     * Subtract another Decimal128 value from this one.
-     *
-     * @param x
-     * @param y
-     * @private
-     */
-    private static _subtract(x: Decimal128, y: Decimal128): Decimal128 {
-        if (y.isNegative) {
-            return Decimal128.add(x, y.negate());
-        }
-
-        if (x.isNegative) {
-            return Decimal128.add(x.negate(), y).negate();
-        }
-
-        let ourDigits = x.toString();
-        let theirDigits = y.toString();
-        let result = "";
-
-        let digitGenerator = nextDigitForSubtraction(theirDigits, ourDigits);
-        let digit = digitGenerator.next();
-        while (!digit.done) {
-            let v = digit.value;
-            result = (-1 === v ? "." : `${v}`) + result;
-            digit = digitGenerator.next();
-        }
-
-        return new Decimal128(result);
+        let theRats: Rational[] = theArgs.map((d) => d.rat);
+        let resultRat = Rational.add(x.rat, ...theRats);
+        return new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
     }
 
     /**
@@ -923,28 +649,10 @@ export class Decimal128 {
      * @param theArgs
      */
     static subtract(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let result = x;
-
-        for (let y of theArgs) {
-            result = Decimal128._subtract(result, y);
-        }
-
-        return result;
-    }
-
-    private static _multiply(x: Decimal128, y: Decimal128): Decimal128 {
-        if (x.isNegative) {
-            return Decimal128._multiply(x.negate(), y).negate();
-        }
-
-        if (y.isNegative) {
-            return Decimal128._multiply(x, y.negate()).negate();
-        }
-
-        let result = doMultiplication(x.significand, y.significand);
-
+        let theRats: Rational[] = theArgs.map((d) => d.rat);
+        let resultRat = Rational.subtract(x.rat, ...theRats);
         return new Decimal128(
-            pushDecimalPointLeft(result, x.exponent + y.exponent)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
 
@@ -957,63 +665,11 @@ export class Decimal128 {
      * @param theArgs
      */
     static multiply(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let result = x;
-
-        for (let y of theArgs) {
-            result = Decimal128._multiply(result, y);
-        }
-
-        return result;
-    }
-
-    /**
-     * Divide this Decimal128 value by another.
-     *
-     * Throws a RangeError if the divisor is zero.
-     *
-     * @param x
-     * @param y
-     */
-    private static _divide(x: Decimal128, y: Decimal128): Decimal128 {
-        if (y.isZero()) {
-            throw new RangeError("Cannot divide by zero");
-        }
-
-        if (x.isNegative) {
-            return Decimal128._divide(x.negate(), y).negate();
-        }
-
-        if (y.isNegative) {
-            return Decimal128._divide(x, y.negate()).negate();
-        }
-
-        if (!x.isInteger() || !y.isInteger()) {
-            let ten = new Decimal128("10");
-            return Decimal128._divide(
-                Decimal128._multiply(x, ten),
-                Decimal128._multiply(y, ten)
-            );
-        }
-
-        let digitGenerator = nextDigitForDivision(x.toString(), y.toString());
-        let digit = digitGenerator.next();
-        let integerPartDone = false;
-        let result = "";
-        while (!digit.done) {
-            let v = digit.value;
-            if (-1 === v) {
-                integerPartDone = true;
-                result = ("" === result ? "0" : result) + ".";
-            } else if (integerPartDone) {
-                result = result + `${v}`;
-            } else {
-                result = `${v}` + result;
-            }
-
-            digit = digitGenerator.next();
-        }
-
-        return new Decimal128(result);
+        let theRats: Rational[] = theArgs.map((d) => d.rat);
+        let resultRat = Rational.multiply(x.rat, ...theRats);
+        return new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
     }
 
     /**
@@ -1027,12 +683,10 @@ export class Decimal128 {
      * @param theArgs
      */
     static divide(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        if (theArgs.length) {
-            let q = Decimal128.multiply(theArgs[0], ...theArgs.slice(1));
-
-            return Decimal128._divide(x, q);
-        }
-
-        return x;
+        let theRats: Rational[] = theArgs.map((d) => d.rat);
+        let resultRat = Rational.divide(x.rat, ...theRats);
+        return new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
     }
 }
