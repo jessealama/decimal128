@@ -248,7 +248,10 @@ function validateConstructorData(x: Decimal128Constructor): void {
     }
 }
 
-function handleExponentialNotation(s: string): Decimal128Constructor {
+function handleExponentialNotation(
+    s: string,
+    opts: Options
+): Decimal128Constructor {
     let [sg, exp] = s.match(/e/) ? s.split("e") : s.split("E");
 
     let isNegative = false;
@@ -264,7 +267,10 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     };
 }
 
-function handleDecimalNotation(s: string): Decimal128Constructor {
+function handleDecimalNotation(
+    s: string,
+    opts: Options
+): Decimal128Constructor {
     let normalized = normalize(s.replace(/_/g, ""));
     let isNegative = !!normalized.match(/^-/);
     let sg = significand(normalized);
@@ -273,11 +279,62 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     let isInteger = typeof exp === "number" ? exp >= 0 : false;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        let rounded = maybeRoundAfterNSignificantDigits(
-            normalized,
-            MAX_SIGNIFICANT_DIGITS
-        );
-        return handleDecimalNotation(rounded);
+        let roundingMode = DEFAULT_ROUNDING_MODE;
+        let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
+        if (opts.round) {
+            roundingMode = opts.round;
+        }
+        if (roundingMode === "truncate") {
+            sg = propagateCarryFromRight(
+                sg.substring(0, MAX_SIGNIFICANT_DIGITS)
+            );
+        } else if (roundingMode === "up") {
+            if (lastDigit >= 5) {
+                sg = propagateCarryFromRight(
+                    sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
+                        `${lastDigit + 1}`
+                );
+            }
+        } else if (roundingMode === "down") {
+            if (isNegative) {
+                let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
+                if (lastDigit >= 5) {
+                    sg =
+                        sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
+                        `${lastDigit + 1}`;
+                }
+            } else {
+                sg = propagateCarryFromRight(
+                    sg.substring(0, MAX_SIGNIFICANT_DIGITS)
+                );
+            }
+        } else if (roundingMode === "ties-to-even") {
+            let penultimateDigit = parseInt(
+                sg.charAt(MAX_SIGNIFICANT_DIGITS - 1)
+            );
+            if (lastDigit === 5) {
+                if (penultimateDigit % 2 === 0) {
+                    sg = propagateCarryFromRight(
+                        sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
+                            `${penultimateDigit + 1}`
+                    );
+                } else {
+                    sg = propagateCarryFromRight(
+                        sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
+                            `${penultimateDigit}`
+                    );
+                }
+            }
+        } else if (roundingMode === "ties-up") {
+            if (lastDigit === 5) {
+                propagateCarryFromRight(
+                    sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
+                        `${lastDigit + 1}`
+                );
+            }
+        } else {
+            throw new Error(`Invalid rounding mode: ${roundingMode}`);
+        }
     }
 
     return {
@@ -286,6 +343,12 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
         isNegative: isNegative,
     };
 }
+
+interface Options {
+    round?: "truncate" | "up" | "down" | "ties-to-even" | "ties-up";
+}
+
+const DEFAULT_ROUNDING_MODE = "ties-to-even";
 
 export class Decimal128 {
     public readonly significand: string;
@@ -296,13 +359,13 @@ export class Decimal128 {
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
     private readonly rat;
 
-    constructor(s: string) {
+    constructor(s: string, options?: Options) {
         let data = undefined;
 
         if (s.match(this.exponentRegExp)) {
-            data = handleExponentialNotation(s);
+            data = handleExponentialNotation(s, options || {});
         } else if (s.match(this.digitStrRegExp)) {
-            data = handleDecimalNotation(s);
+            data = handleDecimalNotation(s, options || {});
         } else {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
