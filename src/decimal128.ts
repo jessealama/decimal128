@@ -14,6 +14,7 @@
  */
 
 import { Rational } from "./rational";
+import { countSignificantDigits } from "./common";
 
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
@@ -40,17 +41,22 @@ function normalize(s: string): string {
         }
         return "-" + n;
     }
+
     let a = s.replace(/^0+/, "");
     let b = a.match(/[.]/) ? a.replace(/0+$/, "") : a;
+
     if (b.match(/^[.]/)) {
         b = "0" + b;
     }
+
     if (b.match(/[.]$/)) {
         b = b.substring(0, b.length - 1);
     }
+
     if ("" === b) {
         b = "0";
     }
+
     return b;
 }
 
@@ -81,39 +87,6 @@ function significand(s: string): string {
 }
 
 /**
- * Counts the number of significant digits in a digit string, assumed to be normalized.
- *
- * @param s
- */
-function countSignificantDigits(s: string): number {
-    if (s.match(/^-/)) {
-        return countSignificantDigits(s.substring(1));
-    }
-
-    if (s.match(/^0[.]/)) {
-        let m = s.match(/[.]0+/);
-
-        if (m) {
-            return s.length - m[0].length - 1;
-        }
-
-        return s.length - 2;
-    }
-
-    if (s.match(/[.]/)) {
-        return s.length - 1;
-    }
-
-    let m = s.match(/0+$/);
-
-    if (m) {
-        return s.length - m[0].length;
-    }
-
-    return s.length;
-}
-
-/**
  * Get the n-th significant digit of a digit string, assumed to be normalized.
  *
  * @param s digit string (assumed to be normalized)
@@ -123,7 +96,7 @@ function nthSignificantDigit(s: string, n: number): number {
     return parseInt(significand(s).charAt(n));
 }
 
-function propogateCarryFromRight(s: string): string {
+function propagateCarryFromRight(s: string): string {
     let [left, right] = s.split(/[.]/);
 
     if (undefined === right) {
@@ -134,7 +107,7 @@ function propogateCarryFromRight(s: string): string {
             }
 
             return (
-                propogateCarryFromRight(left.substring(0, left.length - 1)) +
+                propagateCarryFromRight(left.substring(0, left.length - 1)) +
                 "0"
             );
         }
@@ -154,7 +127,7 @@ function propogateCarryFromRight(s: string): string {
     if (1 === len) {
         let lastDigit = parseInt(right.charAt(0));
         if (9 === lastDigit) {
-            return propogateCarryFromRight(left);
+            return propagateCarryFromRight(left);
         }
         return left + "." + `${lastDigit + 1}`;
     } else {
@@ -173,7 +146,7 @@ function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
     }
 
     if (n < 1) {
-        return propogateCarryFromRight(s);
+        return propagateCarryFromRight(s);
     }
 
     let finalDigit = nthSignificantDigit(s, n - 1);
@@ -214,58 +187,6 @@ function cutoffAfterSignificantDigits(s: string, n: number): string {
     }
 
     return s.substring(0, n);
-}
-
-function ensureDecimalPoint(s: string): string {
-    if (s.match(/[.]/)) {
-        return s;
-    } else {
-        return s + ".0";
-    }
-}
-
-/**
- * Given two digit strings, return a pair of digit strings where
- *
- * + the number of digits before the decimal point is the same
- * + the number of digits after the decimal point is the same
- *
- * This means that one of the strings may have some zeros prepended to it,
- * and possibly prepended to it.
- *
- * It is assumed that both digits are non-negative.
- *
- * @example padDigits("123.456", "9.9") // => ["123.456", "009.900"]
- * @example padDigits("123.456", "9.99") // => ["123.456", "009.990"]
- *
- * @param s1
- * @param s2
- */
-function padDigits(s1: string, s2: string): [string, string] {
-    let [lhs1, rhs1] = ensureDecimalPoint(s1).split(".");
-    let [lhs2, rhs2] = ensureDecimalPoint(s2).split(".");
-
-    let numIntegerDigits1 = lhs1.length;
-    let numIntegerDigits2 = lhs2.length;
-    let numDecimalDigits1 = rhs1.length;
-    let numDecimalDigits2 = rhs2.length;
-
-    let result1 = `${lhs1}.${rhs1}`;
-    let result2 = `${lhs2}.${rhs2}`;
-
-    if (numIntegerDigits1 < numIntegerDigits2) {
-        result1 = "0".repeat(numIntegerDigits2 - numIntegerDigits1) + result1;
-    } else {
-        result2 = "0".repeat(numIntegerDigits1 - numIntegerDigits2) + result2;
-    }
-
-    if (numDecimalDigits1 < numDecimalDigits2) {
-        result1 = result1 + "0".repeat(numDecimalDigits2 - numDecimalDigits1);
-    } else {
-        result2 = result2 + "0".repeat(numDecimalDigits1 - numDecimalDigits2);
-    }
-
-    return [result1, result2];
 }
 
 /**
@@ -425,7 +346,7 @@ export class Decimal128 {
             );
         } else if (this.exponent === 1) {
             this.rat = new Rational(
-                BigInt((this.isNegative ? "-" : "") + this.significand),
+                BigInt((this.isNegative ? "-" : "") + this.significand + "0"),
                 BigInt(1)
             );
         } else {
@@ -440,38 +361,7 @@ export class Decimal128 {
      * Returns a digit string representing this Decimal128.
      */
     toString(): string {
-        let prefix = this.isNegative ? "-" : "";
-
-        if (this.exponent === 0) {
-            return prefix + ("" === this.significand ? "0" : this.significand);
-        }
-
-        if (this.exponent > 0) {
-            return prefix + this.significand + "0".repeat(this.exponent);
-        }
-
-        if (this.significand.length === -this.exponent) {
-            return prefix + "0." + this.significand;
-        }
-
-        if (this.significand.length < -this.exponent) {
-            return (
-                prefix +
-                "0." +
-                "0".repeat(-this.exponent - this.significand.length) +
-                this.significand
-            );
-        }
-
-        return (
-            prefix +
-            this.significand.substring(
-                0,
-                this.significand.length + this.exponent
-            ) +
-            "." +
-            this.significand.substring(this.significand.length + this.exponent)
-        );
+        return normalize(this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1));
     }
 
     toExponentialString(): string {
@@ -586,32 +476,7 @@ export class Decimal128 {
      * @param x
      */
     cmp(x: Decimal128): number {
-        let [s1, s2] = padDigits(this.toString(), x.toString());
-        let [lhs1, rhs1] = s1.split(".");
-        let [lhs2, rhs2] = s2.split(".");
-
-        let bigLhs1 = BigInt(lhs1);
-        let bigLhs2 = BigInt(lhs2);
-        let bigRhs1 = BigInt(rhs1);
-        let bigRhs2 = BigInt(rhs2);
-
-        if (bigLhs1 < bigLhs2) {
-            return -1;
-        }
-
-        if (bigLhs2 < bigLhs1) {
-            return 1;
-        }
-
-        if (bigRhs1 < bigRhs2) {
-            return -1;
-        }
-
-        if (bigRhs2 < bigRhs1) {
-            return 1;
-        }
-
-        return 0;
+        return this.rat.cmp(x.rat);
     }
 
     /**

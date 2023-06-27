@@ -1,3 +1,5 @@
+import { countSignificantDigits } from "./common";
+
 const zero = BigInt(0);
 const one = BigInt(1);
 const minusOne = BigInt(-1);
@@ -14,40 +16,12 @@ function gcd(a: bigint, b: bigint): bigint {
     return a;
 }
 
-function countSignificantDigits(s: string): number {
-    if (s.match(/^0+[1-9]$/)) {
-        return countSignificantDigits(s.replace(/^0+/, ""));
-    }
-
-    if (s.match(/^0[.]/)) {
-        let m = s.match(/[.]0+/);
-
-        if (m) {
-            return s.length - m[0].length - 1;
-        }
-
-        return s.length - 2;
-    }
-
-    if (s.match(/[.]/)) {
-        return s.length - 1;
-    }
-
-    let m = s.match(/0+$/);
-
-    if (m) {
-        return s.length - m[0].length;
-    }
-
-    return s.length;
-}
-
 function* nextDigitForDivision(
     x: bigint,
     y: bigint,
     n: number
 ): Generator<Digit> {
-    let result = "0";
+    let result = "";
     let emittedDecimalPoint = false;
     let done = false;
 
@@ -69,7 +43,7 @@ function* nextDigitForDivision(
                 }
             } else {
                 emittedDecimalPoint = true;
-                result = result + ".";
+                result = (result === "" ? "0" : result) + ".";
                 x = x * ten;
                 yield -1;
                 if (x < y) {
@@ -233,8 +207,10 @@ export class Rational {
             this.denominator,
             n
         );
+
         let digit = digitGenerator.next();
         let result = "";
+
         while (!digit.done) {
             let v = digit.value;
             if (-1 === v) {
@@ -247,5 +223,22 @@ export class Rational {
         }
 
         return (this.isNegative ? "-" : "") + result;
+    }
+
+    cmp(x: Rational): number {
+        let a =
+            (this.isNegative ? minusOne : one) * this.numerator * x.denominator;
+        let b =
+            (x.isNegative ? minusOne : one) * x.numerator * this.denominator;
+
+        if (a < b) {
+            return -1;
+        }
+
+        if (b < a) {
+            return 1;
+        }
+
+        return 0;
     }
 }
