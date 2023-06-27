@@ -516,8 +516,7 @@ export class Decimal128 {
             return this;
         }
 
-        return Decimal128.add(
-            this.truncate(),
+        return this.truncate().add(
             new Decimal128(this.isNegative ? "-1" : "1")
         );
     }
@@ -556,13 +555,13 @@ export class Decimal128 {
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
-     * @param theArgs An array of Decimal128 values to add to this one.
+     * @param opts
      */
-    static add(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.add(x.rat, ...theRats);
+    add(x: Decimal128, opts?: Options): Decimal128 {
+        let resultRat = Rational.add(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
+            opts
         );
     }
 
@@ -574,13 +573,13 @@ export class Decimal128 {
      * of arguments.
      *
      * @param x
-     * @param theArgs
+     * @param opts
      */
-    static subtract(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.subtract(x.rat, ...theRats);
+    subtract(x: Decimal128, opts?: Options): Decimal128 {
+        let resultRat = Rational.subtract(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
+            opts
         );
     }
 
@@ -590,13 +589,13 @@ export class Decimal128 {
      * If no arguments are given, return this value.
      *
      * @param x
-     * @param theArgs
+     * @param opts
      */
-    static multiply(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.multiply(x.rat, ...theRats);
+    multiply(x: Decimal128, opts?: Options): Decimal128 {
+        let resultRat = Rational.multiply(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
+            opts
         );
     }
 
@@ -608,13 +607,13 @@ export class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
-     * @param theArgs
+     * @param opts
      */
-    static divide(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.divide(x.rat, ...theRats);
+    divide(x: Decimal128, opts?: Options): Decimal128 {
+        let resultRat = Rational.divide(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
+            opts
         );
     }
 }

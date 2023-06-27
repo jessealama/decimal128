@@ -26,21 +26,13 @@ describe("division", () => {
     for (let [name, [a, b, c]] of Object.entries(tests)) {
         test(name, () => {
             expect(
-                Decimal128.divide(
-                    new Decimal128(a),
-                    new Decimal128(b)
-                ).toString()
+                new Decimal128(a).divide(new Decimal128(b)).toString()
             ).toStrictEqual(c);
         });
     }
     test("divide by zero", () => {
         expect(() =>
-            Decimal128.divide(new Decimal128("123.456"), new Decimal128("0.0"))
+            new Decimal128("123.456").divide(new Decimal128("0.0"))
         ).toThrow(RangeError);
-    });
-    test("four arguments", () => {
-        expect(
-            Decimal128.divide(ten, two, three, four).toString()
-        ).toStrictEqual("0.4166666666666666666666666666666667");
     });
 });

@@ -17,35 +17,32 @@ describe("addition" + "", () => {
         expect(() => new Decimal128("9" + bigDigits)).toThrow(RangeError);
     });
     test("one plus one equals two", () => {
-        expect(Decimal128.add(one, one).equals(two));
+        expect(one.add(one).equals(two));
     });
     test("one plus minus one equals zero", () => {
-        expect(Decimal128.add(one, minusOne).equals(zero));
-        expect(Decimal128.add(minusOne, one).equals(zero));
+        expect(one.add(minusOne).equals(zero));
+        expect(minusOne.add(one).equals(zero));
     });
     test("0.1 + 0.2 = 0.3", () => {
         let a = new Decimal128("0.1");
         let b = new Decimal128("0.2");
         let c = new Decimal128("0.3");
-        expect(Decimal128.add(a, b).equals(c));
-        expect(Decimal128.add(b, a).equals(c));
+        expect(a.add(b).equals(c));
+        expect(b.add(a).equals(c));
     });
     test("big plus zero is OK", () => {
-        expect(big.equals(Decimal128.add(big, zero)));
+        expect(big.equals(big.add(zero)));
     });
     test("zero plus big is OK", () => {
-        expect(big.equals(Decimal128.add(zero, big)));
+        expect(big.equals(zero.add(big)));
     });
     test("big plus one is OK", () => {
-        expect(Decimal128.add(big, one).equals(Decimal128.add(one, big)));
+        expect(big.add(one).equals(one.add(big)));
     });
     test("two plus big is not OK (too many significant digits)", () => {
-        expect(() => Decimal128.add(two, big)).toThrow(RangeError);
+        expect(() => two.add(big)).toThrow(RangeError);
     });
     test("big plus two is not OK (too many significant digits)", () => {
-        expect(() => Decimal128.add(big, two)).toThrow(RangeError);
-    });
-    test("four arguments", () => {
-        expect(Decimal128.add(one, two, three, four).equals(ten));
+        expect(() => big.add(two)).toThrow(RangeError);
     });
 });

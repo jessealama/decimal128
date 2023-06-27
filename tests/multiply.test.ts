@@ -27,55 +27,42 @@ describe("multiplication", () => {
     for (let [a, b, c] of examples)
         test(`${a} * ${b} = ${c}`, () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128(a),
-                    new Decimal128(b)
-                ).toString()
+                new Decimal128(a).multiply(new Decimal128(b)).toString()
             ).toStrictEqual(c);
         });
     test("negative second argument", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("987.654"),
-                new Decimal128("-321.987")
-            ).toString()
+            new Decimal128("987.654")
+                .multiply(new Decimal128("-321.987"))
+                .toString()
         ).toStrictEqual("-318011.748498");
     });
     test("negative first argument", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("-987.654"),
-                new Decimal128("321.987")
-            ).toString()
+            new Decimal128("-987.654")
+                .multiply(new Decimal128("321.987"))
+                .toString()
         ).toStrictEqual("-318011.748498");
     });
     test("both arguments negative", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("-987.654"),
-                new Decimal128("-321.987")
-            ).toString()
+            new Decimal128("-987.654")
+                .multiply(new Decimal128("-321.987"))
+                .toString()
         ).toStrictEqual("318011.748498");
     });
     test("integer overflow", () => {
         expect(() =>
-            Decimal128.multiply(
-                new Decimal128("123456789123456789"),
+            new Decimal128("123456789123456789").multiply(
                 new Decimal128("987654321987654321")
             )
         ).toThrow(RangeError);
     });
     test("decimal overflow", () => {
         expect(() =>
-            Decimal128.multiply(
-                new Decimal128("123456789123456789.987654321"),
+            new Decimal128("123456789123456789.987654321").multiply(
                 new Decimal128("987654321123456789.123456789")
             )
         ).toThrow(RangeError);
-    });
-    test("four arguments", () => {
-        expect(
-            Decimal128.multiply(ten, two, three, four).toString()
-        ).toStrictEqual("240");
     });
 });
