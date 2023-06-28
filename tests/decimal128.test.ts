@@ -1,5 +1,4 @@
 import { Decimal128, DecimalCalculator } from "../src/decimal128";
-import { Rational, RationalCalculator } from "../src/rational";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 
@@ -468,7 +467,7 @@ describe("calculator", () => {
         let calc = new DecimalCalculator();
         calc.push(new Decimal128("0.5"), new Decimal128("0.3"));
         calc.subtract();
-        expect(calc.evaluate().toString()).toEqual("0.2");
+        expect(calc.evaluate().toString()).toStrictEqual("0.2");
     });
     test("operator still on the stack", () => {
         let calc = new DecimalCalculator();
