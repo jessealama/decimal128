@@ -169,16 +169,22 @@ export class Rational {
         return Rational._multiply(x, y.reciprocal());
     }
 
-    public static add(x: Rational, ...theArgs: Rational[]): Rational {
-        return theArgs.reduce((acc, cur) => Rational._add(acc, cur), x);
+    public static add(...theArgs: Rational[]): Rational {
+        return theArgs.reduce(
+            (acc, cur) => Rational._add(acc, cur),
+            new Rational(zero, one)
+        );
     }
 
     public static subtract(x: Rational, ...theArgs: Rational[]): Rational {
         return theArgs.reduce((acc, cur) => Rational._subtract(acc, cur), x);
     }
 
-    public static multiply(x: Rational, ...theArgs: Rational[]): Rational {
-        return theArgs.reduce((acc, cur) => Rational._multiply(acc, cur), x);
+    public static multiply(...theArgs: Rational[]): Rational {
+        return theArgs.reduce(
+            (acc, cur) => Rational._multiply(acc, cur),
+            new Rational(one, one)
+        );
     }
 
     public static divide(x: Rational, ...theArgs: Rational[]): Rational {
@@ -240,5 +246,86 @@ export class Rational {
         }
 
         return 0;
+    }
+}
+
+type CalculatorOperator = "+" | "-" | "*" | "/";
+type CalculatorStackElement = CalculatorOperator | Rational;
+
+export class RationalCalculator {
+    private stack: CalculatorStackElement[] = [];
+
+    add() {
+        this.stack = this.stack.concat(["+"]);
+        return this;
+    }
+
+    subtract() {
+        this.stack = this.stack.concat(["-"]);
+        return this;
+    }
+
+    multiply() {
+        this.stack = this.stack.concat(["*"]);
+        return this;
+    }
+
+    divide() {
+        this.stack = this.stack.concat(["/"]);
+        return this;
+    }
+
+    push(...d: Rational[]) {
+        this.stack = this.stack.concat(d);
+        return this;
+    }
+
+    evaluate(): Rational {
+        let stack: Rational[] = [];
+
+        while (this.stack.length > 0) {
+            let element = this.stack.shift();
+            if (element instanceof Rational) {
+                stack.push(element);
+            } else if ("+" === element) {
+                if (stack.length < 2) {
+                    throw new Error("Stack underflow in addition");
+                }
+                this.stack.unshift(Rational.add(...stack));
+                stack = [];
+            } else if ("-" === element) {
+                if (stack.length < 2) {
+                    throw new Error("Stack underflow in subtraction");
+                }
+                this.stack.unshift(
+                    Rational.subtract(stack[0], ...stack.slice(1))
+                );
+                stack = [];
+            } else if ("*" === element) {
+                if (stack.length < 2) {
+                    throw new Error("Stack underflow in multiplication");
+                }
+                this.stack.unshift(Rational.multiply(...stack));
+                stack = [];
+            } else if ("/" === element) {
+                if (stack.length < 2) {
+                    throw new Error("Stack underflow in division");
+                }
+                this.stack.unshift(
+                    Rational.divide(stack[0], ...stack.slice(1))
+                );
+                stack = [];
+            }
+        }
+
+        if (0 === stack.length) {
+            throw new Error("Empty stack");
+        }
+
+        if (1 < stack.length) {
+            throw new Error("Local stack has multiple elements");
+        }
+
+        return stack[0] as Rational;
     }
 }
