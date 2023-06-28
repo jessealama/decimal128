@@ -1,4 +1,4 @@
-import { Rational } from "../src/rational";
+import { Rational, RationalCalculator } from "../src/rational";
 
 describe("constructor", () => {
     test("cannot divide by zero", () => {
@@ -60,5 +60,41 @@ describe("toDecimalPlaces", () => {
         expect(() => new Rational(1n, 2n).toDecimalPlaces(-1)).toThrow(
             RangeError
         );
+    });
+});
+
+describe("calculator", () => {
+    test("empty stack throws", () => {
+        expect(() => new RationalCalculator().evaluate()).toThrow(Error);
+    });
+    test("stack with a single operator throws", () => {
+        expect(() => new RationalCalculator().add().evaluate()).toThrow(Error);
+        expect(() => new RationalCalculator().subtract().evaluate()).toThrow(
+            Error
+        );
+        expect(() => new RationalCalculator().multiply().evaluate()).toThrow(
+            Error
+        );
+        expect(() => new RationalCalculator().divide().evaluate()).toThrow(
+            Error
+        );
+    });
+    test("stack with a single number returns number", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        expect(calc.evaluate()).toEqual(new Rational(1n, 2n));
+    });
+    test("stack with two numbers throws", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        calc.push(new Rational(1n, 2n));
+        expect(() => calc.evaluate()).toThrow(Error);
+    });
+    test("addition", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        calc.push(new Rational(1n, 3n));
+        calc.add();
+        expect(calc.evaluate()).toEqual(new Rational(5n, 6n));
     });
 });

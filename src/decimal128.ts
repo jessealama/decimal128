@@ -13,7 +13,7 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { Rational } from "./rational";
+import { Rational, RationalCalculator } from "./rational";
 
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
@@ -483,6 +483,10 @@ export class Decimal128 {
         );
     }
 
+    asRational(): Rational {
+        return this.rat;
+    }
+
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
@@ -687,6 +691,49 @@ export class Decimal128 {
         let resultRat = Rational.divide(x.rat, ...theRats);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
+    }
+}
+
+type CalculatorOperator = "+" | "-" | "*" | "/";
+type CalculatorStackElement = CalculatorOperator | Rational;
+
+export class DecimalCalculator {
+    private rationalCalculator = new RationalCalculator();
+
+    add() {
+        this.rationalCalculator.add();
+        return this;
+    }
+
+    subtract() {
+        this.rationalCalculator.subtract();
+        return this;
+    }
+
+    multiply() {
+        this.rationalCalculator.multiply();
+        return this;
+    }
+
+    divide() {
+        this.rationalCalculator.divide();
+        return this;
+    }
+
+    push(d: Decimal128 | Decimal128[]) {
+        if (Array.isArray(d)) {
+            this.rationalCalculator.push(d.map((d) => d.asRational()));
+        } else {
+            this.rationalCalculator.push(d.asRational());
+        }
+        return this;
+    }
+
+    evaluate(): Decimal128 {
+        let result = this.rationalCalculator.evaluate();
+        return new Decimal128(
+            result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
 }
