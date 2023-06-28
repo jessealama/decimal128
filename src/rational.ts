@@ -282,8 +282,8 @@ export class RationalCalculator {
         return this;
     }
 
-    push(d: Rational | Rational[]) {
-        this.stack = this.stack.concat(Array.isArray(d) ? d : [d]);
+    push(...d: Rational[]) {
+        this.stack = this.stack.concat(d);
         return this;
     }
 
@@ -295,13 +295,13 @@ export class RationalCalculator {
             if (element instanceof Rational) {
                 stack.push(element);
             } else if ("+" === element) {
-                if (0 === stack.length) {
+                if (stack.length < 2) {
                     throw new Error("Stack underflow in addition");
                 }
                 this.stack.unshift(Rational.add(...stack));
                 stack = [];
             } else if ("-" === element) {
-                if (0 === stack.length) {
+                if (stack.length < 2) {
                     throw new Error("Stack underflow in subtraction");
                 }
                 this.stack.unshift(
@@ -309,21 +309,19 @@ export class RationalCalculator {
                 );
                 stack = [];
             } else if ("*" === element) {
-                if (0 === stack.length) {
+                if (stack.length < 2) {
                     throw new Error("Stack underflow in multiplication");
                 }
                 this.stack.unshift(Rational.multiply(...stack));
                 stack = [];
             } else if ("/" === element) {
-                if (0 === stack.length) {
+                if (stack.length < 2) {
                     throw new Error("Stack underflow in division");
                 }
                 this.stack.unshift(
                     Rational.divide(stack[0], ...stack.slice(1))
                 );
                 stack = [];
-            } else {
-                throw new Error("Invalid stack element: " + element);
             }
         }
 
@@ -335,10 +333,6 @@ export class RationalCalculator {
             throw new Error("Local stack has multiple elements");
         }
 
-        if (stack[0] instanceof Rational) {
-            return stack[0];
-        }
-
-        throw new Error(`Invalid final stack element: ${stack[0]}`);
+        return stack[0] as Rational;
     }
 }

@@ -90,11 +90,45 @@ describe("calculator", () => {
         calc.push(new Rational(1n, 2n));
         expect(() => calc.evaluate()).toThrow(Error);
     });
+    test("push multiple numbers at once", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n), new Rational(1n, 3n));
+        calc.subtract();
+        expect(calc.evaluate()).toEqual(new Rational(1n, 6n));
+    });
+    test("operator still on the stack", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        calc.add();
+        calc.add();
+        expect(() => calc.evaluate()).toThrow(Error);
+    });
     test("addition", () => {
         let calc = new RationalCalculator();
         calc.push(new Rational(1n, 2n));
         calc.push(new Rational(1n, 3n));
         calc.add();
         expect(calc.evaluate()).toEqual(new Rational(5n, 6n));
+    });
+    test("subtraction", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        calc.push(new Rational(1n, 3n));
+        calc.subtract();
+        expect(calc.evaluate()).toEqual(new Rational(1n, 6n));
+    });
+    test("multiplication", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        calc.push(new Rational(1n, 5n));
+        calc.multiply();
+        expect(calc.evaluate()).toEqual(new Rational(1n, 10n));
+    });
+    test("division", () => {
+        let calc = new RationalCalculator();
+        calc.push(new Rational(1n, 2n));
+        calc.push(new Rational(1n, 3n));
+        calc.divide();
+        expect(calc.evaluate()).toEqual(new Rational(3n, 2n));
     });
 });

@@ -721,12 +721,8 @@ export class DecimalCalculator {
         return this;
     }
 
-    push(d: Decimal128 | Decimal128[]) {
-        if (Array.isArray(d)) {
-            this.rationalCalculator.push(d.map((d) => d.asRational()));
-        } else {
-            this.rationalCalculator.push(d.asRational());
-        }
+    push(...d: Decimal128[]) {
+        this.rationalCalculator.push(...d.map((d) => d.asRational()));
         return this;
     }
 
