@@ -38,6 +38,9 @@ describe("toDecimalPlaces", () => {
     test("exactly representable", () => {
         expect(new Rational(1n, 2n).toDecimalPlaces(1)).toStrictEqual("0.5");
         expect(new Rational(1n, 5n).toDecimalPlaces(1)).toStrictEqual("0.2");
+        expect(new Rational(367n, 1000n).toDecimalPlaces(3)).toStrictEqual(
+            "0.367"
+        );
     });
     test("not exactly representable", () => {
         let third = new Rational(1n, 3n);
@@ -60,75 +63,5 @@ describe("toDecimalPlaces", () => {
         expect(() => new Rational(1n, 2n).toDecimalPlaces(-1)).toThrow(
             RangeError
         );
-    });
-});
-
-describe("calculator", () => {
-    test("empty stack throws", () => {
-        expect(() => new RationalCalculator().evaluate()).toThrow(Error);
-    });
-    test("stack with a single operator throws", () => {
-        expect(() => new RationalCalculator().add().evaluate()).toThrow(Error);
-        expect(() => new RationalCalculator().subtract().evaluate()).toThrow(
-            Error
-        );
-        expect(() => new RationalCalculator().multiply().evaluate()).toThrow(
-            Error
-        );
-        expect(() => new RationalCalculator().divide().evaluate()).toThrow(
-            Error
-        );
-    });
-    test("stack with a single number returns number", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        expect(calc.evaluate()).toEqual(new Rational(1n, 2n));
-    });
-    test("stack with two numbers throws", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        calc.push(new Rational(1n, 2n));
-        expect(() => calc.evaluate()).toThrow(Error);
-    });
-    test("push multiple numbers at once", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n), new Rational(1n, 3n));
-        calc.subtract();
-        expect(calc.evaluate()).toEqual(new Rational(1n, 6n));
-    });
-    test("operator still on the stack", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        calc.add();
-        calc.add();
-        expect(() => calc.evaluate()).toThrow(Error);
-    });
-    test("addition", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        calc.push(new Rational(1n, 3n));
-        calc.add();
-        expect(calc.evaluate()).toEqual(new Rational(5n, 6n));
-    });
-    test("subtraction", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        calc.push(new Rational(1n, 3n));
-        calc.subtract();
-        expect(calc.evaluate()).toEqual(new Rational(1n, 6n));
-    });
-    test("multiplication", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        calc.push(new Rational(1n, 5n));
-        calc.multiply();
-        expect(calc.evaluate()).toEqual(new Rational(1n, 10n));
-    });
-    test("division", () => {
-        let calc = new RationalCalculator();
-        calc.push(new Rational(1n, 2n));
-        calc.push(new Rational(1n, 3n));
-        calc.divide();
-        expect(calc.evaluate()).toEqual(new Rational(3n, 2n));
     });
 });

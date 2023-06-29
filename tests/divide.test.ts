@@ -1,10 +1,5 @@
 import { Decimal128 } from "../src/decimal128";
 
-const two = new Decimal128("2");
-const three = new Decimal128("3");
-const four = new Decimal128("4");
-const ten = new Decimal128("10");
-
 let tests = {
     "simple example": ["4.1", "1.25", "3.28"],
     "finite decimal representation": ["0.654", "0.12", "5.45"],
