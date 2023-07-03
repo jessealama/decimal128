@@ -13,11 +13,16 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { Rational, RationalCalculator } from "./rational";
+import { countSignificantDigits } from "./common";
+import { Rational } from "./rational";
 
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
+
+const bigTen = BigInt(10);
+const bigOne = BigInt(1);
+const bigZero = BigInt(0);
 
 /**
  * Normalize a digit string. This means:
@@ -40,18 +45,76 @@ function normalize(s: string): string {
         }
         return "-" + n;
     }
+
     let a = s.replace(/^0+/, "");
     let b = a.match(/[.]/) ? a.replace(/0+$/, "") : a;
+
     if (b.match(/^[.]/)) {
         b = "0" + b;
     }
+
     if (b.match(/[.]$/)) {
         b = b.substring(0, b.length - 1);
     }
+
     if ("" === b) {
         b = "0";
     }
+
     return b;
+}
+
+function shiftDecimalPointLeft(s: string): string {
+    if (s.match(/^-/)) {
+        return "-" + shiftDecimalPointLeft(s.substring(1));
+    }
+
+    let [lhs, rhs] = s.split(/[.]/);
+    return lhs + rhs.substring(0, 1) + "." + rhs.substring(1);
+}
+
+function shiftDecimalPointRight(s: string): string {
+    if (s.match(/^-/)) {
+        return "-" + shiftDecimalPointRight(s.substring(1));
+    }
+
+    return s.substring(0, s.length - 1) + "." + s.substring(s.length - 1);
+}
+
+function roundDigitStringTiesToEven(s: string, n: number): string {
+    let [lhs, rhs] = s.split(".");
+
+    if (undefined === rhs) {
+        return lhs;
+    }
+
+    if (n === 0) {
+        let digit = parseInt(lhs.substring(lhs.length - 1, lhs.length));
+        let nextDigit = nthSignificantDigit("0." + rhs, 0);
+
+        if (nextDigit > 5) {
+            return propagateCarryFromRight(lhs);
+        }
+
+        if (nextDigit === 5) {
+            if (0 === digit % 2) {
+                // round to even
+                return lhs;
+            }
+
+            return propagateCarryFromRight(lhs);
+        }
+
+        return lhs;
+    }
+
+    let timesTen = normalize(shiftDecimalPointLeft(s));
+
+    if (!timesTen.match(/[.]/)) {
+        return roundDigitStringTiesToEven(s, n - 1);
+    }
+
+    return shiftDecimalPointRight(roundDigitStringTiesToEven(timesTen, n - 1));
 }
 
 /**
@@ -81,39 +144,6 @@ function significand(s: string): string {
 }
 
 /**
- * Counts the number of significant digits in a digit string, assumed to be normalized.
- *
- * @param s
- */
-function countSignificantDigits(s: string): number {
-    if (s.match(/^-/)) {
-        return countSignificantDigits(s.substring(1));
-    }
-
-    if (s.match(/^0[.]/)) {
-        let m = s.match(/[.]0+/);
-
-        if (m) {
-            return s.length - m[0].length - 1;
-        }
-
-        return s.length - 2;
-    }
-
-    if (s.match(/[.]/)) {
-        return s.length - 1;
-    }
-
-    let m = s.match(/0+$/);
-
-    if (m) {
-        return s.length - m[0].length;
-    }
-
-    return s.length;
-}
-
-/**
  * Get the n-th significant digit of a digit string, assumed to be normalized.
  *
  * @param s digit string (assumed to be normalized)
@@ -123,7 +153,15 @@ function nthSignificantDigit(s: string, n: number): number {
     return parseInt(significand(s).charAt(n));
 }
 
-function propogateCarryFromRight(s: string): string {
+function cutoffAfterSignificantDigits(s: string, n: number): string {
+    if (s.match(/^0[.]/)) {
+        return s.substring(0, n + 2);
+    }
+
+    return s.substring(0, n + 1);
+}
+
+function propagateCarryFromRight(s: string): string {
     let [left, right] = s.split(/[.]/);
 
     if (undefined === right) {
@@ -134,30 +172,32 @@ function propogateCarryFromRight(s: string): string {
             }
 
             return (
-                propogateCarryFromRight(left.substring(0, left.length - 1)) +
+                propagateCarryFromRight(left.substring(0, left.length - 1)) +
                 "0"
             );
         }
         return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
     }
 
-    let m = right.match(/^0*[1-9]/);
-
-    if (null === m) {
-        return s;
-    }
-
-    let digits = m[0];
-
-    let len = digits.length;
+    let len = right.length;
 
     if (1 === len) {
         let lastDigit = parseInt(right.charAt(0));
         if (9 === lastDigit) {
-            return propogateCarryFromRight(left);
+            return propagateCarryFromRight(left) + ".0";
         }
         return left + "." + `${lastDigit + 1}`;
     } else {
+        let finalDigit = parseInt(right.charAt(len - 1));
+
+        if (9 === finalDigit) {
+            return (
+                propagateCarryFromRight(
+                    left + "." + right.substring(0, len - 1)
+                ) + "0"
+            );
+        }
+
         return (
             left +
             "." +
@@ -165,107 +205,6 @@ function propogateCarryFromRight(s: string): string {
             `${parseInt(right.charAt(len - 1)) + 1}`
         );
     }
-}
-
-function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
-    if (s.match(/^-/)) {
-        return "-" + maybeRoundAfterNSignificantDigits(s.substring(1), n);
-    }
-
-    if (n < 1) {
-        return propogateCarryFromRight(s);
-    }
-
-    let finalDigit = nthSignificantDigit(s, n - 1);
-    let decidingDigit = nthSignificantDigit(s, n);
-
-    if (decidingDigit >= 5) {
-        if (9 === finalDigit) {
-            let cutoff = cutoffAfterSignificantDigits(s, n);
-            return maybeRoundAfterNSignificantDigits(cutoff, n - 1);
-        }
-
-        return cutoffAfterSignificantDigits(s, n - 1) + `${finalDigit + 1}`;
-    }
-
-    return cutoffAfterSignificantDigits(s, n);
-}
-
-function cutoffAfterSignificantDigits(s: string, n: number): string {
-    if (s.match(/^0[.]/)) {
-        let m = s.match(/^0[.]0+/);
-
-        if (m) {
-            return (
-                m[0] + cutoffAfterSignificantDigits(s.substring(m[0].length), n)
-            );
-        }
-
-        return s.substring(0, n + 2);
-    }
-
-    if (s.match(/[.]/)) {
-        let newS = s.substring(0, n + 1);
-        if (newS.match(/[.]$/)) {
-            return newS.substring(0, newS.length - 1);
-        } else {
-            return newS;
-        }
-    }
-
-    return s.substring(0, n);
-}
-
-function ensureDecimalPoint(s: string): string {
-    if (s.match(/[.]/)) {
-        return s;
-    } else {
-        return s + ".0";
-    }
-}
-
-/**
- * Given two digit strings, return a pair of digit strings where
- *
- * + the number of digits before the decimal point is the same
- * + the number of digits after the decimal point is the same
- *
- * This means that one of the strings may have some zeros prepended to it,
- * and possibly prepended to it.
- *
- * It is assumed that both digits are non-negative.
- *
- * @example padDigits("123.456", "9.9") // => ["123.456", "009.900"]
- * @example padDigits("123.456", "9.99") // => ["123.456", "009.990"]
- *
- * @param s1
- * @param s2
- */
-function padDigits(s1: string, s2: string): [string, string] {
-    let [lhs1, rhs1] = ensureDecimalPoint(s1).split(".");
-    let [lhs2, rhs2] = ensureDecimalPoint(s2).split(".");
-
-    let numIntegerDigits1 = lhs1.length;
-    let numIntegerDigits2 = lhs2.length;
-    let numDecimalDigits1 = rhs1.length;
-    let numDecimalDigits2 = rhs2.length;
-
-    let result1 = `${lhs1}.${rhs1}`;
-    let result2 = `${lhs2}.${rhs2}`;
-
-    if (numIntegerDigits1 < numIntegerDigits2) {
-        result1 = "0".repeat(numIntegerDigits2 - numIntegerDigits1) + result1;
-    } else {
-        result2 = "0".repeat(numIntegerDigits1 - numIntegerDigits2) + result2;
-    }
-
-    if (numDecimalDigits1 < numDecimalDigits2) {
-        result1 = result1 + "0".repeat(numDecimalDigits2 - numDecimalDigits1);
-    } else {
-        result2 = result2 + "0".repeat(numDecimalDigits1 - numDecimalDigits2);
-    }
-
-    return [result1, result2];
 }
 
 /**
@@ -302,13 +241,7 @@ interface Decimal128Constructor {
 }
 
 function isInteger(x: Decimal128Constructor): boolean {
-    if (x.exponent >= BigInt(0)) {
-        return true;
-    }
-
-    let numDigits = x.significand.length;
-
-    return BigInt(numDigits) + x.exponent >= 0;
+    return x.exponent >= bigZero;
 }
 
 function validateConstructorData(x: Decimal128Constructor): void {
@@ -352,11 +285,38 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     let isInteger = typeof exp === "number" ? exp >= 0 : false;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        let rounded = maybeRoundAfterNSignificantDigits(
-            normalized,
-            MAX_SIGNIFICANT_DIGITS
-        );
-        return handleDecimalNotation(rounded);
+        let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
+        let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
+        if (lastDigit === 5) {
+            if (penultimateDigit % 2 === 0) {
+                let rounded =
+                    cutoffAfterSignificantDigits(
+                        normalized,
+                        MAX_SIGNIFICANT_DIGITS - 1
+                    ) + `${penultimateDigit}`;
+                sg = significand(rounded);
+                exp = exponent(rounded);
+            } else {
+                let rounded =
+                    cutoffAfterSignificantDigits(
+                        normalized,
+                        MAX_SIGNIFICANT_DIGITS - 1
+                    ) + `${penultimateDigit}`;
+                sg = significand(rounded);
+                exp = exponent(rounded);
+            }
+        } else if (lastDigit > 5) {
+            let rounded = normalize(
+                propagateCarryFromRight(
+                    cutoffAfterSignificantDigits(
+                        normalized,
+                        MAX_SIGNIFICANT_DIGITS
+                    )
+                )
+            );
+            sg = significand(rounded);
+            exp = exponent(rounded);
+        }
     }
 
     return {
@@ -396,7 +356,7 @@ export class Decimal128 {
             // power of ten
             if (this.exponent < 0) {
                 this.rat = new Rational(
-                    BigInt(1),
+                    bigOne,
                     BigInt(
                         (this.isNegative ? "-" : "") +
                             "1" +
@@ -406,7 +366,7 @@ export class Decimal128 {
             } else if (this.exponent === 0) {
                 this.rat = new Rational(
                     BigInt(this.isNegative ? -1 : 1),
-                    BigInt(1)
+                    bigOne
                 );
             } else {
                 this.rat = new Rational(
@@ -415,23 +375,23 @@ export class Decimal128 {
                             "1" +
                             "0".repeat(this.exponent)
                     ),
-                    BigInt(1)
+                    bigOne
                 );
             }
         } else if (this.exponent < 0) {
             this.rat = new Rational(
                 BigInt((this.isNegative ? "-" : "") + this.significand),
-                BigInt(10) ** BigInt(0 - this.exponent)
+                bigTen ** BigInt(0 - this.exponent)
             );
         } else if (this.exponent === 1) {
             this.rat = new Rational(
-                BigInt((this.isNegative ? "-" : "") + this.significand),
-                BigInt(1)
+                BigInt((this.isNegative ? "-" : "") + this.significand + "0"),
+                bigOne
             );
         } else {
             this.rat = new Rational(
                 BigInt((this.isNegative ? "-" : "") + this.significand),
-                BigInt(10) ** BigInt(this.exponent)
+                bigTen ** BigInt(this.exponent)
             );
         }
     }
@@ -440,38 +400,7 @@ export class Decimal128 {
      * Returns a digit string representing this Decimal128.
      */
     toString(): string {
-        let prefix = this.isNegative ? "-" : "";
-
-        if (this.exponent === 0) {
-            return prefix + ("" === this.significand ? "0" : this.significand);
-        }
-
-        if (this.exponent > 0) {
-            return prefix + this.significand + "0".repeat(this.exponent);
-        }
-
-        if (this.significand.length === -this.exponent) {
-            return prefix + "0." + this.significand;
-        }
-
-        if (this.significand.length < -this.exponent) {
-            return (
-                prefix +
-                "0." +
-                "0".repeat(-this.exponent - this.significand.length) +
-                this.significand
-            );
-        }
-
-        return (
-            prefix +
-            this.significand.substring(
-                0,
-                this.significand.length + this.exponent
-            ) +
-            "." +
-            this.significand.substring(this.significand.length + this.exponent)
-        );
+        return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
     }
 
     toExponentialString(): string {
@@ -481,10 +410,6 @@ export class Decimal128 {
             "E" +
             this.exponent
         );
-    }
-
-    asRational(): Rational {
-        return this.rat;
     }
 
     /**
@@ -567,8 +492,7 @@ export class Decimal128 {
             return this;
         }
 
-        return Decimal128.add(
-            this.truncate(),
+        return this.truncate().add(
             new Decimal128(this.isNegative ? "-1" : "1")
         );
     }
@@ -590,32 +514,7 @@ export class Decimal128 {
      * @param x
      */
     cmp(x: Decimal128): number {
-        let [s1, s2] = padDigits(this.toString(), x.toString());
-        let [lhs1, rhs1] = s1.split(".");
-        let [lhs2, rhs2] = s2.split(".");
-
-        let bigLhs1 = BigInt(lhs1);
-        let bigLhs2 = BigInt(lhs2);
-        let bigRhs1 = BigInt(rhs1);
-        let bigRhs2 = BigInt(rhs2);
-
-        if (bigLhs1 < bigLhs2) {
-            return -1;
-        }
-
-        if (bigLhs2 < bigLhs1) {
-            return 1;
-        }
-
-        if (bigRhs1 < bigRhs2) {
-            return -1;
-        }
-
-        if (bigRhs2 < bigRhs1) {
-            return 1;
-        }
-
-        return 0;
+        return this.rat.cmp(x.rat);
     }
 
     /**
@@ -632,11 +531,10 @@ export class Decimal128 {
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
-     * @param theArgs An array of Decimal128 values to add to this one.
+     * @param opts
      */
-    static add(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.add(x.rat, ...theRats);
+    add(x: Decimal128): Decimal128 {
+        let resultRat = Rational.add(this.rat, x.rat);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -650,11 +548,9 @@ export class Decimal128 {
      * of arguments.
      *
      * @param x
-     * @param theArgs
      */
-    static subtract(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.subtract(x.rat, ...theRats);
+    subtract(x: Decimal128): Decimal128 {
+        let resultRat = Rational.subtract(this.rat, x.rat);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -666,11 +562,9 @@ export class Decimal128 {
      * If no arguments are given, return this value.
      *
      * @param x
-     * @param theArgs
      */
-    static multiply(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.multiply(x.rat, ...theRats);
+    multiply(x: Decimal128): Decimal128 {
+        let resultRat = Rational.multiply(this.rat, x.rat);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -684,52 +578,23 @@ export class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
-     * @param theArgs
      */
-    static divide(x: Decimal128, ...theArgs: Decimal128[]): Decimal128 {
-        let theRats: Rational[] = theArgs.map((d) => d.rat);
-        let resultRat = Rational.divide(x.rat, ...theRats);
+    divide(x: Decimal128): Decimal128 {
+        let resultRat = Rational.divide(this.rat, x.rat);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
-}
 
-type CalculatorOperator = "+" | "-" | "*" | "/";
-type CalculatorStackElement = CalculatorOperator | Rational;
+    round(n: number = 0): Decimal128 {
+        if (!Number.isInteger(n)) {
+            throw new TypeError("Argument must be an integer");
+        }
 
-export class DecimalCalculator {
-    private rationalCalculator = new RationalCalculator();
+        if (n < 0) {
+            throw new RangeError("Argument must be non-negative");
+        }
 
-    add() {
-        this.rationalCalculator.add();
-        return this;
-    }
-
-    subtract() {
-        this.rationalCalculator.subtract();
-        return this;
-    }
-
-    multiply() {
-        this.rationalCalculator.multiply();
-        return this;
-    }
-
-    divide() {
-        this.rationalCalculator.divide();
-        return this;
-    }
-
-    push(...d: Decimal128[]) {
-        this.rationalCalculator.push(...d.map((d) => d.asRational()));
-        return this;
-    }
-
-    evaluate(): Decimal128 {
-        let result = this.rationalCalculator.evaluate();
-        return new Decimal128(
-            result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
-        );
+        return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
     }
 }

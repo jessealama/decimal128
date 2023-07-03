@@ -1,3 +1,5 @@
+import { countSignificantDigits } from "./common";
+
 const zero = BigInt(0);
 const one = BigInt(1);
 const minusOne = BigInt(-1);
@@ -14,40 +16,12 @@ function gcd(a: bigint, b: bigint): bigint {
     return a;
 }
 
-function countSignificantDigits(s: string): number {
-    if (s.match(/^0+[1-9]$/)) {
-        return countSignificantDigits(s.replace(/^0+/, ""));
-    }
-
-    if (s.match(/^0[.]/)) {
-        let m = s.match(/[.]0+/);
-
-        if (m) {
-            return s.length - m[0].length - 1;
-        }
-
-        return s.length - 2;
-    }
-
-    if (s.match(/[.]/)) {
-        return s.length - 1;
-    }
-
-    let m = s.match(/0+$/);
-
-    if (m) {
-        return s.length - m[0].length;
-    }
-
-    return s.length;
-}
-
 function* nextDigitForDivision(
     x: bigint,
     y: bigint,
     n: number
 ): Generator<Digit> {
-    let result = "0";
+    let result = "";
     let emittedDecimalPoint = false;
     let done = false;
 
@@ -69,7 +43,7 @@ function* nextDigitForDivision(
                 }
             } else {
                 emittedDecimalPoint = true;
-                result = result + ".";
+                result = (result === "" ? "0" : result) + ".";
                 x = x * ten;
                 yield -1;
                 if (x < y) {
@@ -239,8 +213,10 @@ export class Rational {
             this.denominator,
             n
         );
+
         let digit = digitGenerator.next();
         let result = "";
+
         while (!digit.done) {
             let v = digit.value;
             if (-1 === v) {
@@ -254,85 +230,21 @@ export class Rational {
 
         return (this.isNegative ? "-" : "") + result;
     }
-}
 
-type CalculatorOperator = "+" | "-" | "*" | "/";
-type CalculatorStackElement = CalculatorOperator | Rational;
+    cmp(x: Rational): number {
+        let a =
+            (this.isNegative ? minusOne : one) * this.numerator * x.denominator;
+        let b =
+            (x.isNegative ? minusOne : one) * x.numerator * this.denominator;
 
-export class RationalCalculator {
-    private stack: CalculatorStackElement[] = [];
-
-    add() {
-        this.stack = this.stack.concat(["+"]);
-        return this;
-    }
-
-    subtract() {
-        this.stack = this.stack.concat(["-"]);
-        return this;
-    }
-
-    multiply() {
-        this.stack = this.stack.concat(["*"]);
-        return this;
-    }
-
-    divide() {
-        this.stack = this.stack.concat(["/"]);
-        return this;
-    }
-
-    push(...d: Rational[]) {
-        this.stack = this.stack.concat(d);
-        return this;
-    }
-
-    evaluate(): Rational {
-        let stack: Rational[] = [];
-
-        while (this.stack.length > 0) {
-            let element = this.stack.shift();
-            if (element instanceof Rational) {
-                stack.push(element);
-            } else if ("+" === element) {
-                if (stack.length < 2) {
-                    throw new Error("Stack underflow in addition");
-                }
-                this.stack.unshift(Rational.add(...stack));
-                stack = [];
-            } else if ("-" === element) {
-                if (stack.length < 2) {
-                    throw new Error("Stack underflow in subtraction");
-                }
-                this.stack.unshift(
-                    Rational.subtract(stack[0], ...stack.slice(1))
-                );
-                stack = [];
-            } else if ("*" === element) {
-                if (stack.length < 2) {
-                    throw new Error("Stack underflow in multiplication");
-                }
-                this.stack.unshift(Rational.multiply(...stack));
-                stack = [];
-            } else if ("/" === element) {
-                if (stack.length < 2) {
-                    throw new Error("Stack underflow in division");
-                }
-                this.stack.unshift(
-                    Rational.divide(stack[0], ...stack.slice(1))
-                );
-                stack = [];
-            }
+        if (a < b) {
+            return -1;
         }
 
-        if (0 === stack.length) {
-            throw new Error("Empty stack");
+        if (b < a) {
+            return 1;
         }
 
-        if (1 < stack.length) {
-            throw new Error("Local stack has multiple elements");
-        }
-
-        return stack[0] as Rational;
+        return 0;
     }
 }

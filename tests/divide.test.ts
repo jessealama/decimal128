@@ -1,10 +1,5 @@
 import { Decimal128 } from "../src/decimal128";
 
-const two = new Decimal128("2");
-const three = new Decimal128("3");
-const four = new Decimal128("4");
-const ten = new Decimal128("10");
-
 let tests = {
     "simple example": ["4.1", "1.25", "3.28"],
     "finite decimal representation": ["0.654", "0.12", "5.45"],
@@ -26,21 +21,13 @@ describe("division", () => {
     for (let [name, [a, b, c]] of Object.entries(tests)) {
         test(name, () => {
             expect(
-                Decimal128.divide(
-                    new Decimal128(a),
-                    new Decimal128(b)
-                ).toString()
+                new Decimal128(a).divide(new Decimal128(b)).toString()
             ).toStrictEqual(c);
         });
     }
     test("divide by zero", () => {
         expect(() =>
-            Decimal128.divide(new Decimal128("123.456"), new Decimal128("0.0"))
+            new Decimal128("123.456").divide(new Decimal128("0.0"))
         ).toThrow(RangeError);
-    });
-    test("four arguments", () => {
-        expect(
-            Decimal128.divide(ten, two, three, four).toString()
-        ).toStrictEqual("0.4166666666666666666666666666666667");
     });
 });
