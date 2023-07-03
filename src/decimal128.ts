@@ -14,9 +14,7 @@
  */
 
 import { countSignificantDigits } from "./common";
-import { Rational, RationalCalculator } from "./rational";
-import { util } from "prettier";
-import getNextNonSpaceNonCommentCharacterIndex = util.getNextNonSpaceNonCommentCharacterIndex;
+import { Rational } from "./rational";
 
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
@@ -66,6 +64,59 @@ function normalize(s: string): string {
     return b;
 }
 
+function shiftDecimalPointLeft(s: string): string {
+    if (s.match(/^-/)) {
+        return "-" + shiftDecimalPointLeft(s.substring(1));
+    }
+
+    let [lhs, rhs] = s.split(/[.]/);
+    return lhs + rhs.substring(0, 1) + "." + rhs.substring(1);
+}
+
+function shiftDecimalPointRight(s: string): string {
+    if (s.match(/^-/)) {
+        return "-" + shiftDecimalPointRight(s.substring(1));
+    }
+
+    return s.substring(0, s.length - 1) + "." + s.substring(s.length - 1);
+}
+
+function roundDigitStringTiesToEven(s: string, n: number): string {
+    let [lhs, rhs] = s.split(".");
+
+    if (undefined === rhs) {
+        return lhs;
+    }
+
+    if (n === 0) {
+        let digit = parseInt(lhs.substring(lhs.length - 1, lhs.length));
+        let nextDigit = nthSignificantDigit("0." + rhs, 0);
+
+        if (nextDigit > 5) {
+            return propagateCarryFromRight(lhs);
+        }
+
+        if (nextDigit === 5) {
+            if (0 === digit % 2) {
+                // round to even
+                return lhs;
+            }
+
+            return propagateCarryFromRight(lhs);
+        }
+
+        return lhs;
+    }
+
+    let timesTen = normalize(shiftDecimalPointLeft(s));
+
+    if (!timesTen.match(/[.]/)) {
+        return roundDigitStringTiesToEven(s, n - 1);
+    }
+
+    return shiftDecimalPointRight(roundDigitStringTiesToEven(timesTen, n - 1));
+}
+
 /**
  * Return the significand of a digit string, assumed to be normalized.
  * The returned value is a digit string that has no decimal point, even if the original
@@ -102,53 +153,12 @@ function nthSignificantDigit(s: string, n: number): number {
     return parseInt(significand(s).charAt(n));
 }
 
-function maybeRoundAfterNSignificantDigits(s: string, n: number): string {
-    if (s.match(/^-/)) {
-        return "-" + maybeRoundAfterNSignificantDigits(s.substring(1), n);
-    }
-
-    if (n < 1) {
-        return propagateCarryFromRight(s);
-    }
-
-    let finalDigit = nthSignificantDigit(s, n - 1);
-    let decidingDigit = nthSignificantDigit(s, n);
-
-    if (decidingDigit >= 5) {
-        if (9 === finalDigit) {
-            let cutoff = cutoffAfterSignificantDigits(s, n);
-            return maybeRoundAfterNSignificantDigits(cutoff, n - 1);
-        }
-
-        return cutoffAfterSignificantDigits(s, n - 1) + `${finalDigit + 1}`;
-    }
-
-    return cutoffAfterSignificantDigits(s, n);
-}
-
 function cutoffAfterSignificantDigits(s: string, n: number): string {
     if (s.match(/^0[.]/)) {
-        let m = s.match(/^0[.]0+/);
-
-        if (m) {
-            return (
-                m[0] + cutoffAfterSignificantDigits(s.substring(m[0].length), n)
-            );
-        }
-
         return s.substring(0, n + 2);
     }
 
-    if (s.match(/[.]/)) {
-        let newS = s.substring(0, n + 1);
-        if (newS.match(/[.]$/)) {
-            return newS.substring(0, newS.length - 1);
-        } else {
-            return newS;
-        }
-    }
-
-    return s.substring(0, n);
+    return s.substring(0, n + 1);
 }
 
 function propagateCarryFromRight(s: string): string {
@@ -169,23 +179,25 @@ function propagateCarryFromRight(s: string): string {
         return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
     }
 
-    let m = right.match(/^0*[1-9]/);
-
-    if (null === m) {
-        return s;
-    }
-
-    let digits = m[0];
-
-    let len = digits.length;
+    let len = right.length;
 
     if (1 === len) {
         let lastDigit = parseInt(right.charAt(0));
         if (9 === lastDigit) {
-            return propagateCarryFromRight(left);
+            return propagateCarryFromRight(left) + ".0";
         }
         return left + "." + `${lastDigit + 1}`;
     } else {
+        let finalDigit = parseInt(right.charAt(len - 1));
+
+        if (9 === finalDigit) {
+            return (
+                propagateCarryFromRight(
+                    left + "." + right.substring(0, len - 1)
+                ) + "0"
+            );
+        }
+
         return (
             left +
             "." +
@@ -264,10 +276,7 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     };
 }
 
-function handleDecimalNotation(
-    s: string,
-    opts: Options
-): Decimal128Constructor {
+function handleDecimalNotation(s: string): Decimal128Constructor {
     let normalized = normalize(s.replace(/_/g, ""));
     let isNegative = !!normalized.match(/^-/);
     let sg = significand(normalized);
@@ -276,54 +285,37 @@ function handleDecimalNotation(
     let isInteger = typeof exp === "number" ? exp >= 0 : false;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        let roundingMode = DEFAULT_ROUNDING_MODE;
         let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
-        if (opts["rounding-mode"]) {
-            roundingMode = opts["rounding-mode"];
-        }
-        if (roundingMode === "truncate") {
-            sg = propagateCarryFromRight(
-                sg.substring(0, MAX_SIGNIFICANT_DIGITS)
-            );
-        } else if (roundingMode === "half-even") {
-            let penultimateDigit = parseInt(
-                sg.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-            );
-            if (lastDigit === 5) {
-                if (penultimateDigit % 2 === 0) {
-                    sg = propagateCarryFromRight(
-                        sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
-                            `${penultimateDigit + 1}`
-                    );
-                } else {
-                    sg = propagateCarryFromRight(
-                        sg.substring(0, MAX_SIGNIFICANT_DIGITS - 1) +
-                            `${penultimateDigit}`
-                    );
-                }
-            }
-        } else if (roundingMode === "half-up") {
-            if (lastDigit >= 5) {
-                let cutoff = cutoffAfterSignificantDigits(
-                    normalized,
-                    MAX_SIGNIFICANT_DIGITS - 1
-                );
-                let penultimateDigit = parseInt(
-                    cutoff.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-                );
-                let result = cutoff + `${penultimateDigit + 1}`;
-                sg = significand(result);
-                exp = exponent(result);
+        let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
+        if (lastDigit === 5) {
+            if (penultimateDigit % 2 === 0) {
+                let rounded =
+                    cutoffAfterSignificantDigits(
+                        normalized,
+                        MAX_SIGNIFICANT_DIGITS - 1
+                    ) + `${penultimateDigit}`;
+                sg = significand(rounded);
+                exp = exponent(rounded);
             } else {
-                let cutoff = cutoffAfterSignificantDigits(
-                    normalized,
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                sg = significand(cutoff);
-                exp = exponent(cutoff);
+                let rounded =
+                    cutoffAfterSignificantDigits(
+                        normalized,
+                        MAX_SIGNIFICANT_DIGITS - 1
+                    ) + `${penultimateDigit}`;
+                sg = significand(rounded);
+                exp = exponent(rounded);
             }
-        } else {
-            throw new Error(`Invalid rounding mode: ${roundingMode}`);
+        } else if (lastDigit > 5) {
+            let rounded = normalize(
+                propagateCarryFromRight(
+                    cutoffAfterSignificantDigits(
+                        normalized,
+                        MAX_SIGNIFICANT_DIGITS
+                    )
+                )
+            );
+            sg = significand(rounded);
+            exp = exponent(rounded);
         }
     }
 
@@ -334,15 +326,6 @@ function handleDecimalNotation(
     };
 }
 
-type RoundingMode = "half-even" | "half-up" | "truncate";
-
-interface Options {
-    "rounding-mode"?: RoundingMode;
-    "max-significant-digits"?: number;
-}
-
-const DEFAULT_ROUNDING_MODE: RoundingMode = "half-up";
-
 export class Decimal128 {
     public readonly significand: string;
     public readonly exponent: number;
@@ -352,13 +335,13 @@ export class Decimal128 {
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
     private readonly rat;
 
-    constructor(s: string, options?: Options) {
+    constructor(s: string) {
         let data = undefined;
 
         if (s.match(this.exponentRegExp)) {
-            data = handleExponentialNotation(s); // options not needed in this case
+            data = handleExponentialNotation(s);
         } else if (s.match(this.digitStrRegExp)) {
-            data = handleDecimalNotation(s, options || {});
+            data = handleDecimalNotation(s);
         } else {
             throw new SyntaxError(`Illegal number format "${s}"`);
         }
@@ -417,7 +400,7 @@ export class Decimal128 {
      * Returns a digit string representing this Decimal128.
      */
     toString(): string {
-        return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 5);
+        return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
     }
 
     toExponentialString(): string {
@@ -427,10 +410,6 @@ export class Decimal128 {
             "E" +
             this.exponent
         );
-    }
-
-    asRational(): Rational {
-        return this.rat;
     }
 
     /**
@@ -554,11 +533,10 @@ export class Decimal128 {
      * @param x
      * @param opts
      */
-    add(x: Decimal128, opts?: Options): Decimal128 {
+    add(x: Decimal128): Decimal128 {
         let resultRat = Rational.add(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            opts
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
 
@@ -570,13 +548,11 @@ export class Decimal128 {
      * of arguments.
      *
      * @param x
-     * @param opts
      */
-    subtract(x: Decimal128, opts?: Options): Decimal128 {
+    subtract(x: Decimal128): Decimal128 {
         let resultRat = Rational.subtract(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            opts
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
 
@@ -586,13 +562,11 @@ export class Decimal128 {
      * If no arguments are given, return this value.
      *
      * @param x
-     * @param opts
      */
-    multiply(x: Decimal128, opts?: Options): Decimal128 {
+    multiply(x: Decimal128): Decimal128 {
         let resultRat = Rational.multiply(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            opts
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
 
@@ -604,49 +578,23 @@ export class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
-     * @param opts
      */
-    divide(x: Decimal128, opts?: Options): Decimal128 {
+    divide(x: Decimal128): Decimal128 {
         let resultRat = Rational.divide(this.rat, x.rat);
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            opts
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
     }
-}
 
-export class DecimalCalculator {
-    private rationalCalculator = new RationalCalculator();
+    round(n: number = 0): Decimal128 {
+        if (!Number.isInteger(n)) {
+            throw new TypeError("Argument must be an integer");
+        }
 
-    add() {
-        this.rationalCalculator.add();
-        return this;
-    }
+        if (n < 0) {
+            throw new RangeError("Argument must be non-negative");
+        }
 
-    subtract() {
-        this.rationalCalculator.subtract();
-        return this;
-    }
-
-    multiply() {
-        this.rationalCalculator.multiply();
-        return this;
-    }
-
-    divide() {
-        this.rationalCalculator.divide();
-        return this;
-    }
-
-    push(...d: Decimal128[]) {
-        this.rationalCalculator.push(...d.map((d) => d.asRational()));
-        return this;
-    }
-
-    evaluate(): Decimal128 {
-        let result = this.rationalCalculator.evaluate();
-        return new Decimal128(
-            result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
-        );
+        return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
     }
 }

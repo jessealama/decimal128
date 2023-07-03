@@ -1,4 +1,4 @@
-import { Rational, RationalCalculator } from "../src/rational";
+import { Rational } from "../src/rational";
 
 describe("constructor", () => {
     test("cannot divide by zero", () => {

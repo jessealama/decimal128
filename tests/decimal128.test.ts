@@ -1,4 +1,4 @@
-import { Decimal128, DecimalCalculator } from "../src/decimal128";
+import { Decimal128 } from "../src/decimal128";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 
