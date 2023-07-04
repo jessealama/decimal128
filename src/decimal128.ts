@@ -269,6 +269,8 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     if (sg.match(/^-/)) {
         isNegative = true;
         sg = sg.substring(1);
+    } else if (sg.match(/^[+]/)) {
+        sg = sg.substring(1);
     }
 
     return {
@@ -334,7 +336,7 @@ export class Decimal128 {
     public readonly isNegative: boolean;
     private readonly digitStrRegExp =
         /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
-    private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
+    private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
     private readonly rat;
 
     constructor(n: string | bigint | number) {
@@ -346,7 +348,10 @@ export class Decimal128 {
             s = n.toString();
         } else if (typeof n === "number") {
             if (!Number.isInteger(n)) {
-                throw new RangeError("Number must be an integer");
+                throw new TypeError("Number must be an integer");
+            }
+            if (!Number.isSafeInteger(n)) {
+                throw new RangeError("Integer is not safe");
             }
             s = n.toString();
         } else {

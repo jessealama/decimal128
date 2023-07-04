@@ -181,6 +181,30 @@ describe("constructor", () => {
             ).toThrow(RangeError);
         });
     });
+    describe("bigint as argument", () => {
+        test("positive bigint", () => {
+            expect(new Decimal128(123n).toString()).toStrictEqual("123");
+        });
+        test("negative bigint", () => {
+            expect(new Decimal128(-123n).toString()).toStrictEqual("-123");
+        });
+    });
+    describe("number as argument", () => {
+        test("positive number", () => {
+            expect(new Decimal128(123).toString()).toStrictEqual("123");
+        });
+        test("negative number", () => {
+            expect(new Decimal128(-123).toString()).toStrictEqual("-123");
+        });
+        test("integer too large (unsafe)", () => {
+            expect(
+                () => new Decimal128(1234567890123456789012345678901234567890)
+            ).toThrow(RangeError);
+        });
+        test("non-integer number", () => {
+            expect(() => new Decimal128(123.456)).toThrow(TypeError);
+        });
+    });
 });
 
 describe("exponent and significand", () => {
