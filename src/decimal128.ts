@@ -337,8 +337,21 @@ export class Decimal128 {
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
     private readonly rat;
 
-    constructor(s: string) {
+    constructor(n: string | bigint | number) {
         let data = undefined;
+
+        let s: string = "";
+
+        if (typeof n === "bigint") {
+            s = n.toString();
+        } else if (typeof n === "number") {
+            if (!Number.isInteger(n)) {
+                throw new RangeError("Number must be an integer");
+            }
+            s = n.toString();
+        } else {
+            s = n;
+        }
 
         if (s.match(this.exponentRegExp)) {
             data = handleExponentialNotation(s);
