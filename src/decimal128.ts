@@ -29,6 +29,8 @@ const bigZero = BigInt(0);
  *
  * + removing any initial zeros
  * + removing any trailing zeros
+ * + rewriting -0 to 0
+ * + rewriting 0.0 to 0
  *
  * @param s A digit string
  *
@@ -425,15 +427,16 @@ export class Decimal128 {
      * @param x
      */
     equals(x: Decimal128): boolean {
-        return this.toString() === x.toString();
+        return 0 === this.cmp(x);
     }
 
     negate(): Decimal128 {
+        let s = this.toString();
         if (this.isNegative) {
-            return new Decimal128(this.toString().substring(1));
+            return new Decimal128(s.substring(1));
         }
 
-        return new Decimal128("-" + this.toString());
+        return new Decimal128("-" + s);
     }
 
     /**
@@ -531,7 +534,6 @@ export class Decimal128 {
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
-     * @param opts
      */
     add(x: Decimal128): Decimal128 {
         let resultRat = Rational.add(this.rat, x.rat);
@@ -596,5 +598,15 @@ export class Decimal128 {
         }
 
         return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
+    }
+
+    /**
+     * Return the remainder of this Decimal128 value divided by another Decimal128 value.
+     *
+     * @param x
+     * @throws RangeError If argument is zero
+     */
+    remainder(x: Decimal128): Decimal128 {
+        return this.subtract(this.divide(x)).abs();
     }
 }
