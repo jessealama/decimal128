@@ -5,9 +5,6 @@ const MAX_SIGNIFICANT_DIGITS = 34;
 const zero = new Decimal128("0");
 const one = new Decimal128("1");
 const two = new Decimal128("2");
-const three = new Decimal128("3");
-const four = new Decimal128("4");
-const ten = new Decimal128("10");
 
 describe("addition" + "", () => {
     let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
