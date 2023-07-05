@@ -2,9 +2,6 @@ import { Decimal128 } from "../src/decimal128";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 
-const zero = new Decimal128("0");
-const one = new Decimal128("1");
-
 describe("constructor", () => {
     describe("digit string syntax", () => {
         test("sane string works", () => {

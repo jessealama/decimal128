@@ -1,22 +1,27 @@
 import { Decimal128 } from "../src/decimal128";
 
 const zero = new Decimal128("0");
-const minusThree = new Decimal128("-3");
 
 describe("floor", function () {
     test("floor works (positive)", () => {
-        expect(new Decimal128("123.456").floor().equals(new Decimal128("123")));
-        expect(new Decimal128("-2.5").floor().equals(minusThree));
+        expect(
+            Decimal128.floor(new Decimal128("123.456")).toString()
+        ).toStrictEqual("123");
+        expect(
+            Decimal128.floor(new Decimal128("-2.5")).toString()
+        ).toStrictEqual("-2");
     });
     test("floor works (negative)", () => {
         expect(
-            new Decimal128("-123.456").floor().equals(new Decimal128("-124"))
-        );
+            Decimal128.floor(new Decimal128("-123.456")).toString()
+        ).toStrictEqual("-123");
     });
     test("floor of integer is unchanged", () => {
-        expect(new Decimal128("123").floor().equals(new Decimal128("123")));
+        expect(
+            Decimal128.floor(new Decimal128("123")).toString()
+        ).toStrictEqual("123");
     });
     test("floor of zero is unchanged", () => {
-        expect(zero.floor().equals(zero));
+        expect(Decimal128.floor(zero).toString()).toStrictEqual("0");
     });
 });
