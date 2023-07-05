@@ -269,6 +269,8 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     if (sg.match(/^-/)) {
         isNegative = true;
         sg = sg.substring(1);
+    } else if (sg.match(/^[+]/)) {
+        sg = sg.substring(1);
     }
 
     return {
@@ -334,11 +336,27 @@ export class Decimal128 {
     public readonly isNegative: boolean;
     private readonly digitStrRegExp =
         /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
-    private readonly exponentRegExp = /^-?[1-9][0-9]*[eE]-?[1-9][0-9]*$/;
+    private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
     private readonly rat;
 
-    constructor(s: string) {
+    constructor(n: string | bigint | number) {
         let data = undefined;
+
+        let s: string = "";
+
+        if (typeof n === "bigint") {
+            s = n.toString();
+        } else if (typeof n === "number") {
+            if (!Number.isInteger(n)) {
+                throw new TypeError("Number must be an integer");
+            }
+            if (!Number.isSafeInteger(n)) {
+                throw new RangeError("Integer is not safe");
+            }
+            s = n.toString();
+        } else {
+            s = n;
+        }
 
         if (s.match(this.exponentRegExp)) {
             data = handleExponentialNotation(s);
@@ -405,58 +423,48 @@ export class Decimal128 {
         return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
     }
 
-    toExponentialString(): string {
+    /**
+     * Returns an exponential string representing this Decimal128.
+     *
+     * @param x
+     */
+    static toExponentialString(x: Decimal128): string {
         return (
-            (this.isNegative ? "-" : "") +
-            (this.significand === "" ? "0" : this.significand) +
+            (x.isNegative ? "-" : "") +
+            (x.significand === "" ? "0" : x.significand) +
             "E" +
-            this.exponent
+            x.exponent
         );
     }
 
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
-    isInteger(): boolean {
-        return this.exponent >= 0;
-    }
-
-    /**
-     * Are these two Decimal1288 values equal?
-     *
-     * @param x
-     */
-    equals(x: Decimal128): boolean {
-        return 0 === this.cmp(x);
-    }
-
-    negate(): Decimal128 {
-        let s = this.toString();
-        if (this.isNegative) {
-            return new Decimal128(s.substring(1));
-        }
-
-        return new Decimal128("-" + s);
+    static isInteger(x: Decimal128): boolean {
+        return x.exponent >= 0;
     }
 
     /**
      * Return the absolute value of this Decimal128 value.
+     *
+     * @param x
      */
-    abs(): Decimal128 {
-        if (this.isNegative) {
-            return this.negate();
+    static abs(x: Decimal128): Decimal128 {
+        if (x.isNegative) {
+            return new Decimal128(x.toString().substring(1));
         }
 
-        return this;
+        return new Decimal128(x.toString());
     }
 
     /**
      * Return a digit string where the digits of this number are cut off after
      * a certain number of digits. Rounding may be performed, in case we always round up.
      *
+     * @param x
      * @param n
      */
-    toDecimalPlaces(n: number): Decimal128 {
+    static toDecimalPlaces(x: Decimal128, n: number): Decimal128 {
         if (!Number.isInteger(n)) {
             throw new TypeError("Argument must be an integer");
         }
@@ -465,14 +473,14 @@ export class Decimal128 {
             throw new RangeError("Argument must be non-negative");
         }
 
-        let [lhs, rhs] = this.toString().split(".");
+        let [lhs, rhs] = x.toString().split(".");
 
         if (undefined === rhs || 0 === n) {
             return new Decimal128(lhs);
         }
 
         if (rhs.length <= n) {
-            return this;
+            return new Decimal128(x.toString());
         }
 
         let penultimateDigit = parseInt(rhs.charAt(n - 1));
@@ -490,21 +498,25 @@ export class Decimal128 {
     /**
      * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
      */
-    ceil(): Decimal128 {
-        if (this.isInteger()) {
-            return this;
+    static ceil(x: Decimal128): Decimal128 {
+        if (Decimal128.isInteger(x)) {
+            return new Decimal128(x.toString());
         }
 
-        return this.truncate().add(
-            new Decimal128(this.isNegative ? "-1" : "1")
-        );
+        if (x.isNegative) {
+            return Decimal128.truncate(x);
+        }
+
+        return Decimal128.truncate(Decimal128.add(x, new Decimal128("1")));
     }
 
     /**
      * Return the floor of this number. That is: the largest integer less than or equal to this number.
+     *
+     * @param x A Decimal128 value.
      */
-    floor(): Decimal128 {
-        return this.truncate();
+    static floor(x: Decimal128): Decimal128 {
+        return Decimal128.truncate(x);
     }
 
     /**
@@ -515,17 +527,24 @@ export class Decimal128 {
      * + 1 otherwise.
      *
      * @param x
+     * @param y
      */
-    cmp(x: Decimal128): number {
-        return this.rat.cmp(x.rat);
+    static cmp(x: Decimal128, y: Decimal128): number {
+        return x.rat.cmp(y.rat);
+    }
+
+    equals(x: Decimal128): boolean {
+        return Decimal128.cmp(this, x) === 0;
     }
 
     /**
      * Truncate the decimal part of this number (if any), returning an integer.
+     *
+     * @param x A Decimal128 value.
      * @return {Decimal128} An integer (as a Decimal128 value).
      */
-    truncate(): Decimal128 {
-        let s = this.toString();
+    static truncate(x: Decimal128): Decimal128 {
+        let s = x.toString();
         let [lhs] = s.split(".");
         return new Decimal128(lhs);
     }
@@ -533,10 +552,10 @@ export class Decimal128 {
     /**
      * Add this Decimal128 value to one or more Decimal128 values.
      *
-     * @param x
+     * @param theArgs A list of Decimal128 values to add
      */
-    add(x: Decimal128): Decimal128 {
-        let resultRat = Rational.add(this.rat, x.rat);
+    static add(...theArgs: Decimal128[]): Decimal128 {
+        let resultRat = Rational.add(...theArgs.map((x) => x.rat));
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -550,11 +569,13 @@ export class Decimal128 {
      * of arguments.
      *
      * @param x
+     * @param y
      */
-    subtract(x: Decimal128): Decimal128 {
-        let resultRat = Rational.subtract(this.rat, x.rat);
+    static subtract(x: Decimal128, y: Decimal128): Decimal128 {
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            Rational.subtract(x.rat, y.rat).toDecimalPlaces(
+                MAX_SIGNIFICANT_DIGITS + 1
+            )
         );
     }
 
@@ -563,10 +584,10 @@ export class Decimal128 {
      *
      * If no arguments are given, return this value.
      *
-     * @param x
+     * @param theArgs A list of Decimal128 values to multiply
      */
-    multiply(x: Decimal128): Decimal128 {
-        let resultRat = Rational.multiply(this.rat, x.rat);
+    static multiply(...theArgs: Decimal128[]): Decimal128 {
+        let resultRat = Rational.multiply(...theArgs.map((x) => x.rat));
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -580,15 +601,17 @@ export class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
+     * @param y
      */
-    divide(x: Decimal128): Decimal128 {
-        let resultRat = Rational.divide(this.rat, x.rat);
+    static divide(x: Decimal128, y: Decimal128): Decimal128 {
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            Rational.divide(x.rat, y.rat).toDecimalPlaces(
+                MAX_SIGNIFICANT_DIGITS + 1
+            )
         );
     }
 
-    round(n: number = 0): Decimal128 {
+    static round(x: Decimal128, n: number = 0): Decimal128 {
         if (!Number.isInteger(n)) {
             throw new TypeError("Argument must be an integer");
         }
@@ -597,16 +620,17 @@ export class Decimal128 {
             throw new RangeError("Argument must be non-negative");
         }
 
-        return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
+        return new Decimal128(roundDigitStringTiesToEven(x.toString(), n));
     }
 
     /**
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
      * @param x
+     * @param y
      * @throws RangeError If argument is zero
      */
-    remainder(x: Decimal128): Decimal128 {
-        return this.subtract(this.divide(x)).abs();
+    static remainder(x: Decimal128, y: Decimal128): Decimal128 {
+        return Decimal128.abs(Decimal128.subtract(x, Decimal128.divide(x, y)));
     }
 }

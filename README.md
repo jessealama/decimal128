@@ -15,7 +15,7 @@
 
 ## Implementation
 
-This package is written in TypeScript. Unit tests are in Jest. There are no other external dependencies.
+This package is written in TypeScript. Unit tests are in (typed) Jest. There are no other external dependencies.
 
 ## Data model
 
