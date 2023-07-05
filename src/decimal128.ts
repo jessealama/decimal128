@@ -503,10 +503,11 @@ export class Decimal128 {
             return new Decimal128(x.toString());
         }
 
-        return Decimal128.add(
-            Decimal128.truncate(x),
-            new Decimal128(x.isNegative ? "-1" : "1")
-        );
+        if (x.isNegative) {
+            return Decimal128.truncate(x);
+        }
+
+        return Decimal128.truncate(Decimal128.add(x, new Decimal128("1")));
     }
 
     /**
