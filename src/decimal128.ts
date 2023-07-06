@@ -623,14 +623,35 @@ export class Decimal128 {
         return new Decimal128(roundDigitStringTiesToEven(x.toString(), n));
     }
 
+    negate(): Decimal128 {
+        let s = this.toString();
+
+        if (s.match(/^-/)) {
+            return new Decimal128(s.substring(1));
+        }
+
+        return new Decimal128("-" + s);
+    }
+
     /**
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
-     * @param x
-     * @param y
+     * @param n
+     * @param d
      * @throws RangeError If argument is zero
      */
-    static remainder(x: Decimal128, y: Decimal128): Decimal128 {
-        return Decimal128.abs(Decimal128.subtract(x, Decimal128.divide(x, y)));
+    static remainder(n: Decimal128, d: Decimal128): Decimal128 {
+        if (n.isNegative) {
+            return Decimal128.remainder(n.negate(), d).negate();
+        }
+
+        if (d.isNegative) {
+            return Decimal128.remainder(n, d.negate());
+        }
+
+        let q = Decimal128.round(Decimal128.divide(n, d));
+        return Decimal128.abs(
+            Decimal128.subtract(n, Decimal128.multiply(d, q))
+        );
     }
 }
