@@ -19,46 +19,45 @@ export declare class Decimal128 {
     private readonly digitStrRegExp;
     private readonly exponentRegExp;
     private readonly rat;
-    constructor(s: string);
+    constructor(n: string | bigint | number);
     /**
      * Returns a digit string representing this Decimal128.
      */
     toString(): string;
-    toExponentialString(): string;
     /**
-     * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
-     */
-    isInteger(): boolean;
-    /**
-     * Is this Decimal128 zero?
-     */
-    isZero(): boolean;
-    /**
-     * Are these two Decimal1288 values equal?
+     * Returns an exponential string representing this Decimal128.
      *
      * @param x
      */
-    equals(x: Decimal128): boolean;
-    negate(): Decimal128;
+    static toExponentialString(x: Decimal128): string;
+    /**
+     * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
+     */
+    static isInteger(x: Decimal128): boolean;
     /**
      * Return the absolute value of this Decimal128 value.
+     *
+     * @param x
      */
-    abs(): Decimal128;
+    static abs(x: Decimal128): Decimal128;
     /**
      * Return a digit string where the digits of this number are cut off after
      * a certain number of digits. Rounding may be performed, in case we always round up.
      *
+     * @param x
      * @param n
      */
-    toDecimalPlaces(n: number): Decimal128;
+    static toDecimalPlaces(x: Decimal128, n: number): Decimal128;
     /**
      * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
      */
-    ceil(): Decimal128;
+    static ceil(x: Decimal128): Decimal128;
     /**
      * Return the floor of this number. That is: the largest integer less than or equal to this number.
+     *
+     * @param x A Decimal128 value.
      */
-    floor(): Decimal128;
+    static floor(x: Decimal128): Decimal128;
     /**
      * Compare two values. Return
      *
@@ -67,36 +66,23 @@ export declare class Decimal128 {
      * + 1 otherwise.
      *
      * @param x
+     * @param y
      */
-    cmp(x: Decimal128): number;
+    static cmp(x: Decimal128, y: Decimal128): number;
+    equals(x: Decimal128): boolean;
     /**
      * Truncate the decimal part of this number (if any), returning an integer.
+     *
+     * @param x A Decimal128 value.
      * @return {Decimal128} An integer (as a Decimal128 value).
      */
-    truncate(): Decimal128;
-    /**
-     * Add two Decimal128 values.
-     *
-     * @param x
-     * @param y
-     * @private
-     */
-    private static _add;
+    static truncate(x: Decimal128): Decimal128;
     /**
      * Add this Decimal128 value to one or more Decimal128 values.
      *
-     * @param x
-     * @param theArgs An array of Decimal128 values to add to this one.
+     * @param theArgs A list of Decimal128 values to add
      */
-    static add(x: Decimal128, ...theArgs: Decimal128[]): Decimal128;
-    /**
-     * Subtract another Decimal128 value from this one.
-     *
-     * @param x
-     * @param y
-     * @private
-     */
-    private static _subtract;
+    static add(...theArgs: Decimal128[]): Decimal128;
     /**
      * Subtract another Decimal128 value from one or more Decimal128 values.
      *
@@ -105,28 +91,17 @@ export declare class Decimal128 {
      * of arguments.
      *
      * @param x
-     * @param theArgs
+     * @param y
      */
-    static subtract(x: Decimal128, ...theArgs: Decimal128[]): Decimal128;
-    private static _multiply;
+    static subtract(x: Decimal128, y: Decimal128): Decimal128;
     /**
      * Multiply this Decimal128 value by an array of other Decimal128 values.
      *
      * If no arguments are given, return this value.
      *
-     * @param x
-     * @param theArgs
+     * @param theArgs A list of Decimal128 values to multiply
      */
-    static multiply(x: Decimal128, ...theArgs: Decimal128[]): Decimal128;
-    /**
-     * Divide this Decimal128 value by another.
-     *
-     * Throws a RangeError if the divisor is zero.
-     *
-     * @param x
-     * @param y
-     */
-    private static _divide;
+    static multiply(...theArgs: Decimal128[]): Decimal128;
     /**
      * Divide this Decimal128 value by an array of other Decimal128 values.
      *
@@ -135,7 +110,17 @@ export declare class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
-     * @param theArgs
+     * @param y
      */
-    static divide(x: Decimal128, ...theArgs: Decimal128[]): Decimal128;
+    static divide(x: Decimal128, y: Decimal128): Decimal128;
+    static round(x: Decimal128, n?: number): Decimal128;
+    negate(): Decimal128;
+    /**
+     * Return the remainder of this Decimal128 value divided by another Decimal128 value.
+     *
+     * @param n
+     * @param d
+     * @throws RangeError If argument is zero
+     */
+    static remainder(n: Decimal128, d: Decimal128): Decimal128;
 }
