@@ -2,6 +2,7 @@
     "name": "decimal128",
     "version": "4.2.1",
     "main": "src/decimal128.js",
+    "type": "module",
     "description": "Partial implementation of IEEE 754 Decimal128 decimal floating-point numbers",
     "directories": {
         "test": "tests"
