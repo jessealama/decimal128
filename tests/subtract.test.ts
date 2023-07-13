@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128";
+import { Decimal128 } from "../src/decimal128.mjs";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);

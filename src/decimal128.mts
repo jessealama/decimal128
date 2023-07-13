@@ -13,8 +13,8 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { countSignificantDigits } from "./common";
-import { Rational } from "./rational";
+import { countSignificantDigits } from "./common.mts";
+import { Rational } from "./rational.mts";
 
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;

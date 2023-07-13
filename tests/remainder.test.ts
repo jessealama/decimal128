@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128";
+import { Decimal128 } from "../src/decimal128.mjs";
 
 describe("remainder", () => {
     let a = new Decimal128("4.1");

@@ -1,5 +1,4 @@
-import { Rational } from "../src/rational";
-
+import { Rational } from "../src/rational.mjs";
 describe("constructor", () => {
     test("cannot divide by zero", () => {
         expect(() => new Rational(1n, 0n)).toThrow(RangeError);

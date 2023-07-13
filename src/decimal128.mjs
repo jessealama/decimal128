@@ -12,8 +12,8 @@
  *
  * @author Jesse Alama <jesse@igalia.com>
  */
-import { countSignificantDigits } from "./common";
-import { Rational } from "./rational";
+import { countSignificantDigits } from "./common.mjs";
+import { Rational } from "./rational.mjs";
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;

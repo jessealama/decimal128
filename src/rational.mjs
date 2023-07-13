@@ -1,4 +1,4 @@
-import { countSignificantDigits } from "./common";
+import { countSignificantDigits } from "./common.mjs";
 const zero = BigInt(0);
 const one = BigInt(1);
 const minusOne = BigInt(-1);

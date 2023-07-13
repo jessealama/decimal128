@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128";
+import { Decimal128 } from "../src/decimal128.mjs";
 
 let tests = {
     "simple example": ["4.1", "1.25", "3.28"],
