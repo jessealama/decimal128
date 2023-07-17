@@ -30,7 +30,7 @@ describe("cmp", () => {
     test("different number of digits", () => {
         expect(
             new Decimal128("123.456").cmp(new Decimal128("123.4561"))
-        ).toStrictEqual(0);
+        ).toStrictEqual(-1);
     });
     test("negative and positive are different", () => {
         expect(
@@ -42,7 +42,7 @@ describe("cmp", () => {
             new Decimal128("0.4166666666666666666666666666666667").cmp(
                 new Decimal128("0.4166666666666666666666666666666666")
             )
-        ).toStrictEqual(-1);
+        ).toStrictEqual(1);
     });
     test("beyond limit of significant digits", () => {
         expect(
@@ -90,12 +90,5 @@ describe("many digits", () => {
                 new Decimal128("0." + "4".repeat(MAX_SIGNIFICANT_DIGITS))
             )
         ).toStrictEqual(-1);
-    });
-    test("non-integer works out to be integer", () => {
-        expect(
-            new Decimal128(
-                "1.00000000000000000000000000000000000000000000000001"
-            ).cmp(one)
-        ).toStrictEqual(0);
     });
 });

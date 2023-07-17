@@ -240,6 +240,13 @@ describe("exponent and significand", () => {
             RangeError
         );
     });
+    test("non-integer works out to be integer", () => {
+        expect(
+            new Decimal128(
+                "1.00000000000000000000000000000000000000000000000001"
+            ).toString()
+        ).toStrictEqual("1");
+    });
 });
 
 describe("normalization", () => {

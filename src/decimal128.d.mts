@@ -29,35 +29,32 @@ export declare class Decimal128 {
      *
      * @param x
      */
-    static toExponentialString(x: Decimal128): string;
+    toExponentialString(): string;
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
-    static isInteger(x: Decimal128): boolean;
+    isInteger(): boolean;
     /**
      * Return the absolute value of this Decimal128 value.
      *
-     * @param x
      */
-    static abs(x: Decimal128): Decimal128;
+    abs(): Decimal128;
     /**
      * Return a digit string where the digits of this number are cut off after
      * a certain number of digits. Rounding may be performed, in case we always round up.
      *
-     * @param x
      * @param n
      */
-    static toDecimalPlaces(x: Decimal128, n: number): Decimal128;
+    toDecimalPlaces(n: number): Decimal128;
     /**
      * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
      */
-    static ceil(x: Decimal128): Decimal128;
+    ceil(): Decimal128;
     /**
      * Return the floor of this number. That is: the largest integer less than or equal to this number.
      *
-     * @param x A Decimal128 value.
      */
-    static floor(x: Decimal128): Decimal128;
+    floor(): Decimal128;
     /**
      * Compare two values. Return
      *
@@ -66,17 +63,14 @@ export declare class Decimal128 {
      * + 1 otherwise.
      *
      * @param x
-     * @param y
      */
-    static cmp(x: Decimal128, y: Decimal128): number;
-    equals(x: Decimal128): boolean;
+    cmp(x: Decimal128): -1 | 0 | 1;
     /**
      * Truncate the decimal part of this number (if any), returning an integer.
      *
-     * @param x A Decimal128 value.
      * @return {Decimal128} An integer (as a Decimal128 value).
      */
-    static truncate(x: Decimal128): Decimal128;
+    truncate(): Decimal128;
     /**
      * Add this Decimal128 value to one or more Decimal128 values.
      *
@@ -91,9 +85,8 @@ export declare class Decimal128 {
      * of arguments.
      *
      * @param x
-     * @param y
      */
-    static subtract(x: Decimal128, y: Decimal128): Decimal128;
+    subtract(x: Decimal128): Decimal128;
     /**
      * Multiply this Decimal128 value by an array of other Decimal128 values.
      *
@@ -110,17 +103,15 @@ export declare class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
-     * @param y
      */
-    static divide(x: Decimal128, y: Decimal128): Decimal128;
-    static round(x: Decimal128, n?: number): Decimal128;
+    divide(x: Decimal128): Decimal128;
+    round(n?: number): Decimal128;
     negate(): Decimal128;
     /**
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
-     * @param n
      * @param d
      * @throws RangeError If argument is zero
      */
-    static remainder(n: Decimal128, d: Decimal128): Decimal128;
+    remainder(d: Decimal128): Decimal128;
 }

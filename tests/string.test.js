@@ -4,50 +4,34 @@ const d = new Decimal128("123.456");
 
 describe("to decimal places", function () {
     test("more digits than available means no change", () => {
-        expect(Decimal128.toDecimalPlaces(d, 7).toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(d.toDecimalPlaces(7).toString()).toStrictEqual("123.456");
     });
     test("same number of digits as available means no change", () => {
-        expect(Decimal128.toDecimalPlaces(d, 6).toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(d.toDecimalPlaces(6).toString()).toStrictEqual("123.456");
     });
     test("round if number has more digits than requested (1)", () => {
-        expect(Decimal128.toDecimalPlaces(d, 5).toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(d.toDecimalPlaces(5).toString()).toStrictEqual("123.456");
     });
     test("round if number has more digits than requested (2)", () => {
-        expect(Decimal128.toDecimalPlaces(d, 4).toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(d.toDecimalPlaces(4).toString()).toStrictEqual("123.456");
     });
     test("round if number has more digits than requested (3)", () => {
-        expect(Decimal128.toDecimalPlaces(d, 3).toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(d.toDecimalPlaces(3).toString()).toStrictEqual("123.456");
     });
     test("round if number has more digits than requested (4)", () => {
-        expect(Decimal128.toDecimalPlaces(d, 2).toString()).toStrictEqual(
-            "123.46"
-        );
+        expect(d.toDecimalPlaces(2).toString()).toStrictEqual("123.46");
     });
     test("round if number has more digits than requested (5)", () => {
-        expect(Decimal128.toDecimalPlaces(d, 1).toString()).toStrictEqual(
-            "123.5"
-        );
+        expect(d.toDecimalPlaces(1).toString()).toStrictEqual("123.5");
     });
     test("zero decimal places", () => {
-        expect(Decimal128.toDecimalPlaces(d, 0).toString()).toStrictEqual(
-            "123"
-        );
+        expect(d.toDecimalPlaces(0).toString()).toStrictEqual("123");
     });
     test("negative number of decimal places", () => {
-        expect(() => Decimal128.toDecimalPlaces(d, -1)).toThrow(RangeError);
+        expect(() => d.toDecimalPlaces(-1)).toThrow(RangeError);
     });
     test("non-integer number of decimal places", () => {
-        expect(() => Decimal128.toDecimalPlaces(d, 1.5)).toThrow(TypeError);
+        expect(() => d.toDecimalPlaces(1.5)).toThrow(TypeError);
     });
 });
 
@@ -60,8 +44,8 @@ describe("to exponential string", () => {
         1: "1E0",
     };
     for (let [input, output] of Object.entries(data)) {
-        expect(
-            Decimal128.toExponentialString(new Decimal128(input))
-        ).toStrictEqual(output);
+        expect(new Decimal128(input).toExponentialString()).toStrictEqual(
+            output
+        );
     }
 });

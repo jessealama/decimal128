@@ -13,8 +13,8 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { countSignificantDigits } from "./common.mts";
-import { Rational } from "./rational.mts";
+import { countSignificantDigits } from "./common.mjs";
+import { Rational } from "./rational.mjs";
 
 const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
@@ -320,6 +320,12 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
             );
             sg = significand(rounded);
             exp = exponent(rounded);
+        } else {
+            let rounded = normalize(
+                cutoffAfterSignificantDigits(normalized, MAX_SIGNIFICANT_DIGITS)
+            );
+            sg = significand(rounded);
+            exp = exponent(rounded);
         }
     }
 
@@ -428,12 +434,12 @@ export class Decimal128 {
      *
      * @param x
      */
-    static toExponentialString(x: Decimal128): string {
+    toExponentialString(): string {
         return (
-            (x.isNegative ? "-" : "") +
-            (x.significand === "" ? "0" : x.significand) +
+            (this.isNegative ? "-" : "") +
+            (this.significand === "" ? "0" : this.significand) +
             "E" +
-            x.exponent
+            this.exponent
         );
     }
 
@@ -506,7 +512,7 @@ export class Decimal128 {
             return this.truncate();
         }
 
-        return Decimal128.add(new Decimal128("1")).truncate();
+        return Decimal128.add(this, new Decimal128("1")).truncate();
     }
 
     /**

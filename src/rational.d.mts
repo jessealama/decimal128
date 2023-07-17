@@ -15,5 +15,5 @@ export declare class Rational {
     static multiply(...theArgs: Rational[]): Rational;
     static divide(x: Rational, ...theArgs: Rational[]): Rational;
     toDecimalPlaces(n: number): string;
-    cmp(x: Rational): number;
+    cmp(x: Rational): -1 | 0 | 1;
 }
