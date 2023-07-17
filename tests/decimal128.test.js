@@ -205,7 +205,7 @@ describe("constructor", () => {
 });
 
 describe("exponent and significand", () => {
-    let data: [string, string, number][] = [
+    let data = [
         ["123.456", "123456", -3],
         ["0", "", 0],
         ["0.0", "", 0],

@@ -440,31 +440,29 @@ export class Decimal128 {
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
-    static isInteger(x: Decimal128): boolean {
-        return x.exponent >= 0;
+    isInteger(): boolean {
+        return this.exponent >= 0;
     }
 
     /**
      * Return the absolute value of this Decimal128 value.
      *
-     * @param x
      */
-    static abs(x: Decimal128): Decimal128 {
-        if (x.isNegative) {
-            return new Decimal128(x.toString().substring(1));
+    abs(): Decimal128 {
+        if (this.isNegative) {
+            return new Decimal128(this.toString().substring(1));
         }
 
-        return new Decimal128(x.toString());
+        return this;
     }
 
     /**
      * Return a digit string where the digits of this number are cut off after
      * a certain number of digits. Rounding may be performed, in case we always round up.
      *
-     * @param x
      * @param n
      */
-    static toDecimalPlaces(x: Decimal128, n: number): Decimal128 {
+    toDecimalPlaces(n: number): Decimal128 {
         if (!Number.isInteger(n)) {
             throw new TypeError("Argument must be an integer");
         }
@@ -473,14 +471,15 @@ export class Decimal128 {
             throw new RangeError("Argument must be non-negative");
         }
 
-        let [lhs, rhs] = x.toString().split(".");
+        let s = this.toString();
+        let [lhs, rhs] = s.split(".");
 
         if (undefined === rhs || 0 === n) {
             return new Decimal128(lhs);
         }
 
         if (rhs.length <= n) {
-            return new Decimal128(x.toString());
+            return new Decimal128(s);
         }
 
         let penultimateDigit = parseInt(rhs.charAt(n - 1));
@@ -498,25 +497,24 @@ export class Decimal128 {
     /**
      * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
      */
-    static ceil(x: Decimal128): Decimal128 {
-        if (Decimal128.isInteger(x)) {
-            return new Decimal128(x.toString());
+    ceil(): Decimal128 {
+        if (this.isInteger()) {
+            return this;
         }
 
-        if (x.isNegative) {
-            return Decimal128.truncate(x);
+        if (this.isNegative) {
+            return this.truncate();
         }
 
-        return Decimal128.truncate(Decimal128.add(x, new Decimal128("1")));
+        return Decimal128.add(new Decimal128("1")).truncate();
     }
 
     /**
      * Return the floor of this number. That is: the largest integer less than or equal to this number.
      *
-     * @param x A Decimal128 value.
      */
-    static floor(x: Decimal128): Decimal128 {
-        return Decimal128.truncate(x);
+    floor(): Decimal128 {
+        return this.truncate();
     }
 
     /**
@@ -527,25 +525,18 @@ export class Decimal128 {
      * + 1 otherwise.
      *
      * @param x
-     * @param y
      */
-    static cmp(x: Decimal128, y: Decimal128): number {
-        return x.rat.cmp(y.rat);
-    }
-
-    equals(x: Decimal128): boolean {
-        return Decimal128.cmp(this, x) === 0;
+    cmp(x: Decimal128): -1 | 0 | 1 {
+        return this.rat.cmp(x.rat);
     }
 
     /**
      * Truncate the decimal part of this number (if any), returning an integer.
      *
-     * @param x A Decimal128 value.
      * @return {Decimal128} An integer (as a Decimal128 value).
      */
-    static truncate(x: Decimal128): Decimal128 {
-        let s = x.toString();
-        let [lhs] = s.split(".");
+    truncate(): Decimal128 {
+        let [lhs] = this.toString().split(".");
         return new Decimal128(lhs);
     }
 
@@ -569,11 +560,10 @@ export class Decimal128 {
      * of arguments.
      *
      * @param x
-     * @param y
      */
-    static subtract(x: Decimal128, y: Decimal128): Decimal128 {
+    subtract(x: Decimal128): Decimal128 {
         return new Decimal128(
-            Rational.subtract(x.rat, y.rat).toDecimalPlaces(
+            Rational.subtract(this.rat, x.rat).toDecimalPlaces(
                 MAX_SIGNIFICANT_DIGITS + 1
             )
         );
@@ -601,17 +591,16 @@ export class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
-     * @param y
      */
-    static divide(x: Decimal128, y: Decimal128): Decimal128 {
+    divide(x: Decimal128): Decimal128 {
         return new Decimal128(
-            Rational.divide(x.rat, y.rat).toDecimalPlaces(
+            Rational.divide(this.rat, x.rat).toDecimalPlaces(
                 MAX_SIGNIFICANT_DIGITS + 1
             )
         );
     }
 
-    static round(x: Decimal128, n: number = 0): Decimal128 {
+    round(n: number = 0): Decimal128 {
         if (!Number.isInteger(n)) {
             throw new TypeError("Argument must be an integer");
         }
@@ -620,7 +609,7 @@ export class Decimal128 {
             throw new RangeError("Argument must be non-negative");
         }
 
-        return new Decimal128(roundDigitStringTiesToEven(x.toString(), n));
+        return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
     }
 
     negate(): Decimal128 {
@@ -636,22 +625,19 @@ export class Decimal128 {
     /**
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
-     * @param n
      * @param d
      * @throws RangeError If argument is zero
      */
-    static remainder(n: Decimal128, d: Decimal128): Decimal128 {
-        if (n.isNegative) {
-            return Decimal128.remainder(n.negate(), d).negate();
+    remainder(d: Decimal128): Decimal128 {
+        if (this.isNegative) {
+            return this.negate().remainder(d).negate();
         }
 
         if (d.isNegative) {
-            return Decimal128.remainder(n, d.negate());
+            return this.remainder(d.negate());
         }
 
-        let q = Decimal128.round(Decimal128.divide(n, d));
-        return Decimal128.abs(
-            Decimal128.subtract(n, Decimal128.multiply(d, q))
-        );
+        let q = this.divide(d).round();
+        return this.subtract(Decimal128.multiply(d, q)).abs();
     }
 }

@@ -54,10 +54,10 @@ describe("to decimal places", function () {
 describe("to exponential string", () => {
     let data = {
         "123456E-2": "123456E-2",
-        "123.456": "123456E-3",
+        123.456: "123456E-3",
         "-123.456": "-123456E-3",
-        "0": "0E0",
-        "1": "1E0",
+        0: "0E0",
+        1: "1E0",
     };
     for (let [input, output] of Object.entries(data)) {
         expect(

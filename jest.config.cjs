@@ -1,8 +1,7 @@
 module.exports = {
-    runner: "jest-light-runner",
     transform: { "^.+\\.ts?$": "ts-jest" },
     testEnvironment: "node",
-    testRegex: "/tests/.*\\.(test|spec)?\\.(ts|tsx|js)$",
+    testRegex: "/tests/.*\\.(test|spec)?\\.(ts|tsx)$",
     moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
     coverageThreshold: {
         global: {
@@ -10,5 +9,3 @@ module.exports = {
         },
     },
 };
-
-console.log("Run")

@@ -231,7 +231,7 @@ export class Rational {
         return (this.isNegative ? "-" : "") + result;
     }
 
-    cmp(x: Rational): number {
+    cmp(x: Rational): -1 | 0 | 1 {
         let a =
             (this.isNegative ? minusOne : one) * this.numerator * x.denominator;
         let b =
