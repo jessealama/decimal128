@@ -205,7 +205,7 @@ describe("constructor", () => {
 });
 
 describe("exponent and significand", () => {
-    let data: [string, string, number][] = [
+    let data = [
         ["123.456", "123456", -3],
         ["0", "", 0],
         ["0.0", "", 0],
@@ -239,6 +239,13 @@ describe("exponent and significand", () => {
         expect(() => new Decimal128("0." + "0".repeat(7000) + "1")).toThrow(
             RangeError
         );
+    });
+    test("non-integer works out to be integer", () => {
+        expect(
+            new Decimal128(
+                "1.00000000000000000000000000000000000000000000000001"
+            ).toString()
+        ).toStrictEqual("1");
     });
 });
 

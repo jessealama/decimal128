@@ -1,4 +1,6 @@
 node_modules
 coverage
-tests/*.js
 dist/
+src/*.d.ts
+src/*.mjs
+src/*.d.mts
