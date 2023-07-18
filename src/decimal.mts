@@ -1,6 +1,10 @@
 import { Decimal128 } from "./decimal128.mjs";
 
 export class Decimal {
+    constructor(...theArgs: any[]) {
+        throw new Error("Decimal is a static class and cannot be instantiated");
+    }
+
     /**
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
