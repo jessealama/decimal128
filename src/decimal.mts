@@ -28,6 +28,10 @@ export class Decimal {
         return new Decimal128(d).toDecimalPlaces(n).toString();
     }
 
+    static toExponentialString(d: string): string {
+        return new Decimal128(d).toExponentialString();
+    }
+
     /**
      * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
      */

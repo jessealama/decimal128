@@ -1,19 +1,13 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal } from "../src/decimal.mjs";
 
 describe("truncate", () => {
     test("basic example", () => {
-        expect(new Decimal128("123.45678").truncate().toString()).toStrictEqual(
-            "123"
-        );
+        expect(Decimal.truncate("123.45678")).toStrictEqual("123");
     });
     test("truncate negative", () => {
-        expect(new Decimal128("-42.99").truncate().toString()).toStrictEqual(
-            "-42"
-        );
+        expect(Decimal.truncate("-42.99")).toStrictEqual("-42");
     });
     test("between zero and one", () => {
-        expect(new Decimal128("0.00765").truncate().toString()).toStrictEqual(
-            "0"
-        );
+        expect(Decimal.truncate("0.00765")).toStrictEqual("0");
     });
 });

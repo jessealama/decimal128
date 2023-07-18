@@ -1,14 +1,10 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal } from "../src/decimal.mjs";
 
 describe("absolute value", function () {
     test("simple positive case", () => {
-        expect(new Decimal128("123.456").abs().toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(Decimal.abs("123.456")).toStrictEqual("123.456");
     });
     test("simple negative case", () => {
-        expect(new Decimal128("-123.456").abs().toString()).toStrictEqual(
-            "123.456"
-        );
+        expect(Decimal.abs("-123.456")).toStrictEqual("123.456");
     });
 });

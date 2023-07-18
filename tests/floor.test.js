@@ -1,23 +1,17 @@
-import { Decimal128 } from "../src/decimal128.mjs";
-
-const zero = new Decimal128("0");
+import { Decimal } from "../src/decimal.mjs";
 
 describe("floor", function () {
     test("floor works (positive)", () => {
-        expect(new Decimal128("123.456").floor().toString()).toStrictEqual(
-            "123"
-        );
-        expect(new Decimal128("-2.5").floor().toString()).toStrictEqual("-2");
+        expect(Decimal.floor("123.456")).toStrictEqual("123");
+        expect(Decimal.floor("-2.5")).toStrictEqual("-2");
     });
     test("floor works (negative)", () => {
-        expect(new Decimal128("-123.456").floor().toString()).toStrictEqual(
-            "-123"
-        );
+        expect(Decimal.floor("-123.456")).toStrictEqual("-123");
     });
     test("floor of integer is unchanged", () => {
-        expect(new Decimal128("123").floor().toString()).toStrictEqual("123");
+        expect(Decimal.floor("123")).toStrictEqual("123");
     });
     test("floor of zero is unchanged", () => {
-        expect(zero.floor().toString()).toStrictEqual("0");
+        expect(Decimal.floor("0")).toStrictEqual("0");
     });
 });

@@ -1,34 +1,26 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal } from "../src/decimal.mjs";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 let bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
 
 describe("subtraction", () => {
     test("subtract decimal part", () => {
-        expect(
-            new Decimal128("123.456")
-                .subtract(new Decimal128("0.456"))
-                .toString()
-        ).toStrictEqual("123");
+        expect(Decimal.subtract("123.456", "0.456")).toStrictEqual("123");
     });
     test("minus negative number", () => {
-        expect(
-            new Decimal128("0.1").subtract(new Decimal128("-0.2")).toString()
-        ).toStrictEqual("0.3");
+        expect(Decimal.subtract("0.1", "-0.2")).toStrictEqual("0.3");
     });
     test("subtract two negatives", () => {
-        expect(
-            new Decimal128("-1.9").subtract(new Decimal128("-2.7")).toString()
-        ).toStrictEqual("0.8");
+        expect(Decimal.subtract("-1.9", "-2.7")).toStrictEqual("0.8");
     });
     test("close to range limit", () => {
-        expect(
-            new Decimal128(bigDigits).subtract(new Decimal128("9")).toString()
-        ).toStrictEqual("9".repeat(MAX_SIGNIFICANT_DIGITS - 1) + "0");
+        expect(Decimal.subtract(bigDigits, "9")).toStrictEqual(
+            "9".repeat(MAX_SIGNIFICANT_DIGITS - 1) + "0"
+        );
     });
     test("integer overflow", () => {
-        expect(() =>
-            new Decimal128("-" + bigDigits).subtract(new Decimal128("9"))
-        ).toThrow(RangeError);
+        expect(() => Decimal.subtract("-" + bigDigits, "9")).toThrow(
+            RangeError
+        );
     });
 });
