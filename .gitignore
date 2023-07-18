@@ -3,3 +3,4 @@ coverage
 dist/
 src/*.d.ts
 src/*.mjs
+src/*.d.mts
