@@ -15,15 +15,12 @@ function* nextDigitForDivision(x, y, n) {
     let result = "";
     let emittedDecimalPoint = false;
     let done = false;
-    while (
-        !done &&
-        countSignificantDigits(
-            result.match(/[.]$/) ? result.replace(".", "") : result
-        ) < n
-    ) {
+    while (!done &&
+        countSignificantDigits(result.match(/[.]$/) ? result.replace(".", "") : result) < n) {
         if (x === zero) {
             done = true;
-        } else if (x < y) {
+        }
+        else if (x < y) {
             if (emittedDecimalPoint) {
                 x = x * ten;
                 if (x < y) {
@@ -31,7 +28,8 @@ function* nextDigitForDivision(x, y, n) {
                     result = result + "0";
                     yield 0;
                 }
-            } else {
+            }
+            else {
                 emittedDecimalPoint = true;
                 result = (result === "" ? "0" : result) + ".";
                 x = x * ten;
@@ -42,7 +40,8 @@ function* nextDigitForDivision(x, y, n) {
                     yield 0;
                 }
             }
-        } else {
+        }
+        else {
             let q = x / y;
             x = x % y;
             let qString = q.toString();
@@ -57,9 +56,7 @@ function* nextDigitForDivision(x, y, n) {
 export class Rational {
     constructor(p, q) {
         if (q === zero) {
-            throw new RangeError(
-                "Cannot construct rational whose denominator is zero"
-            );
+            throw new RangeError("Cannot construct rational whose denominator is zero");
         }
         let num = p;
         let den = q;
@@ -68,11 +65,13 @@ export class Rational {
             if (q < zero) {
                 num = -p;
                 den = -q;
-            } else {
+            }
+            else {
                 num = -p;
                 neg = true;
             }
-        } else if (q < zero) {
+        }
+        else if (q < zero) {
             den = -q;
             neg = true;
         }
@@ -82,9 +81,7 @@ export class Rational {
         this.isNegative = neg;
     }
     toString() {
-        return `${this.isNegative ? "-" : ""}${this.numerator}/${
-            this.denominator
-        }`;
+        return `${this.isNegative ? "-" : ""}${this.numerator}/${this.denominator}`;
     }
     negate() {
         if (this.isNegative) {
@@ -105,10 +102,7 @@ export class Rational {
         if (y.isNegative) {
             return Rational._subtract(x, y.negate());
         }
-        return new Rational(
-            x.numerator * y.denominator + y.numerator * x.denominator,
-            x.denominator * y.denominator
-        );
+        return new Rational(x.numerator * y.denominator + y.numerator * x.denominator, x.denominator * y.denominator);
     }
     static _subtract(x, y) {
         if (x.isNegative) {
@@ -120,65 +114,46 @@ export class Rational {
         if (y.isNegative) {
             return Rational._add(x, y.negate());
         }
-        return new Rational(
-            x.numerator * y.denominator - y.numerator * x.denominator,
-            x.denominator * y.denominator
-        );
+        return new Rational(x.numerator * y.denominator - y.numerator * x.denominator, x.denominator * y.denominator);
     }
     static _multiply(x, y) {
         let neg = x.isNegative !== y.isNegative;
-        return new Rational(
-            (neg ? minusOne : one) * x.numerator * y.numerator,
-            x.denominator * y.denominator
-        );
+        return new Rational((neg ? minusOne : one) * x.numerator * y.numerator, x.denominator * y.denominator);
     }
     static _divide(x, y) {
         return Rational._multiply(x, y.reciprocal());
     }
     static add(...theArgs) {
-        return theArgs.reduce(
-            (acc, cur) => Rational._add(acc, cur),
-            new Rational(zero, one)
-        );
+        return theArgs.reduce((acc, cur) => Rational._add(acc, cur), new Rational(zero, one));
     }
     static subtract(x, ...theArgs) {
         return theArgs.reduce((acc, cur) => Rational._subtract(acc, cur), x);
     }
     static multiply(...theArgs) {
-        return theArgs.reduce(
-            (acc, cur) => Rational._multiply(acc, cur),
-            new Rational(one, one)
-        );
+        return theArgs.reduce((acc, cur) => Rational._multiply(acc, cur), new Rational(one, one));
     }
     static divide(x, ...theArgs) {
         return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
     toDecimalPlaces(n) {
         if (!Number.isInteger(n)) {
-            throw new TypeError(
-                "Cannot round to non-integer number of decimal places"
-            );
+            throw new TypeError("Cannot round to non-integer number of decimal places");
         }
         if (n < 0) {
-            throw new RangeError(
-                "Cannot round to negative number of decimal places"
-            );
+            throw new RangeError("Cannot round to negative number of decimal places");
         }
         if (this.numerator === zero) {
             return "0";
         }
-        let digitGenerator = nextDigitForDivision(
-            this.numerator,
-            this.denominator,
-            n
-        );
+        let digitGenerator = nextDigitForDivision(this.numerator, this.denominator, n);
         let digit = digitGenerator.next();
         let result = "";
         while (!digit.done) {
             let v = digit.value;
             if (-1 === v) {
                 result = ("" === result ? "0" : result) + ".";
-            } else {
+            }
+            else {
                 result = result + `${v}`;
             }
             digit = digitGenerator.next();
@@ -186,10 +161,8 @@ export class Rational {
         return (this.isNegative ? "-" : "") + result;
     }
     cmp(x) {
-        let a =
-            (this.isNegative ? minusOne : one) * this.numerator * x.denominator;
-        let b =
-            (x.isNegative ? minusOne : one) * x.numerator * this.denominator;
+        let a = (this.isNegative ? minusOne : one) * this.numerator * x.denominator;
+        let b = (x.isNegative ? minusOne : one) * x.numerator * this.denominator;
         if (a < b) {
             return -1;
         }
