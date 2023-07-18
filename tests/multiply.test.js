@@ -1,5 +1,4 @@
 import { Decimal128 } from "../src/decimal128.mjs";
-import { Decimal } from "../src/decimal.mjs";
 
 let examples = [
     ["123.456", "789.789", "97504.190784"],
@@ -23,32 +22,32 @@ describe("multiplication", () => {
     describe("worked-out examples", () => {
         for (let [a, b, c] of examples)
             test(`${a} * ${b} = ${c}`, () => {
-                expect(Decimal.multiply(a, b)).toStrictEqual(c);
+                expect(Decimal128.multiply(a, b)).toStrictEqual(c);
             });
     });
     test("negative second argument", () => {
-        expect(Decimal.multiply("987.654", "-321.987")).toStrictEqual(
+        expect(Decimal128.multiply("987.654", "-321.987")).toStrictEqual(
             "-318011.748498"
         );
     });
     test("negative first argument", () => {
-        expect(Decimal.multiply("-987.654", "321.987")).toStrictEqual(
+        expect(Decimal128.multiply("-987.654", "321.987")).toStrictEqual(
             "-318011.748498"
         );
     });
     test("both arguments negative", () => {
-        expect(Decimal.multiply("-987.654", "-321.987")).toStrictEqual(
+        expect(Decimal128.multiply("-987.654", "-321.987")).toStrictEqual(
             "318011.748498"
         );
     });
     test("integer overflow", () => {
         expect(() =>
-            Decimal.multiply("123456789123456789", "987654321987654321")
+            Decimal128.multiply("123456789123456789", "987654321987654321")
         ).toThrow(RangeError);
     });
     test("decimal overflow", () => {
         expect(() =>
-            Decimal.multiply(
+            Decimal128.multiply(
                 "123456789123456789.987654321",
                 "987654321123456789.123456789"
             )
