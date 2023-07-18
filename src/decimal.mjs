@@ -66,7 +66,9 @@ export class Decimal {
      * @param theArgs A list of Decimal128 values to add
      */
     static add(...theArgs) {
-        return Decimal128.add(...theArgs.map((x) => new Decimal128(x))).toString();
+        return Decimal128.add(
+            ...theArgs.map((x) => new Decimal128(x))
+        ).toString();
     }
     /**
      * Subtract another Decimal128 value from one or more Decimal128 values.
@@ -85,7 +87,9 @@ export class Decimal {
      * @param theArgs A list of Decimal128 values to multiply
      */
     static multiply(...theArgs) {
-        return Decimal128.multiply(...theArgs.map((x) => new Decimal128(x))).toString();
+        return Decimal128.multiply(
+            ...theArgs.map((x) => new Decimal128(x))
+        ).toString();
     }
     /**
      * Divide this Decimal128 value by an array of other Decimal128 values.
