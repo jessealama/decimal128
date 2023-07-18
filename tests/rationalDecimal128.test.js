@@ -1,0 +1,325 @@
+import { Decimal128 } from "../src/decimal128.mjs";
+import { RationalDecimal128 } from "../src/rationalDecimal128.mjs";
+
+const MAX_SIGNIFICANT_DIGITS = 34;
+
+describe("constructor", () => {
+    describe("digit string syntax", () => {
+        test("sane string works", () => {
+            expect(new RationalDecimal128("123.456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("string with underscores in integer part", () => {
+            expect(
+                new RationalDecimal128("123_456.789").toString()
+            ).toStrictEqual("123456.789");
+        });
+        test("multiple underscores in integer part", () => {
+            expect(() => new RationalDecimal128("123__456.789")).toThrow(
+                SyntaxError
+            );
+        });
+        test("multiple underscores in decimal part", () => {
+            expect(() => new RationalDecimal128("123.789__456")).toThrow(
+                SyntaxError
+            );
+        });
+        test("leading underscore", () => {
+            expect(() => new RationalDecimal128("_123")).toThrow(SyntaxError);
+        });
+        test("trailing underscore", () => {
+            expect(() => new RationalDecimal128("123_")).toThrow(SyntaxError);
+        });
+        test("string with multiple underscores in integer part", () => {
+            expect(
+                new RationalDecimal128("123_456_789.123").toString()
+            ).toStrictEqual("123456789.123");
+        });
+        test("string with underscore in decimal part", () => {
+            expect(
+                new RationalDecimal128("123.456_789").toString()
+            ).toStrictEqual("123.456789");
+        });
+        test("string with underscores in both integer and decimal part", () => {
+            expect(
+                new RationalDecimal128("123_456.789_123").toString()
+            ).toStrictEqual("123456.789123");
+        });
+        test("negative works", () => {
+            expect(new RationalDecimal128("-123.456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("integer works (decimal point unnecessary)", () => {
+            expect(new RationalDecimal128("123")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("more significant digits than we can store is not OK for integers", () => {
+            expect(
+                () =>
+                    new RationalDecimal128(
+                        "123456789123456789123456789123456789"
+                    )
+            ).toThrow(RangeError);
+        });
+        test("empty string not OK", () => {
+            expect(() => new RationalDecimal128("")).toThrow(SyntaxError);
+        });
+        test("whitespace plus number not OK", () => {
+            expect(() => new RationalDecimal128(" 42")).toThrow(SyntaxError);
+        });
+        test("many significant digits", () => {
+            expect(
+                new RationalDecimal128("0.3666666666666666666666666666666667")
+            ).toBeInstanceOf(RationalDecimal128);
+        });
+        test("significant digits are counted, not total digits (1)", () => {
+            expect(
+                new RationalDecimal128(
+                    "100000000000000000000000000000000000000000000000000"
+                )
+            ).toBeInstanceOf(RationalDecimal128);
+        });
+        test("too many significant digits", () => {
+            expect(
+                () =>
+                    new RationalDecimal128(
+                        "-10000000000000000000000000000000008"
+                    )
+            ).toThrow(RangeError);
+        });
+        test("significant digits are counted, not total digits (2)", () => {
+            expect(
+                new RationalDecimal128(
+                    "10000000000000000000000000000000000000000000.0000000"
+                )
+            ).toBeInstanceOf(RationalDecimal128);
+        });
+        test("ton of digits gets rounded", () => {
+            expect(
+                new RationalDecimal128(
+                    "0.3666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667"
+                ).toString()
+            ).toStrictEqual("0.3666666666666666666666666666666667");
+        });
+        test("lots of digits gets rounded to 1", () => {
+            expect(
+                new RationalDecimal128("0." + "9".repeat(100)).toString()
+            ).toStrictEqual("1");
+        });
+        test("lots of digits gets rounded to minus 1", () => {
+            expect(
+                new RationalDecimal128("-0." + "9".repeat(100)).toString()
+            ).toStrictEqual("-1");
+        });
+        test("lots of digits gets rounded to 10", () => {
+            expect(
+                new RationalDecimal128("9." + "9".repeat(100)).toString()
+            ).toStrictEqual("10");
+        });
+        test("rounding at the limit of significant digits", () => {
+            expect(
+                new RationalDecimal128(
+                    "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS) + "9"
+                ).toString()
+            ).toStrictEqual(
+                "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS - 1) + "2"
+            );
+        });
+        test("rounding occurs beyond the limit of significant digits", () => {
+            expect(
+                new RationalDecimal128(
+                    "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS + 100) + "9"
+                ).toString()
+            ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS));
+        });
+    });
+
+    describe("exponential string syntax", () => {
+        test("sane string works (big E)", () => {
+            expect(new RationalDecimal128("123E456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("sane string works (little E)", () => {
+            expect(new RationalDecimal128("123e456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("negative works", () => {
+            expect(new RationalDecimal128("-123E456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("negative exponent works", () => {
+            expect(new RationalDecimal128("123E-456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("negative significant and negative exponent works", () => {
+            expect(new RationalDecimal128("-123E-456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("leading zero does not work", () => {
+            expect(() => new RationalDecimal128("0123E10")).toThrow(
+                SyntaxError
+            );
+        });
+        test("leading zero in exponent does not work", () => {
+            expect(() => new RationalDecimal128("123E05")).toThrow(SyntaxError);
+        });
+        test("whitespace plus number not OK", () => {
+            expect(() => new RationalDecimal128(" 42E10")).toThrow(SyntaxError);
+        });
+        test("many significant digits", () => {
+            expect(
+                new RationalDecimal128("3666666666666666666666666666666667E10")
+            ).toBeInstanceOf(RationalDecimal128);
+        });
+        test("too many significant digits", () => {
+            expect(
+                () =>
+                    new RationalDecimal128(
+                        "-10000000000000000000000000000000008E5"
+                    )
+            ).toThrow(RangeError);
+        });
+        test("exponent too big", () => {
+            expect(() => new RationalDecimal128("123E100000")).toThrow(
+                RangeError
+            );
+        });
+        test("exponent too small", () => {
+            expect(() => new RationalDecimal128("123E-100000")).toThrow(
+                RangeError
+            );
+        });
+        test("max exponent", () => {
+            expect(new RationalDecimal128("123E6144")).toBeInstanceOf(
+                RationalDecimal128
+            );
+            expect(() => new RationalDecimal128("123E6145")).toThrow(
+                RangeError
+            );
+        });
+        test("min exponent", () => {
+            expect(new RationalDecimal128("123E-6143")).toBeInstanceOf(
+                RationalDecimal128
+            );
+            expect(() => new RationalDecimal128("123E-6144")).toThrow(
+                RangeError
+            );
+        });
+        test("integer too big", () => {
+            expect(
+                () =>
+                    new RationalDecimal128(
+                        "1234567890123456789012345678901234567890E10"
+                    )
+            ).toThrow(RangeError);
+        });
+    });
+    describe("bigint as argument", () => {
+        test("positive bigint", () => {
+            expect(new RationalDecimal128(123n).toString()).toStrictEqual(
+                "123"
+            );
+        });
+        test("negative bigint", () => {
+            expect(new RationalDecimal128(-123n).toString()).toStrictEqual(
+                "-123"
+            );
+        });
+    });
+    describe("number as argument", () => {
+        test("positive number", () => {
+            expect(new RationalDecimal128(123).toString()).toStrictEqual("123");
+        });
+        test("negative number", () => {
+            expect(new RationalDecimal128(-123).toString()).toStrictEqual(
+                "-123"
+            );
+        });
+        test("integer too large (unsafe)", () => {
+            expect(
+                () =>
+                    new RationalDecimal128(
+                        1234567890123456789012345678901234567890
+                    )
+            ).toThrow(RangeError);
+        });
+        test("non-integer number", () => {
+            expect(() => new RationalDecimal128(123.456)).toThrow(TypeError);
+        });
+    });
+});
+
+describe("exponent and significand", () => {
+    let data = [
+        ["123.456", "123456", -3],
+        ["0", "", 0],
+        ["0.0", "", 0],
+        ["5", "5", 0],
+        ["-123.456", "123456", -3],
+        ["0.0042", "42", -4],
+        ["0.00000000000000000000000000000000000001", "1", -38],
+        ["1000", "1", 3],
+        ["0.5", "5", -1],
+        ["0.000001", "1", -6],
+        ["0.0000012", "12", -7],
+    ];
+    for (const [n, sigDigits, exponent] of data) {
+        test(`simple example (${n})`, () => {
+            let d = new RationalDecimal128(n);
+            expect(d.significand).toStrictEqual(sigDigits);
+            expect(d.exponent).toStrictEqual(exponent);
+        });
+    }
+    test("silently round up if too many significant digits", () => {
+        expect(
+            new RationalDecimal128(
+                "1234.56789123456789123456789123456789"
+            ).toString()
+        ).toStrictEqual("1234.567891234567891234567891234568");
+    });
+    test("exponent too big", () => {
+        expect(() => new RationalDecimal128("1" + "0".repeat(7000))).toThrow(
+            RangeError
+        );
+    });
+    test("exponent too small", () => {
+        expect(
+            () => new RationalDecimal128("0." + "0".repeat(7000) + "1")
+        ).toThrow(RangeError);
+    });
+    test("non-integer works out to be integer", () => {
+        expect(
+            new RationalDecimal128(
+                "1.00000000000000000000000000000000000000000000000001"
+            ).toString()
+        ).toStrictEqual("1");
+    });
+});
+
+describe("normalization", () => {
+    let tests = [
+        ["0123.456", "123.456"],
+        ["123.4560", "123.456"],
+        ["123.0", "123"],
+        ["00.123", "0.123"],
+        ["0.0", "0"],
+        ["-0.0", "0"],
+        ["00.0", "0"],
+        ["-00.0", "0"],
+        ["0.00", "0"],
+        ["-0.00", "0"],
+    ];
+    for (let [a, b] of tests) {
+        test(`${a} is actually ${b}`, () => {
+            expect(new RationalDecimal128(a).toString()).toStrictEqual(b);
+        });
+    }
+});

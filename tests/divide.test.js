@@ -1,5 +1,4 @@
 import { Decimal128 } from "../src/decimal128.mjs";
-import { Decimal } from "../src/decimal.mjs";
 
 let tests = {
     "simple example": ["4.1", "1.25", "3.28"],
@@ -21,13 +20,13 @@ let tests = {
 describe("division", () => {
     for (let [name, [a, b, c]] of Object.entries(tests)) {
         test(name, () => {
-            expect(Decimal.divide(a, b)).toStrictEqual(c);
+            expect(Decimal128.divide(a, b)).toStrictEqual(c);
         });
     }
     test("divide by zero", () => {
-        expect(() => Decimal.divide("123.456", "0.0")).toThrow(RangeError);
+        expect(() => Decimal128.divide("123.456", "0.0")).toThrow(RangeError);
     });
     test("divide by negative zero", () => {
-        expect(() => Decimal.divide("123.456", "-0")).toThrow(RangeError);
+        expect(() => Decimal128.divide("123.456", "-0")).toThrow(RangeError);
     });
 });
