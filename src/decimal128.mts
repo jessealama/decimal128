@@ -1,6 +1,5 @@
 import { RationalDecimal128 } from "./rationalDecimal128.mjs";
 
-
 /**
  * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
  */
@@ -103,7 +102,9 @@ function subtract(x: string, y: string): string {
  * @param y
  */
 function multiply(x: string, y: string): string {
-    return new RationalDecimal128(x).multiply(new RationalDecimal128(y)).toString();
+    return new RationalDecimal128(x)
+        .multiply(new RationalDecimal128(y))
+        .toString();
 }
 
 /**

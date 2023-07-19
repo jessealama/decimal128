@@ -12,7 +12,7 @@ describe("addition" + "", () => {
         expect(Decimal128.add("-1", "1")).toStrictEqual("0");
     });
     test("two negatives", () => {
-       expect(Decimal128.add("-1", "-99")).toStrictEqual("-100");
+        expect(Decimal128.add("-1", "-99")).toStrictEqual("-100");
     });
     test("0.1 + 0.2 = 0.3", () => {
         let a = "0.1";
