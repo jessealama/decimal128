@@ -2,7 +2,7 @@ import { RationalDecimal128 } from "./rationalDecimal128.mjs";
 
 export class Decimal128 {
     constructor(...theArgs: any[]) {
-        throw new Error("Decimal is a static class and cannot be instantiated");
+        throw new Error("Decimal128 is a static class and cannot be instantiated");
     }
 
     /**
