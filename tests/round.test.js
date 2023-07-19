@@ -64,4 +64,13 @@ describe("rounding", () => {
     test("round integer", () => {
         expect(Decimal128.round("42", 6)).toStrictEqual("42");
     });
+    test("round with non-number number of digits", () => {
+        expect(() => Decimal128.round("42", "1")).toThrow(TypeError);
+    });
+    test("round with non-integer number of digits", () => {
+        expect(() => Decimal128.round("42", 1.5)).toThrow(TypeError);
+    });
+    test("round with negative number of digits", () => {
+        expect(() => Decimal128.round("42", -1)).toThrow(RangeError);
+    });
 });

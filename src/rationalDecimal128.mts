@@ -293,19 +293,31 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
         let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
         if (lastDigit === 5) {
             if (penultimateDigit % 2 === 0) {
+                let rounded = cutoffAfterSignificantDigits(
+                    normalized,
+                    MAX_SIGNIFICANT_DIGITS - 1
+                );
+                sg = significand(rounded);
+                exp = exponent(rounded);
+            } else if (9 === penultimateDigit) {
                 let rounded =
                     cutoffAfterSignificantDigits(
-                        normalized,
-                        MAX_SIGNIFICANT_DIGITS - 1
-                    ) + `${penultimateDigit}`;
+                        propagateCarryFromRight(
+                            cutoffAfterSignificantDigits(
+                                normalized,
+                                MAX_SIGNIFICANT_DIGITS - 1
+                            )
+                        ),
+                        MAX_SIGNIFICANT_DIGITS - 2
+                    ) + "0";
                 sg = significand(rounded);
                 exp = exponent(rounded);
             } else {
                 let rounded =
                     cutoffAfterSignificantDigits(
                         normalized,
-                        MAX_SIGNIFICANT_DIGITS - 1
-                    ) + `${penultimateDigit}`;
+                        MAX_SIGNIFICANT_DIGITS - 2
+                    ) + `${penultimateDigit + 1}`;
                 sg = significand(rounded);
                 exp = exponent(rounded);
             }
@@ -488,11 +500,6 @@ export class RationalDecimal128 {
         }
 
         let penultimateDigit = parseInt(rhs.charAt(n - 1));
-        let lastDigit = parseInt(rhs.charAt(n));
-
-        if (lastDigit < 5) {
-            return new RationalDecimal128(lhs + "." + rhs.substring(0, n));
-        }
 
         return new RationalDecimal128(
             lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`

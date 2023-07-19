@@ -64,6 +64,27 @@ describe("constructor", () => {
                     )
             ).toThrow(RangeError);
         });
+        test("five as last digit past limit: tie to even unchanged", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901234.5"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901234");
+        });
+        test("five as last digit past limit: tie to even round up", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901235.5"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901236");
+        });
+        test("five as last digit past limit: tie to even round up, penultimate digit is 9", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901239.5"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901240");
+        });
         test("empty string not OK", () => {
             expect(() => new RationalDecimal128("")).toThrow(SyntaxError);
         });
@@ -167,6 +188,9 @@ describe("constructor", () => {
             expect(() => new RationalDecimal128("0123E10")).toThrow(
                 SyntaxError
             );
+        });
+        test("nonsense string input", () => {
+            expect(() => new RationalDecimal128("howdy")).toThrow(SyntaxError);
         });
         test("leading zero in exponent does not work", () => {
             expect(() => new RationalDecimal128("123E05")).toThrow(SyntaxError);
