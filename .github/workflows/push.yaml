@@ -18,4 +18,4 @@ jobs:
             - name: test
               run: npx c8 npx jest
             - name: coverage
-              run: npx c8 check-coverage --lines 97 --functions 97 --branches 97 --statements 97
+              run: npx c8 check-coverage --lines 99 --functions 99 --branches 99 --statements 99
