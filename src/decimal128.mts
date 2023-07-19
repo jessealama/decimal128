@@ -140,6 +140,12 @@ function remainder(n: string, d: string): string {
         .toString();
 }
 
+function multiplyAndAdd(x: string, y: string, z: string): string {
+    return new RationalDecimal128(x)
+        .multiplyAndAdd(new RationalDecimal128(y), new RationalDecimal128(z))
+        .toString();
+}
+
 export const Decimal128 = {
     isInteger: isInteger,
     abs: abs,
@@ -155,4 +161,5 @@ export const Decimal128 = {
     multiply: multiply,
     divide: divide,
     remainder: remainder,
+    multiplyAndAdd: multiplyAndAdd,
 };

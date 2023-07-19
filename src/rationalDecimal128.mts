@@ -647,4 +647,11 @@ export class RationalDecimal128 {
         let q = this.divide(d).round();
         return this.subtract(d.multiply(q)).abs();
     }
+
+    multiplyAndAdd(
+        x: RationalDecimal128,
+        y: RationalDecimal128
+    ): RationalDecimal128 {
+        return this.multiply(x).add(y);
+    }
 }
