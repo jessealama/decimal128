@@ -16,4 +16,6 @@ jobs:
             - name: compile typescript
               run: tsc
             - name: test
-              run: npm run coverage
+              run: npx c8 npx jest
+            - name: coverage
+              run: npx c8 check-coverage --lines 95 --functions 95 --branches 95 --statements 95
