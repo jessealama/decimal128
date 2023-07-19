@@ -64,6 +64,41 @@ describe("constructor", () => {
                     )
             ).toThrow(RangeError);
         });
+        test("five as last digit past limit: tie to even unchanged", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901234.5"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901234");
+        });
+        test("five as last digit past limit: tie to even round up", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901235.5"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901236");
+        });
+        test("five as last digit past limit: tie to even round up, penultimate digit is 9", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901239.5"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901240");
+        });
+        test("five as last digit past limit: tie to even round up, penultimate digit is 9 (negative)", () => {
+            expect(
+                new RationalDecimal128(
+                    "-1234567890123456789012345678901239.5"
+                ).toString()
+            ).toStrictEqual("-1234567890123456789012345678901240");
+        });
+        test("round up decimal digit is not nine", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901239.8"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901240");
+        });
         test("empty string not OK", () => {
             expect(() => new RationalDecimal128("")).toThrow(SyntaxError);
         });
@@ -158,6 +193,11 @@ describe("constructor", () => {
                 RationalDecimal128
             );
         });
+        test("positive exponent works", () => {
+            expect(new RationalDecimal128("123E+456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
         test("negative significant and negative exponent works", () => {
             expect(new RationalDecimal128("-123E-456")).toBeInstanceOf(
                 RationalDecimal128
@@ -167,6 +207,9 @@ describe("constructor", () => {
             expect(() => new RationalDecimal128("0123E10")).toThrow(
                 SyntaxError
             );
+        });
+        test("nonsense string input", () => {
+            expect(() => new RationalDecimal128("howdy")).toThrow(SyntaxError);
         });
         test("leading zero in exponent does not work", () => {
             expect(() => new RationalDecimal128("123E05")).toThrow(SyntaxError);
@@ -267,7 +310,11 @@ describe("exponent and significand", () => {
         ["0.0042", "42", -4],
         ["0.00000000000000000000000000000000000001", "1", -38],
         ["1000", "1", 3],
+        ["-1000", "1", 3],
+        ["-0.00001", "1", -5],
         ["0.5", "5", -1],
+        ["-10", "1", 1],
+        ["10", "1", 1],
         ["0.000001", "1", -6],
         ["0.0000012", "12", -7],
     ];

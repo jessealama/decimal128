@@ -156,6 +156,10 @@ function nthSignificantDigit(s: string, n: number): number {
 }
 
 function cutoffAfterSignificantDigits(s: string, n: number): string {
+    if (s.match(/^-/)) {
+        return "-" + cutoffAfterSignificantDigits(s.substring(1), n);
+    }
+
     if (s.match(/^0[.]/)) {
         return s.substring(0, n + 2);
     }
@@ -184,11 +188,7 @@ function propagateCarryFromRight(s: string): string {
     let len = right.length;
 
     if (1 === len) {
-        let lastDigit = parseInt(right.charAt(0));
-        if (9 === lastDigit) {
-            return propagateCarryFromRight(left) + ".0";
-        }
-        return left + "." + `${lastDigit + 1}`;
+        return propagateCarryFromRight(left) + ".0";
     } else {
         let finalDigit = parseInt(right.charAt(len - 1));
 
@@ -216,7 +216,7 @@ function propagateCarryFromRight(s: string): string {
  *
  * @param s string of digits (assumed to be normalized)
  */
-function exponent(s: string): number | undefined {
+function exponent(s: string): number {
     if (s.match(/^-/)) {
         return exponent(s.substring(1));
     } else if (s.match(/[.]/)) {
@@ -224,15 +224,13 @@ function exponent(s: string): number | undefined {
         return 0 - rhs.length;
     } else if (s === "0") {
         return 0;
-    } else if (s.match(/0+$/)) {
+    } else {
         let m = s.match(/0+$/);
         if (m) {
             return m[0].length;
         } else {
             return 0;
         }
-    } else {
-        return 0;
     }
 }
 
@@ -269,8 +267,10 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     if (sg.match(/^-/)) {
         isNegative = true;
         sg = sg.substring(1);
-    } else if (sg.match(/^[+]/)) {
-        sg = sg.substring(1);
+    }
+
+    if (exp.match(/^[+]/)) {
+        exp = exp.substring(1);
     }
 
     return {
@@ -286,38 +286,46 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     let sg = significand(normalized);
     let exp = exponent(normalized);
     let numSigDigits = countSignificantDigits(normalized);
-    let isInteger = typeof exp === "number" ? exp >= 0 : false;
+    let isInteger = exp >= 0;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
         let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
         let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
         if (lastDigit === 5) {
             if (penultimateDigit % 2 === 0) {
+                let rounded = cutoffAfterSignificantDigits(
+                    normalized,
+                    MAX_SIGNIFICANT_DIGITS - 1
+                );
+                sg = significand(rounded);
+                exp = exponent(rounded);
+            } else if (9 === penultimateDigit) {
                 let rounded =
                     cutoffAfterSignificantDigits(
-                        normalized,
-                        MAX_SIGNIFICANT_DIGITS - 1
-                    ) + `${penultimateDigit}`;
+                        propagateCarryFromRight(
+                            cutoffAfterSignificantDigits(
+                                normalized,
+                                MAX_SIGNIFICANT_DIGITS - 1
+                            )
+                        ),
+                        MAX_SIGNIFICANT_DIGITS - 2
+                    ) + "0";
                 sg = significand(rounded);
                 exp = exponent(rounded);
             } else {
                 let rounded =
                     cutoffAfterSignificantDigits(
                         normalized,
-                        MAX_SIGNIFICANT_DIGITS - 1
-                    ) + `${penultimateDigit}`;
+                        MAX_SIGNIFICANT_DIGITS - 2
+                    ) + `${penultimateDigit + 1}`;
                 sg = significand(rounded);
                 exp = exponent(rounded);
             }
         } else if (lastDigit > 5) {
-            let rounded = normalize(
-                propagateCarryFromRight(
-                    cutoffAfterSignificantDigits(
-                        normalized,
-                        MAX_SIGNIFICANT_DIGITS
-                    )
-                )
+            let cutoff = normalize(
+                cutoffAfterSignificantDigits(normalized, MAX_SIGNIFICANT_DIGITS)
             );
+            let rounded = normalize(propagateCarryFromRight(cutoff));
             sg = significand(rounded);
             exp = exponent(rounded);
         } else {
@@ -331,7 +339,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
 
     return {
         significand: sg,
-        exponent: BigInt(typeof exp === "number" ? exp : 0),
+        exponent: BigInt(exp),
         isNegative: isNegative,
     };
 }
@@ -488,11 +496,6 @@ export class RationalDecimal128 {
         }
 
         let penultimateDigit = parseInt(rhs.charAt(n - 1));
-        let lastDigit = parseInt(rhs.charAt(n));
-
-        if (lastDigit < 5) {
-            return new RationalDecimal128(lhs + "." + rhs.substring(0, n));
-        }
 
         return new RationalDecimal128(
             lhs + "." + rhs.substring(0, n - 1) + `${penultimateDigit + 1}`
@@ -646,5 +649,12 @@ export class RationalDecimal128 {
 
         let q = this.divide(d).round();
         return this.subtract(d.multiply(q)).abs();
+    }
+
+    multiplyAndAdd(
+        x: RationalDecimal128,
+        y: RationalDecimal128
+    ): RationalDecimal128 {
+        return this.multiply(x).add(y);
     }
 }
