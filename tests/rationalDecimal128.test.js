@@ -85,6 +85,20 @@ describe("constructor", () => {
                 ).toString()
             ).toStrictEqual("1234567890123456789012345678901240");
         });
+        test("five as last digit past limit: tie to even round up, penultimate digit is 9 (negative)", () => {
+            expect(
+                new RationalDecimal128(
+                    "-1234567890123456789012345678901239.5"
+                ).toString()
+            ).toStrictEqual("-1234567890123456789012345678901240");
+        });
+        test("round up decimal digit is not nine", () => {
+            expect(
+                new RationalDecimal128(
+                    "1234567890123456789012345678901239.8"
+                ).toString()
+            ).toStrictEqual("1234567890123456789012345678901240");
+        });
         test("empty string not OK", () => {
             expect(() => new RationalDecimal128("")).toThrow(SyntaxError);
         });
@@ -176,6 +190,11 @@ describe("constructor", () => {
         });
         test("negative exponent works", () => {
             expect(new RationalDecimal128("123E-456")).toBeInstanceOf(
+                RationalDecimal128
+            );
+        });
+        test("positive exponent works", () => {
+            expect(new RationalDecimal128("123E+456")).toBeInstanceOf(
                 RationalDecimal128
             );
         });
@@ -291,7 +310,11 @@ describe("exponent and significand", () => {
         ["0.0042", "42", -4],
         ["0.00000000000000000000000000000000000001", "1", -38],
         ["1000", "1", 3],
+        ["-1000", "1", 3],
+        ["-0.00001", "1", -5],
         ["0.5", "5", -1],
+        ["-10", "1", 1],
+        ["10", "1", 1],
         ["0.000001", "1", -6],
         ["0.0000012", "12", -7],
     ];
