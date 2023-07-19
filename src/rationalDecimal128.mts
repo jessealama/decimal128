@@ -432,7 +432,6 @@ export class RationalDecimal128 {
     /**
      * Returns an exponential string representing this Decimal128.
      *
-     * @param x
      */
     toExponentialString(): string {
         return (
@@ -512,10 +511,7 @@ export class RationalDecimal128 {
             return this.truncate();
         }
 
-        return RationalDecimal128.add(
-            this,
-            new RationalDecimal128("1")
-        ).truncate();
+        return this.add(new RationalDecimal128("1")).truncate();
     }
 
     /**
@@ -552,10 +548,10 @@ export class RationalDecimal128 {
     /**
      * Add this Decimal128 value to one or more Decimal128 values.
      *
-     * @param theArgs A list of Decimal128 values to add
+     * @param x
      */
-    static add(...theArgs: RationalDecimal128[]): RationalDecimal128 {
-        let resultRat = Rational.add(...theArgs.map((x) => x.rat));
+    add(x: RationalDecimal128): RationalDecimal128 {
+        let resultRat = Rational.add(this.rat, x.rat);
         return new RationalDecimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -583,10 +579,10 @@ export class RationalDecimal128 {
      *
      * If no arguments are given, return this value.
      *
-     * @param theArgs A list of Decimal128 values to multiply
+     * @param x
      */
-    static multiply(...theArgs: RationalDecimal128[]): RationalDecimal128 {
-        let resultRat = Rational.multiply(...theArgs.map((x) => x.rat));
+    multiply(x: RationalDecimal128): RationalDecimal128 {
+        let resultRat = Rational.multiply(this.rat, x.rat);
         return new RationalDecimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
@@ -649,6 +645,6 @@ export class RationalDecimal128 {
         }
 
         let q = this.divide(d).round();
-        return this.subtract(RationalDecimal128.multiply(d, q)).abs();
+        return this.subtract(d.multiply(q)).abs();
     }
 }
