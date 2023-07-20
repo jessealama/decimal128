@@ -13,7 +13,7 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { countSignificantDigits } from "./common.mjs";
+import { countSignificantDigits, Digit } from "./common.mjs";
 import { Rational } from "./rational.mjs";
 
 const EXPONENT_MIN = -6143;
@@ -23,6 +23,7 @@ const MAX_SIGNIFICANT_DIGITS = 34;
 const bigTen = BigInt(10);
 const bigOne = BigInt(1);
 const bigZero = BigInt(0);
+const bigTwenty = BigInt(20);
 
 /**
  * Normalize a digit string. This means:
@@ -232,6 +233,115 @@ function exponent(s: string): number {
             return 0;
         }
     }
+}
+
+type DigitPair = [Digit, Digit];
+
+function prepareLeftHandSideForSquareRoot(s: string): DigitPair[] {
+    let [lhs] = s.split(".");
+    let numDigits = lhs.length;
+
+    let digitPairs: DigitPair[] = [];
+
+    if (numDigits % 2 === 1) {
+        let firstDigit = parseInt(lhs.charAt(0)) as Digit;
+        digitPairs.push([0, firstDigit]);
+        numDigits--;
+    }
+
+    for (let i = 0; i < numDigits / 2; i++) {
+        let d1 = parseInt(lhs.charAt(2 * i)) as Digit;
+        let d2 = parseInt(lhs.charAt(2 * i + 1)) as Digit;
+        digitPairs.push([d1, d2]);
+    }
+
+    return digitPairs;
+}
+
+function prepareRightHandSideForSquareRoot(s: string): DigitPair[] {
+    let [_, rhs] = s.split(".");
+
+    if (undefined === rhs) {
+        return [];
+    }
+
+    let numDigits = rhs.length;
+
+    let digitPairs: DigitPair[] = [];
+
+    for (let i = 0; i < (numDigits - 1) / 2; i++) {
+        let d1 = parseInt(rhs.charAt(2 * i)) as Digit;
+        let d2 = parseInt(rhs.charAt(2 * i + 1)) as Digit;
+        digitPairs.push([d1, d2]);
+    }
+
+    if (numDigits % 2 === 1) {
+        let lastDigit = parseInt(rhs.charAt(numDigits - 1)) as Digit;
+        digitPairs.push([0, lastDigit]);
+    }
+
+    return digitPairs;
+}
+
+function valueOfDigitPair(digitPair: DigitPair): bigint {
+    let [d1, d2] = digitPair;
+    return BigInt(`${d1}${d2}`);
+}
+
+function nextDigit(p: bigint, c: DigitPair, r: bigint): bigint {
+    let x: bigint = 0n;
+    let v: bigint = 100n * r + valueOfDigitPair(c);
+    while (x * (20n * p + x) <= v) {
+        x = x + 1n;
+    }
+    return x - 1n;
+}
+
+function* nextDigitForSquareRoot(s: string): Generator<Digit> {
+    let leftDigits = prepareLeftHandSideForSquareRoot(s);
+    let rightDigits = prepareRightHandSideForSquareRoot(s);
+    let numDigitsEmitted = 0;
+
+    let p: bigint = 0n;
+    let c = 0n;
+    let r = 0n;
+    for (let digitPair of leftDigits) {
+        let x = nextDigit(p, digitPair, r);
+        let y = x * (20n * p + x);
+        let d = parseInt(x.toString()) as Digit;
+        yield d;
+        numDigitsEmitted++;
+        p = 10n * p + x;
+        c = 100n * r + valueOfDigitPair(digitPair);
+        r = c - y;
+    }
+
+    yield -1;
+
+    for (let digitPair of rightDigits) {
+        let x = nextDigit(p, digitPair, r);
+        let y = x * (20n * p + x);
+        let d = parseInt(x.toString()) as Digit;
+        yield d;
+        numDigitsEmitted++;
+        p = 10n * p + x;
+        c = 100n * r + valueOfDigitPair(digitPair);
+        r = c - y;
+    }
+
+    // we may still be able to emit more digits
+    while (numDigitsEmitted < MAX_SIGNIFICANT_DIGITS + 1) {
+        let x = nextDigit(p, [0, 0], r);
+        let y = x * (20n * p + x);
+        let d = parseInt(x.toString()) as Digit;
+        yield d;
+        numDigitsEmitted++;
+        p = 10n * p + x;
+        c = 100n * r + valueOfDigitPair([0, 0]);
+        r = c - y;
+    }
+
+    return;
 }
 
 interface Decimal128Constructor {
@@ -656,5 +766,31 @@ export class RationalDecimal128 {
         y: RationalDecimal128
     ): RationalDecimal128 {
         return this.multiply(x).add(y);
+    }
+
+    squareRoot(): RationalDecimal128 {
+        if (this.isNegative) {
+            throw new RangeError(
+                "Cannot compute square root of negative numbers"
+            );
+        }
+
+        let digitGenerator = nextDigitForSquareRoot(this.toString());
+
+        let digit = digitGenerator.next();
+        let result = "";
+
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                result = result + ".";
+            } else {
+                result = result + `${v}`;
+            }
+
+            digit = digitGenerator.next();
+        }
+
+        return new RationalDecimal128(result);
     }
 }
