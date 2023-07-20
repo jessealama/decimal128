@@ -1,11 +1,9 @@
-import { countSignificantDigits } from "./common.mjs";
+import { countSignificantDigits, Digit } from "./common.mjs";
 
 const zero = BigInt(0);
 const one = BigInt(1);
 const minusOne = BigInt(-1);
 const ten = BigInt(10);
-
-type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
 
 function gcd(a: bigint, b: bigint): bigint {
     while (b !== zero) {
