@@ -146,10 +146,6 @@ function multiplyAndAdd(x: string, y: string, z: string): string {
         .toString();
 }
 
-function squareRoot(x: string): string {
-    return new RationalDecimal128(x).squareRoot().toString();
-}
-
 export const Decimal128 = {
     isInteger: isInteger,
     abs: abs,
@@ -166,5 +162,4 @@ export const Decimal128 = {
     divide: divide,
     remainder: remainder,
     multiplyAndAdd: multiplyAndAdd,
-    squareRoot: squareRoot,
 };

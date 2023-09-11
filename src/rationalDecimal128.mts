@@ -297,53 +297,6 @@ function nextDigit(p: bigint, c: DigitPair, r: bigint): bigint {
     return x - 1n;
 }
 
-function* nextDigitForSquareRoot(s: string): Generator<Digit> {
-    let leftDigits = prepareLeftHandSideForSquareRoot(s);
-    let rightDigits = prepareRightHandSideForSquareRoot(s);
-    let numDigitsEmitted = 0;
-
-    let p: bigint = 0n;
-    let c = 0n;
-    let r = 0n;
-    for (let digitPair of leftDigits) {
-        let x = nextDigit(p, digitPair, r);
-        let y = x * (20n * p + x);
-        let d = parseInt(x.toString()) as Digit;
-        yield d;
-        numDigitsEmitted++;
-        p = 10n * p + x;
-        c = 100n * r + valueOfDigitPair(digitPair);
-        r = c - y;
-    }
-
-    yield -1;
-
-    for (let digitPair of rightDigits) {
-        let x = nextDigit(p, digitPair, r);
-        let y = x * (20n * p + x);
-        let d = parseInt(x.toString()) as Digit;
-        yield d;
-        numDigitsEmitted++;
-        p = 10n * p + x;
-        c = 100n * r + valueOfDigitPair(digitPair);
-        r = c - y;
-    }
-
-    // we may still be able to emit more digits
-    while (numDigitsEmitted < MAX_SIGNIFICANT_DIGITS + 1) {
-        let x = nextDigit(p, [0, 0], r);
-        let y = x * (20n * p + x);
-        let d = parseInt(x.toString()) as Digit;
-        yield d;
-        numDigitsEmitted++;
-        p = 10n * p + x;
-        c = 100n * r + valueOfDigitPair([0, 0]);
-        r = c - y;
-    }
-
-    return;
-}
-
 interface Decimal128Constructor {
     significand: string;
     exponent: bigint;
@@ -766,31 +719,5 @@ export class RationalDecimal128 {
         y: RationalDecimal128
     ): RationalDecimal128 {
         return this.multiply(x).add(y);
-    }
-
-    squareRoot(): RationalDecimal128 {
-        if (this.isNegative) {
-            throw new RangeError(
-                "Cannot compute square root of negative numbers"
-            );
-        }
-
-        let digitGenerator = nextDigitForSquareRoot(this.toString());
-
-        let digit = digitGenerator.next();
-        let result = "";
-
-        while (!digit.done) {
-            let v = digit.value;
-            if (-1 === v) {
-                result = result + ".";
-            } else {
-                result = result + `${v}`;
-            }
-
-            digit = digitGenerator.next();
-        }
-
-        return new RationalDecimal128(result);
     }
 }
