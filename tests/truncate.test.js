@@ -1,13 +1,16 @@
 import { Decimal128 } from "../src/decimal128.mjs";
+import { expectDecimal128 } from "./util.js";
+
 
 describe("truncate", () => {
-    test("basic example", () => {
-        expect(Decimal128.truncate("123.45678")).toStrictEqual("123");
-    });
-    test("truncate negative", () => {
-        expect(Decimal128.truncate("-42.99")).toStrictEqual("-42");
-    });
-    test("between zero and one", () => {
-        expect(Decimal128.truncate("0.00765")).toStrictEqual("0");
-    });
+    let data = {
+        "123.45678": "123",
+        "-42.99": "-42",
+        "0.00765": "0"
+    };
+    for (let [key, value] of Object.entries(data)) {
+        test(key, () => {
+            expectDecimal128(new Decimal128(key).truncate(), value)
+        });
+    }
 });
