@@ -20,13 +20,19 @@ let tests = {
 describe("division", () => {
     for (let [name, [a, b, c]] of Object.entries(tests)) {
         test(name, () => {
-            expect(Decimal128.divide(a, b)).toStrictEqual(c);
+            expect(
+                new Decimal128(a).divide(new Decimal128(b)).toString()
+            ).toStrictEqual(c);
         });
     }
     test("divide by zero", () => {
-        expect(() => Decimal128.divide("123.456", "0.0")).toThrow(RangeError);
+        expect(() =>
+            new Decimal128("123.456").divide(new Decimal128("0.0"))
+        ).toThrow(RangeError);
     });
     test("divide by negative zero", () => {
-        expect(() => Decimal128.divide("123.456", "-0")).toThrow(RangeError);
+        expect(() =>
+            new Decimal128("123.456").divide(new Decimal128("-0"))
+        ).toThrow(RangeError);
     });
 });

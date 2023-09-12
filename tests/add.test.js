@@ -17,14 +17,20 @@ describe("addition" + "", () => {
         expect(minusOne.add(one).toString()).toStrictEqual("0");
     });
     test("two negatives", () => {
-        expect(minusOne.add(new Decimal128("-99").toString())).toStrictEqual("-100");
+        expect(minusOne.add(new Decimal128("-99")).toString()).toStrictEqual(
+            "-100"
+        );
     });
     test("0.1 + 0.2 = 0.3", () => {
         let a = "0.1";
         let b = "0.2";
         let c = "0.3";
-        expect(new Decimal128(a).add(new Decimal128(b)).toString()).toStrictEqual(c);
-        expect(new Decimal128(b).add(new Decimal128(a)).toString()).toStrictEqual(c);
+        expect(
+            new Decimal128(a).add(new Decimal128(b)).toString()
+        ).toStrictEqual(c);
+        expect(
+            new Decimal128(b).add(new Decimal128(a)).toString()
+        ).toStrictEqual(c);
     });
     let big = new Decimal128(bigDigits);
     test("big plus zero is OK", () => {

@@ -3,67 +3,67 @@ import { Decimal128 } from "../src/decimal128.mjs";
 const MAX_SIGNIFICANT_DIGITS = 34;
 
 describe("cmp", () => {
-    let d1 = "987.123";
-    let d2 = "123.456789";
+    let d1 = new Decimal128("987.123");
+    let d2 = new Decimal128("123.456789");
     test("cmp is zero", () => {
-        expect(Decimal128.cmp(d1, d1)).toStrictEqual(0);
+        expect(d1.cmp(d1)).toStrictEqual(0);
     });
     test("cmp is one", () => {
-        expect(Decimal128.cmp(d1, d2)).toStrictEqual(1);
+        expect(d1.cmp(d2)).toStrictEqual(1);
     });
     test("cmp is minus one", () => {
-        expect(Decimal128.cmp(d2, d1)).toStrictEqual(-1);
+        expect(d2.cmp(d1)).toStrictEqual(-1);
     });
     test("negative numbers", () => {
-        let a = "-123.456";
-        let b = "-987.654";
-        expect(Decimal128.cmp(a, b)).toStrictEqual(1);
-        expect(Decimal128.cmp(b, a)).toStrictEqual(-1);
+        let a = new Decimal128("-123.456");
+        let b = new Decimal128("-987.654");
+        expect(a.cmp(b)).toStrictEqual(1);
+        expect(b.cmp(a)).toStrictEqual(-1);
     });
     test("integer part is the same, decimal part is not", () => {
-        let a = "42.678";
-        let b = "42.6789";
-        expect(Decimal128.cmp(a, b)).toStrictEqual(-1);
-        expect(Decimal128.cmp(b, a)).toStrictEqual(1);
+        let a = new Decimal128("42.678");
+        let b = new Decimal128("42.6789");
+        expect(a.cmp(b)).toStrictEqual(-1);
+        expect(b.cmp(a)).toStrictEqual(1);
     });
     test("negative and positive are different", () => {
-        expect(Decimal128.cmp("-123.456", "123.456")).toStrictEqual(-1);
+        expect(
+            new Decimal128("-123.456").cmp(new Decimal128("123.456"))
+        ).toStrictEqual(-1);
     });
     test("limit of significant digits", () => {
         expect(
-            Decimal128.cmp(
-                "0.4166666666666666666666666666666667",
-                "0.4166666666666666666666666666666666"
+            new Decimal128("0.4166666666666666666666666666666667").cmp(
+                new Decimal128("0.4166666666666666666666666666666666")
             )
         ).toStrictEqual(1);
     });
     test("beyond limit of significant digits", () => {
         expect(
-            Decimal128.cmp(
-                "0.41666666666666666666666666666666667",
-                "0.41666666666666666666666666666666666"
+            new Decimal128("0.41666666666666666666666666666666667").cmp(
+                new Decimal128("0.41666666666666666666666666666666666")
             )
         ).toStrictEqual(0);
     });
     test("non-example", () => {
-        expect(Decimal128.cmp("0.037", "0.037037037037")).toStrictEqual(-1);
+        expect(
+            new Decimal128("0.037").cmp(new Decimal128("0.037037037037"))
+        ).toStrictEqual(-1);
     });
 });
 
 describe("many digits", () => {
     test("non-integers get rounded", () => {
         expect(
-            Decimal128.cmp(
-                "0." + "4".repeat(MAX_SIGNIFICANT_DIGITS + 50),
-                "0." + "4".repeat(MAX_SIGNIFICANT_DIGITS)
+            new Decimal128("0." + "4".repeat(MAX_SIGNIFICANT_DIGITS + 50)).cmp(
+                new Decimal128("0." + "4".repeat(MAX_SIGNIFICANT_DIGITS))
             )
         ).toStrictEqual(0);
     });
     test("non-equality within limits", () => {
         expect(
-            Decimal128.cmp(
-                "0." + "4".repeat(33),
-                "0." + "4".repeat(MAX_SIGNIFICANT_DIGITS)
+            new Decimal128("0." + "4".repeat(33)).cmp(
+                new Decimal128("0." + "4".repeat(MAX_SIGNIFICANT_DIGITS))
             )
         ).toStrictEqual(-1);
     });
