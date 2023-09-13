@@ -1,6 +1,6 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 
-let examples = [
+const examples = [
     ["123.456", "789.789", "97504.190784"],
     ["2", "3", "6"],
     ["4", "0.5", "2"],
@@ -26,7 +26,7 @@ function checkProduct(a, b, c) {
 
 describe("multiplication", () => {
     describe("worked-out examples", () => {
-        for (let [a, b, c] of examples)
+        for (const [a, b, c] of examples)
             test(`${a} * ${b} = ${c}`, () => {
                 checkProduct(a, b, c);
             });
