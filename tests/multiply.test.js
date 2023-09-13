@@ -18,35 +18,27 @@ let examples = [
     ],
 ];
 
+function checkProduct(a, b, c) {
+    expect(
+        new Decimal128(a).multiply(new Decimal128(b)).toString()
+    ).toStrictEqual(c);
+}
+
 describe("multiplication", () => {
     describe("worked-out examples", () => {
         for (let [a, b, c] of examples)
             test(`${a} * ${b} = ${c}`, () => {
-                expect(
-                    new Decimal128(a).multiply(new Decimal128(b)).toString()
-                ).toStrictEqual(c);
+                checkProduct(a, b, c);
             });
     });
     test("negative second argument", () => {
-        expect(
-            new Decimal128("987.654")
-                .multiply(new Decimal128("-321.987"))
-                .toString()
-        ).toStrictEqual("-318011.748498");
+        checkProduct("987.654", "-321.987", "-318011.748498");
     });
     test("negative first argument", () => {
-        expect(
-            new Decimal128("-987.654")
-                .multiply(new Decimal128("321.987"))
-                .toString()
-        ).toStrictEqual("-318011.748498");
+        checkProduct("-987.654", "321.987", "-318011.748498");
     });
     test("both arguments negative", () => {
-        expect(
-            new Decimal128("-987.654")
-                .multiply(new Decimal128("-321.987"))
-                .toString()
-        ).toStrictEqual("318011.748498");
+        checkProduct("-987.654", "-321.987", "318011.748498");
     });
     test("integer overflow", () => {
         expect(() =>
