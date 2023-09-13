@@ -1,6 +1,6 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 
-let examples = [
+const examples = [
     ["123.456", "789.789", "97504.190784"],
     ["2", "3", "6"],
     ["4", "0.5", "2"],
@@ -18,38 +18,39 @@ let examples = [
     ],
 ];
 
+function checkProduct(a, b, c) {
+    expect(
+        new Decimal128(a).multiply(new Decimal128(b)).toString()
+    ).toStrictEqual(c);
+}
+
 describe("multiplication", () => {
     describe("worked-out examples", () => {
-        for (let [a, b, c] of examples)
+        for (const [a, b, c] of examples)
             test(`${a} * ${b} = ${c}`, () => {
-                expect(Decimal128.multiply(a, b)).toStrictEqual(c);
+                checkProduct(a, b, c);
             });
     });
     test("negative second argument", () => {
-        expect(Decimal128.multiply("987.654", "-321.987")).toStrictEqual(
-            "-318011.748498"
-        );
+        checkProduct("987.654", "-321.987", "-318011.748498");
     });
     test("negative first argument", () => {
-        expect(Decimal128.multiply("-987.654", "321.987")).toStrictEqual(
-            "-318011.748498"
-        );
+        checkProduct("-987.654", "321.987", "-318011.748498");
     });
     test("both arguments negative", () => {
-        expect(Decimal128.multiply("-987.654", "-321.987")).toStrictEqual(
-            "318011.748498"
-        );
+        checkProduct("-987.654", "-321.987", "318011.748498");
     });
     test("integer overflow", () => {
         expect(() =>
-            Decimal128.multiply("123456789123456789", "987654321987654321")
+            new Decimal128("123456789123456789").multiply(
+                new Decimal128("987654321987654321")
+            )
         ).toThrow(RangeError);
     });
     test("decimal overflow", () => {
         expect(() =>
-            Decimal128.multiply(
-                "123456789123456789.987654321",
-                "987654321123456789.123456789"
+            new Decimal128("123456789123456789.987654321").multiply(
+                new Decimal128("987654321123456789.123456789")
             )
         ).toThrow(RangeError);
     });
