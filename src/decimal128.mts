@@ -66,59 +66,6 @@ function normalize(s: string): string {
     return b;
 }
 
-function shiftDecimalPointLeft(s: string): string {
-    if (s.match(/^-/)) {
-        return "-" + shiftDecimalPointLeft(s.substring(1));
-    }
-
-    let [lhs, rhs] = s.split(/[.]/);
-    return lhs + rhs.substring(0, 1) + "." + rhs.substring(1);
-}
-
-function shiftDecimalPointRight(s: string): string {
-    if (s.match(/^-/)) {
-        return "-" + shiftDecimalPointRight(s.substring(1));
-    }
-
-    return s.substring(0, s.length - 1) + "." + s.substring(s.length - 1);
-}
-
-function roundDigitStringTiesToEven(s: string, n: number): string {
-    let [lhs, rhs] = s.split(".");
-
-    if (undefined === rhs) {
-        return lhs;
-    }
-
-    if (n === 0) {
-        let digit = parseInt(lhs.substring(lhs.length - 1, lhs.length));
-        let nextDigit = nthSignificantDigit("0." + rhs, 0);
-
-        if (nextDigit > 5) {
-            return propagateCarryFromRight(lhs);
-        }
-
-        if (nextDigit === 5) {
-            if (0 === digit % 2) {
-                // round to even
-                return lhs;
-            }
-
-            return propagateCarryFromRight(lhs);
-        }
-
-        return lhs;
-    }
-
-    let timesTen = normalize(shiftDecimalPointLeft(s));
-
-    if (!timesTen.match(/[.]/)) {
-        return roundDigitStringTiesToEven(s, n - 1);
-    }
-
-    return shiftDecimalPointRight(roundDigitStringTiesToEven(timesTen, n - 1));
-}
-
 /**
  * Return the significand of a digit string, assumed to be normalized.
  * The returned value is a digit string that has no decimal point, even if the original
@@ -143,16 +90,6 @@ function significand(s: string): string {
     } else {
         return s;
     }
-}
-
-/**
- * Get the n-th significant digit of a digit string, assumed to be normalized.
- *
- * @param s digit string (assumed to be normalized)
- * @param n non-negative integer
- */
-function nthSignificantDigit(s: string, n: number): number {
-    return parseInt(significand(s).charAt(n));
 }
 
 function cutoffAfterSignificantDigits(s: string, n: number): string {
@@ -374,7 +311,6 @@ function roundIt(
             }
 
             return digitToRound;
-            break;
         case ROUNDING_MODE_FLOOR:
             if (decidingDigit > 0) {
                 if (isNegative) {
@@ -385,13 +321,10 @@ function roundIt(
             }
 
             return digitToRound;
-            break;
         case ROUNDING_MODE_EXPAND:
             return (digitToRound + 1) as DigitOrTen;
-            break;
         case ROUNDING_MODE_TRUNCATE:
             return digitToRound;
-            break;
         case ROUNDING_MODE_HALF_CEILING:
             if (decidingDigit >= 5) {
                 if (isNegative) {
@@ -402,7 +335,6 @@ function roundIt(
             }
 
             return digitToRound;
-            break;
         case ROUNDING_MODE_HALF_FLOOR:
             if (decidingDigit === 5) {
                 if (isNegative) {
@@ -417,7 +349,6 @@ function roundIt(
             }
 
             return digitToRound;
-            break;
         case ROUNDING_MODE_HALF_TRUNCATE:
             if (decidingDigit === 5) {
                 return digitToRound;
@@ -428,14 +359,12 @@ function roundIt(
             }
 
             return digitToRound;
-            break;
         case ROUNDING_MODE_HALF_EXPAND:
             if (decidingDigit >= 5) {
                 return (digitToRound + 1) as DigitOrTen;
             }
 
             return digitToRound;
-            break;
         case ROUNDING_MODE_HALF_EVEN:
             if (decidingDigit === 5) {
                 if (digitToRound % 2 === 0) {
@@ -450,16 +379,10 @@ function roundIt(
             }
 
             return digitToRound;
-            break;
         default:
             throw new TypeError(`Unknown rounding mode "${roundingMode}"`);
     }
 }
-
-type ConstructorOptions = {
-    "rounding-mode"?: RoundingMode;
-    "max-decimal-digits"?: number;
-};
 
 type RoundingMode =
     | "ceil"
@@ -481,7 +404,7 @@ export class Decimal128 {
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
     private readonly rat;
 
-    constructor(n: string, opts?: ConstructorOptions) {
+    constructor(n: string) {
         let data = undefined;
 
         if (n.match(this.exponentRegExp)) {
