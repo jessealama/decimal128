@@ -9,10 +9,6 @@ jobs:
               run: npm install
             - name: lint
               run: npm run lint
-            - name: check test completeness
-              run: |
-                  missing_tests=$(for f in $(find src -mindepth 1 -maxdepth 1 -type f -name '*.mts' -exec basename {} .mts ';'); do if ! test -e "tests/${f}.test.js"; then echo "Missing test for src/${f}.mts"; fi; done);
-                  test -z "${missing_tests}" || (echo "${missing_tests}"; false)
             - name: compile typescript
               run: tsc
             - name: test

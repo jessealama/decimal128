@@ -13,7 +13,7 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { countSignificantDigits } from "./common.mjs";
+import { countSignificantDigits, Digit, DigitOrTen } from "./common.mjs";
 import { Rational } from "./rational.mjs";
 
 const EXPONENT_MIN = -6143;
@@ -66,59 +66,6 @@ function normalize(s: string): string {
     return b;
 }
 
-function shiftDecimalPointLeft(s: string): string {
-    if (s.match(/^-/)) {
-        return "-" + shiftDecimalPointLeft(s.substring(1));
-    }
-
-    let [lhs, rhs] = s.split(/[.]/);
-    return lhs + rhs.substring(0, 1) + "." + rhs.substring(1);
-}
-
-function shiftDecimalPointRight(s: string): string {
-    if (s.match(/^-/)) {
-        return "-" + shiftDecimalPointRight(s.substring(1));
-    }
-
-    return s.substring(0, s.length - 1) + "." + s.substring(s.length - 1);
-}
-
-function roundDigitStringTiesToEven(s: string, n: number): string {
-    let [lhs, rhs] = s.split(".");
-
-    if (undefined === rhs) {
-        return lhs;
-    }
-
-    if (n === 0) {
-        let digit = parseInt(lhs.substring(lhs.length - 1, lhs.length));
-        let nextDigit = nthSignificantDigit("0." + rhs, 0);
-
-        if (nextDigit > 5) {
-            return propagateCarryFromRight(lhs);
-        }
-
-        if (nextDigit === 5) {
-            if (0 === digit % 2) {
-                // round to even
-                return lhs;
-            }
-
-            return propagateCarryFromRight(lhs);
-        }
-
-        return lhs;
-    }
-
-    let timesTen = normalize(shiftDecimalPointLeft(s));
-
-    if (!timesTen.match(/[.]/)) {
-        return roundDigitStringTiesToEven(s, n - 1);
-    }
-
-    return shiftDecimalPointRight(roundDigitStringTiesToEven(timesTen, n - 1));
-}
-
 /**
  * Return the significand of a digit string, assumed to be normalized.
  * The returned value is a digit string that has no decimal point, even if the original
@@ -143,16 +90,6 @@ function significand(s: string): string {
     } else {
         return s;
     }
-}
-
-/**
- * Get the n-th significant digit of a digit string, assumed to be normalized.
- *
- * @param s digit string (assumed to be normalized)
- * @param n non-negative integer
- */
-function nthSignificantDigit(s: string, n: number): number {
-    return parseInt(significand(s).charAt(n));
 }
 
 function cutoffAfterSignificantDigits(s: string, n: number): string {
@@ -281,7 +218,8 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
 }
 
 function handleDecimalNotation(s: string): Decimal128Constructor {
-    let normalized = normalize(s.replace(/_/g, ""));
+    let withoutUnderscores = s.replace(/_/g, "");
+    let normalized = normalize(withoutUnderscores);
     let isNegative = !!normalized.match(/^-/);
     let sg = significand(normalized);
     let exp = exponent(normalized);
@@ -343,6 +281,109 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
         isNegative: isNegative,
     };
 }
+
+export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
+export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
+export const ROUNDING_MODE_EXPAND: RoundingMode = "expand";
+export const ROUNDING_MODE_TRUNCATE: RoundingMode = "trunc";
+export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "halfEven";
+export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "halfExpand";
+export const ROUNDING_MODE_HALF_CEILING: RoundingMode = "halfCeil";
+export const ROUNDING_MODE_HALF_FLOOR: RoundingMode = "halfFloor";
+export const ROUNDING_MODE_HALF_TRUNCATE: RoundingMode = "halfTrunc";
+
+const ROUNDING_MODE_DEFAULT = ROUNDING_MODE_HALF_EXPAND;
+
+function roundIt(
+    isNegative: boolean,
+    digitToRound: Digit,
+    decidingDigit: Digit,
+    roundingMode: RoundingMode
+): DigitOrTen {
+    switch (roundingMode) {
+        case ROUNDING_MODE_CEILING:
+            if (isNegative) {
+                return digitToRound;
+            }
+
+            return (digitToRound + 1) as DigitOrTen;
+        case ROUNDING_MODE_FLOOR:
+            if (isNegative) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        case ROUNDING_MODE_EXPAND:
+            return (digitToRound + 1) as DigitOrTen;
+        case ROUNDING_MODE_TRUNCATE:
+            return digitToRound;
+        case ROUNDING_MODE_HALF_CEILING:
+            if (decidingDigit >= 5) {
+                if (isNegative) {
+                    return digitToRound;
+                }
+
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        case ROUNDING_MODE_HALF_FLOOR:
+            if (decidingDigit === 5) {
+                if (isNegative) {
+                    return (digitToRound + 1) as DigitOrTen;
+                }
+
+                return digitToRound;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        case ROUNDING_MODE_HALF_TRUNCATE:
+            if (decidingDigit === 5) {
+                return digitToRound;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        case ROUNDING_MODE_HALF_EXPAND:
+            if (decidingDigit >= 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        default: // ROUNDING_MODE_HALF_EVEN:
+            if (decidingDigit === 5) {
+                if (digitToRound % 2 === 0) {
+                    return digitToRound;
+                }
+
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+    }
+}
+
+type RoundingMode =
+    | "ceil"
+    | "floor"
+    | "expand"
+    | "trunc"
+    | "halfEven"
+    | "halfExpand"
+    | "halfCeil"
+    | "halfFloor"
+    | "halfTrunc";
 
 export class Decimal128 {
     public readonly significand: string;
@@ -588,16 +629,29 @@ export class Decimal128 {
         );
     }
 
-    round(n: number = 0): Decimal128 {
-        if (!Number.isInteger(n)) {
-            throw new TypeError("Argument must be an integer");
+    /**
+     *
+     * @param {RoundingMode} mode (default: ROUNDING_MODE_DEFAULT)
+     */
+    round(mode: RoundingMode = ROUNDING_MODE_DEFAULT): Decimal128 {
+        let s = this.toString();
+        let [lhs, rhs] = s.split(".");
+
+        if (undefined === rhs) {
+            return this;
         }
 
-        if (n < 0) {
-            throw new RangeError("Argument must be non-negative");
-        }
-
-        return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
+        let finalIntegerDigit = parseInt(lhs.charAt(lhs.length - 1)) as Digit;
+        let firstDecimalDigit = parseInt(rhs.charAt(0)) as Digit;
+        let roundedFinalDigit = roundIt(
+            this.isNegative,
+            finalIntegerDigit,
+            firstDecimalDigit,
+            mode
+        );
+        return new Decimal128(
+            lhs.substring(0, lhs.length - 1) + `${roundedFinalDigit}`
+        );
     }
 
     negate(): Decimal128 {

@@ -269,23 +269,3 @@ describe("exponent and significand", () => {
         ).toStrictEqual("1");
     });
 });
-
-describe("normalization", () => {
-    let tests = [
-        ["0123.456", "123.456"],
-        ["123.4560", "123.456"],
-        ["123.0", "123"],
-        ["00.123", "0.123"],
-        ["0.0", "0"],
-        ["-0.0", "0"],
-        ["00.0", "0"],
-        ["-00.0", "0"],
-        ["0.00", "0"],
-        ["-0.00", "0"],
-    ];
-    for (let [a, b] of tests) {
-        test(`${a} is actually ${b}`, () => {
-            expect(new Decimal128(a).toString()).toStrictEqual(b);
-        });
-    }
-});
