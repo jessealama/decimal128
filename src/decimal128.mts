@@ -13,7 +13,7 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { countSignificantDigits } from "./common.mjs";
+import { countSignificantDigits, Digit, DigitOrTen } from "./common.mjs";
 import { Rational } from "./rational.mjs";
 
 const EXPONENT_MIN = -6143;
@@ -281,7 +281,8 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
 }
 
 function handleDecimalNotation(s: string): Decimal128Constructor {
-    let normalized = normalize(s.replace(/_/g, ""));
+    let withoutUnderscores = s.replace(/_/g, "");
+    let normalized = normalize(withoutUnderscores);
     let isNegative = !!normalized.match(/^-/);
     let sg = significand(normalized);
     let exp = exponent(normalized);
@@ -344,6 +345,133 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     };
 }
 
+export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
+export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
+export const ROUNDING_MODE_EXPAND: RoundingMode = "expand";
+export const ROUNDING_MODE_TRUNCATE: RoundingMode = "trunc";
+export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "halfEven";
+export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "halfExpand";
+export const ROUNDING_MODE_HALF_CEILING: RoundingMode = "halfCeil";
+export const ROUNDING_MODE_HALF_FLOOR: RoundingMode = "halfFloor";
+export const ROUNDING_MODE_HALF_TRUNCATE: RoundingMode = "halfTrunc";
+
+const ROUNDING_MODE_DEFAULT = ROUNDING_MODE_HALF_EXPAND;
+
+function roundIt(
+    isNegative: boolean,
+    digitToRound: Digit,
+    decidingDigit: Digit,
+    roundingMode: RoundingMode
+): DigitOrTen {
+    switch (roundingMode) {
+        case ROUNDING_MODE_CEILING:
+            if (decidingDigit > 0) {
+                if (isNegative) {
+                    return digitToRound;
+                }
+
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_FLOOR:
+            if (decidingDigit > 0) {
+                if (isNegative) {
+                    return (digitToRound + 1) as DigitOrTen;
+                }
+
+                return digitToRound;
+            }
+
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_EXPAND:
+            return (digitToRound + 1) as DigitOrTen;
+            break;
+        case ROUNDING_MODE_TRUNCATE:
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_HALF_CEILING:
+            if (decidingDigit >= 5) {
+                if (isNegative) {
+                    return digitToRound;
+                }
+
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_HALF_FLOOR:
+            if (decidingDigit === 5) {
+                if (isNegative) {
+                    return (digitToRound + 1) as DigitOrTen;
+                }
+
+                return digitToRound;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_HALF_TRUNCATE:
+            if (decidingDigit === 5) {
+                return digitToRound;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_HALF_EXPAND:
+            if (decidingDigit >= 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+            break;
+        case ROUNDING_MODE_HALF_EVEN:
+            if (decidingDigit === 5) {
+                if (digitToRound % 2 === 0) {
+                    return digitToRound;
+                }
+
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+            break;
+        default:
+            throw new TypeError(`Unknown rounding mode "${roundingMode}"`);
+    }
+}
+
+type ConstructorOptions = {
+    "rounding-mode"?: RoundingMode;
+    "max-decimal-digits"?: number;
+};
+
+type RoundingMode =
+    | "ceil"
+    | "floor"
+    | "expand"
+    | "trunc"
+    | "halfEven"
+    | "halfExpand"
+    | "halfCeil"
+    | "halfFloor"
+    | "halfTrunc";
+
 export class Decimal128 {
     public readonly significand: string;
     public readonly exponent: number;
@@ -353,7 +481,7 @@ export class Decimal128 {
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
     private readonly rat;
 
-    constructor(n: string) {
+    constructor(n: string, opts?: ConstructorOptions) {
         let data = undefined;
 
         if (n.match(this.exponentRegExp)) {
@@ -588,16 +716,29 @@ export class Decimal128 {
         );
     }
 
-    round(n: number = 0): Decimal128 {
-        if (!Number.isInteger(n)) {
-            throw new TypeError("Argument must be an integer");
+    /**
+     *
+     * @param {RoundingMode} mode (default: ROUNDING_MODE_DEFAULT)
+     */
+    round(mode: RoundingMode = ROUNDING_MODE_DEFAULT): Decimal128 {
+        let s = this.toString();
+        let [lhs, rhs] = s.split(".");
+
+        if (undefined === rhs) {
+            return this;
         }
 
-        if (n < 0) {
-            throw new RangeError("Argument must be non-negative");
-        }
-
-        return new Decimal128(roundDigitStringTiesToEven(this.toString(), n));
+        let finalIntegerDigit = parseInt(lhs.charAt(lhs.length - 1)) as Digit;
+        let firstDecimalDigit = parseInt(rhs.charAt(0)) as Digit;
+        let roundedFinalDigit = roundIt(
+            this.isNegative,
+            finalIntegerDigit,
+            firstDecimalDigit,
+            mode
+        );
+        return new Decimal128(
+            lhs.substring(0, lhs.length - 1) + `${roundedFinalDigit}`
+        );
     }
 
     negate(): Decimal128 {

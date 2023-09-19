@@ -6,7 +6,7 @@ describe("rounding", () => {
             expect(new Decimal128("1.5").round().toString()).toStrictEqual("2");
         });
         test("positive even", () => {
-            expect(new Decimal128("2.5").round().toString()).toStrictEqual("2");
+            expect(new Decimal128("2.5").round().toString()).toStrictEqual("3");
         });
         test("round up (positive)", () => {
             expect(new Decimal128("2.6").round().toString()).toStrictEqual("3");
@@ -18,87 +18,231 @@ describe("rounding", () => {
         });
         test("negative even", () => {
             expect(new Decimal128("-2.5").round().toString()).toStrictEqual(
-                "-2"
+                "-3"
             );
         });
         test("round down (positive)", () => {
             expect(new Decimal128("1.1").round().toString()).toStrictEqual("1");
         });
     });
-    describe("round to one decimal place, with one decimal place available", () => {
-        test("positive odd", () => {
-            expect(new Decimal128("1.5").round(1).toString()).toStrictEqual(
-                "2"
+});
+
+describe("Intl.NumberFormat examples", () => {
+    let minusOnePointFive = new Decimal128("-1.5");
+    let zeroPointFour = new Decimal128("0.4");
+    let zeroPointFive = new Decimal128("0.5");
+    let zeroPointSix = new Decimal128("0.6");
+    let onePointFive = new Decimal128("1.5");
+    describe("ceil", () => {
+        test("-1.5", () => {
+            expect(minusOnePointFive.round("ceil").toString()).toStrictEqual(
+                "-1"
             );
         });
-        test("positive even", () => {
-            expect(new Decimal128("2.5").round(1).toString()).toStrictEqual(
-                "2"
-            );
+        test("0.4", () => {
+            expect(zeroPointFour.round("ceil").toString()).toStrictEqual("1");
         });
-        test("round up (positive)", () => {
-            expect(new Decimal128("2.6").round(1).toString()).toStrictEqual(
-                "3"
-            );
+        test("0.5", () => {
+            expect(zeroPointFive.round("ceil").toString()).toStrictEqual("1");
         });
-        test("negative odd", () => {
-            expect(new Decimal128("-1.5").round(1).toString()).toStrictEqual(
+        test("0.6", () => {
+            expect(zeroPointSix.round("ceil").toString()).toStrictEqual("1");
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("ceil").toString()).toStrictEqual("2");
+        });
+    });
+    describe("floor", () => {
+        test("-1.5", () => {
+            expect(minusOnePointFive.round("floor").toString()).toStrictEqual(
                 "-2"
             );
         });
-        test("negative even", () => {
-            expect(new Decimal128("-2.5").round(1).toString()).toStrictEqual(
+        test("0.4", () => {
+            expect(zeroPointFour.round("floor").toString()).toStrictEqual("0");
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("floor").toString()).toStrictEqual("0");
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("floor").toString()).toStrictEqual("0");
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("floor").toString()).toStrictEqual("1");
+        });
+    });
+    describe("expand", () => {
+        test("-1.5", () => {
+            expect(minusOnePointFive.round("expand").toString()).toStrictEqual(
                 "-2"
             );
         });
-        test("round down (positive)", () => {
-            expect(new Decimal128("1.1").round(1).toString()).toStrictEqual(
+        test("0.4", () => {
+            expect(zeroPointFour.round("expand").toString()).toStrictEqual("1");
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("expand").toString()).toStrictEqual("1");
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("expand").toString()).toStrictEqual("1");
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("expand").toString()).toStrictEqual("2");
+        });
+    });
+    describe("trunc", () => {
+        test("-1.5", () => {
+            expect(minusOnePointFive.round("trunc").toString()).toStrictEqual(
+                "-1"
+            );
+        });
+        test("0.4", () => {
+            expect(zeroPointFour.round("trunc").toString()).toStrictEqual("0");
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("trunc").toString()).toStrictEqual("0");
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("trunc").toString()).toStrictEqual("0");
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("trunc").toString()).toStrictEqual("1");
+        });
+    });
+    describe("halfCeil", () => {
+        test("-1.5", () => {
+            expect(
+                minusOnePointFive.round("halfCeil").toString()
+            ).toStrictEqual("-1");
+        });
+        test("0.4", () => {
+            expect(zeroPointFour.round("halfCeil").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("halfCeil").toString()).toStrictEqual(
+                "1"
+            );
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("halfCeil").toString()).toStrictEqual(
+                "1"
+            );
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("halfCeil").toString()).toStrictEqual(
+                "2"
+            );
+        });
+    });
+    describe("halfFloor", () => {
+        test("-1.5", () => {
+            expect(
+                minusOnePointFive.round("halfFloor").toString()
+            ).toStrictEqual("-2");
+        });
+        test("0.4", () => {
+            expect(zeroPointFour.round("halfFloor").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("halfFloor").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("halfFloor").toString()).toStrictEqual(
+                "1"
+            );
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("halfFloor").toString()).toStrictEqual(
                 "1"
             );
         });
     });
-    describe("round to one decimal place, more than one decimal place available", () => {
-        test("positive odd", () => {
-            expect(new Decimal128("1.75").round(1).toString()).toStrictEqual(
-                "1.8"
+    describe("halfExpand", () => {
+        let opts = { "rounding-mode": "halfExpand" };
+        test("-1.5", () => {
+            expect(
+                minusOnePointFive.round("halfExpand").toString()
+            ).toStrictEqual("-2");
+        });
+        test("0.4", () => {
+            expect(zeroPointFour.round("halfExpand").toString()).toStrictEqual(
+                "0"
             );
         });
-        test("positive even", () => {
-            expect(new Decimal128("2.55").round(1).toString()).toStrictEqual(
-                "2.6"
+        test("0.5", () => {
+            expect(zeroPointFive.round("halfExpand").toString()).toStrictEqual(
+                "1"
             );
         });
-        test("round up (positive)", () => {
-            expect(new Decimal128("2.26").round(1).toString()).toStrictEqual(
-                "2.3"
+        test("0.6", () => {
+            expect(zeroPointSix.round("halfExpand").toString()).toStrictEqual(
+                "1"
             );
         });
-        test("negative odd", () => {
-            expect(new Decimal128("-1.95").round(1).toString()).toStrictEqual(
-                "-2"
-            );
-        });
-        test("negative even", () => {
-            expect(new Decimal128("-2.65").round(1).toString()).toStrictEqual(
-                "-2.6"
-            );
-        });
-        test("round down (positive)", () => {
-            expect(new Decimal128("1.81").round(1).toString()).toStrictEqual(
-                "1.8"
+        test("1.5", () => {
+            expect(onePointFive.round("halfExpand").toString()).toStrictEqual(
+                "2"
             );
         });
     });
-    test("round integer", () => {
-        expect(new Decimal128("42").round(6).toString()).toStrictEqual("42");
+    describe("halfTrunc", () => {
+        test("-1.5", () => {
+            expect(
+                minusOnePointFive.round("halfTrunc").toString()
+            ).toStrictEqual("-1");
+        });
+        test("0.4", () => {
+            expect(zeroPointFour.round("halfTrunc").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("halfTrunc").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("halfTrunc").toString()).toStrictEqual(
+                "1"
+            );
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("halfTrunc").toString()).toStrictEqual(
+                "1"
+            );
+        });
     });
-    test("round with non-number number of digits", () => {
-        expect(() => new Decimal128("42").round("1")).toThrow(TypeError);
-    });
-    test("round with non-integer number of digits", () => {
-        expect(() => new Decimal128("42").round(1.5)).toThrow(TypeError);
-    });
-    test("round with negative number of digits", () => {
-        expect(() => new Decimal128("42").round(-1)).toThrow(RangeError);
+    describe("halfEven", () => {
+        test("-1.5", () => {
+            expect(
+                minusOnePointFive.round("halfEven").toString()
+            ).toStrictEqual("-2");
+        });
+        test("0.4", () => {
+            expect(zeroPointFour.round("halfEven").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.5", () => {
+            expect(zeroPointFive.round("halfEven").toString()).toStrictEqual(
+                "0"
+            );
+        });
+        test("0.6", () => {
+            expect(zeroPointSix.round("halfEven").toString()).toStrictEqual(
+                "1"
+            );
+        });
+        test("1.5", () => {
+            expect(onePointFive.round("halfEven").toString()).toStrictEqual(
+                "2"
+            );
+        });
     });
 });
