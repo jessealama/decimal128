@@ -302,22 +302,14 @@ function roundIt(
 ): DigitOrTen {
     switch (roundingMode) {
         case ROUNDING_MODE_CEILING:
-            if (decidingDigit > 0) {
-                if (isNegative) {
-                    return digitToRound;
-                }
-
-                return (digitToRound + 1) as DigitOrTen;
+            if (isNegative) {
+                return digitToRound;
             }
 
-            return digitToRound;
+            return (digitToRound + 1) as DigitOrTen;
         case ROUNDING_MODE_FLOOR:
-            if (decidingDigit > 0) {
-                if (isNegative) {
-                    return (digitToRound + 1) as DigitOrTen;
-                }
-
-                return digitToRound;
+            if (isNegative) {
+                return (digitToRound + 1) as DigitOrTen;
             }
 
             return digitToRound;
@@ -365,7 +357,7 @@ function roundIt(
             }
 
             return digitToRound;
-        case ROUNDING_MODE_HALF_EVEN:
+        default: // ROUNDING_MODE_HALF_EVEN:
             if (decidingDigit === 5) {
                 if (digitToRound % 2 === 0) {
                     return digitToRound;
@@ -379,8 +371,6 @@ function roundIt(
             }
 
             return digitToRound;
-        default:
-            throw new TypeError(`Unknown rounding mode "${roundingMode}"`);
     }
 }
 
