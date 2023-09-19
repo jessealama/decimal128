@@ -1,6 +1,6 @@
 {
     "name": "decimal128",
-    "version": "4.3.0",
+    "version": "5.0.0",
     "main": "src/decimal128.js",
     "type": "module",
     "description": "Partial implementation of IEEE 754 Decimal128 decimal floating-point numbers",
