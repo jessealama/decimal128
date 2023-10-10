@@ -172,6 +172,7 @@ function exponent(s: string): number {
 }
 
 interface Decimal128Constructor {
+    isNan: boolean;
     significand: string;
     exponent: bigint;
     isNegative: boolean;
@@ -182,6 +183,10 @@ function isInteger(x: Decimal128Constructor): boolean {
 }
 
 function validateConstructorData(x: Decimal128Constructor): void {
+    if (x.isNan) {
+        return; // no further validation needed
+    }
+
     let numSigDigits = countSignificantDigits(x.significand);
 
     if (isInteger(x) && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
@@ -197,6 +202,14 @@ function validateConstructorData(x: Decimal128Constructor): void {
     }
 }
 
+function handleNan(s: string): Decimal128Constructor {
+    return {
+        significand: "",
+        exponent: bigZero,
+        isNegative: false,
+        isNan: true,
+    };
+}
 function handleExponentialNotation(s: string): Decimal128Constructor {
     let [sg, exp] = s.match(/e/) ? s.split("e") : s.split("E");
 
@@ -214,6 +227,7 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
         significand: sg,
         exponent: BigInt(exp),
         isNegative: isNegative,
+        isNan: false,
     };
 }
 
@@ -279,6 +293,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
         significand: sg,
         exponent: BigInt(exp),
         isNegative: isNegative,
+        isNan: false,
     };
 }
 
@@ -386,18 +401,22 @@ type RoundingMode =
     | "halfTrunc";
 
 export class Decimal128 {
+    private readonly isNan: boolean;
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;
     private readonly digitStrRegExp =
         /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
+    private readonly nanRegExp = /^-?nan$/i;
     private readonly rat;
 
     constructor(n: string) {
         let data = undefined;
 
-        if (n.match(this.exponentRegExp)) {
+        if (n.match(this.nanRegExp)) {
+            data = handleNan(n);
+        } else if (n.match(this.exponentRegExp)) {
             data = handleExponentialNotation(n);
         } else if (n.match(this.digitStrRegExp)) {
             data = handleDecimalNotation(n);
@@ -407,6 +426,7 @@ export class Decimal128 {
 
         validateConstructorData(data);
 
+        this.isNan = data.isNan;
         this.significand = data.significand;
         this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
         this.isNegative = data.isNegative;

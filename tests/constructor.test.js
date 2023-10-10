@@ -269,3 +269,21 @@ describe("exponent and significand", () => {
         ).toStrictEqual("1");
     });
 });
+
+describe("NaN", () => {
+    describe("does not throw", () => {
+        expect(new Decimal128("NaN")).toBeInstanceOf(Decimal128);
+    });
+    describe("minus NaN", () => {
+        expect(new Decimal128("-NaN")).toBeInstanceOf(Decimal128);
+    });
+    describe("lowercase", () => {
+        expect(new Decimal128("nan")).toBeInstanceOf(Decimal128);
+    });
+    describe("minus lowercase", () => {
+        expect(new Decimal128("-nan")).toBeInstanceOf(Decimal128);
+    });
+    describe("weird case", () => {
+        expect(new Decimal128("-nAN")).toBeInstanceOf(Decimal128);
+    });
+});
