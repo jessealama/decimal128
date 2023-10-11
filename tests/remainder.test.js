@@ -57,4 +57,37 @@ describe("remainder", () => {
             ).toStrictEqual("NaN");
         });
     });
+    describe("infinity", () => {
+        let posInf = new Decimal128("Infinity");
+        let negInf = new Decimal128("-Infinity");
+        test("positive infinity remainder positive infinity is NaN", () => {
+            expect(posInf.remainder(posInf).toString()).toStrictEqual("NaN");
+        });
+        test("positive infinity remainder negative infinity is NaN", () => {
+            expect(posInf.remainder(negInf).toString()).toStrictEqual("NaN");
+        });
+        test("negative infinity remainder positive infinity is NaN", () => {
+            expect(negInf.remainder(posInf).toString()).toStrictEqual("NaN");
+        });
+        test("remainder with positive infinity", () => {
+            expect(
+                new Decimal128("42").remainder(posInf).toString()
+            ).toStrictEqual("42");
+        });
+        test("remainder with negative infinity", () => {
+            expect(
+                new Decimal128("42").remainder(negInf).toString()
+            ).toStrictEqual("42");
+        });
+        test("positive infinity remainder number is NaN", () => {
+            expect(
+                posInf.remainder(new Decimal128("42")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("negative infinity remainder number is NaN", () => {
+            expect(
+                negInf.remainder(new Decimal128("42")).toString()
+            ).toStrictEqual("NaN");
+        });
+    });
 });

@@ -17,4 +17,14 @@ describe("negation", () => {
     test("minus zero", () => {
         expect(new Decimal128("-0").negate().toString()).toStrictEqual("0");
     });
+    test("positive infinity", () => {
+        expect(new Decimal128("Infinity").negate().toString()).toStrictEqual(
+            "-Infinity"
+        );
+    });
+    test("negative infinity", () => {
+        expect(new Decimal128("-Infinity").negate().toString()).toStrictEqual(
+            "Infinity"
+        );
+    });
 });

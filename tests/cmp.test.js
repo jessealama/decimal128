@@ -101,4 +101,26 @@ describe("many digits", () => {
             ).toStrictEqual(0);
         });
     });
+    describe("infinity", () => {
+        let posInf = new Decimal128("Infinity");
+        let negInf = new Decimal128("-Infinity");
+        test("positive infinity vs number", () => {
+            expect(posInf.cmp(new Decimal128("1"))).toStrictEqual(1);
+        });
+        test("negative infinity vs number", () => {
+            expect(negInf.cmp(new Decimal128("1"))).toStrictEqual(-1);
+        });
+        test("negative infintity vs positive infinity", () => {
+            expect(negInf.cmp(posInf)).toStrictEqual(-1);
+        });
+        test("positive infinity vs negative infinity", () => {
+            expect(posInf.cmp(negInf)).toStrictEqual(1);
+        });
+        test("positive infinity both arguments", () => {
+            expect(posInf.cmp(posInf)).toStrictEqual(0);
+        });
+        test("negative infinity both arguments", () => {
+            expect(negInf.cmp(negInf)).toStrictEqual(0);
+        });
+    });
 });

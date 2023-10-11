@@ -293,3 +293,42 @@ describe("NaN", () => {
         expect(new Decimal128("-nAN")).toBeInstanceOf(Decimal128);
     });
 });
+
+describe("infinity", () => {
+    describe("inf", () => {
+        expect(new Decimal128("inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("-inf", () => {
+        expect(new Decimal128("-inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("infinity", () => {
+        expect(new Decimal128("infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("-infinity", () => {
+        expect(new Decimal128("-infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("Infinity", () => {
+        expect(new Decimal128("Infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("-Infinity", () => {
+        expect(new Decimal128("-Infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("Inf", () => {
+        expect(new Decimal128("Inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("-Inf", () => {
+        expect(new Decimal128("-Inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("INFINITY", () => {
+        expect(new Decimal128("INFINITY")).toBeInstanceOf(Decimal128);
+    });
+    describe("-INFINITY", () => {
+        expect(new Decimal128("-INFINITY")).toBeInstanceOf(Decimal128);
+    });
+    describe("INF", () => {
+        expect(new Decimal128("INF")).toBeInstanceOf(Decimal128);
+    });
+    describe("-INF", () => {
+        expect(new Decimal128("-INF")).toBeInstanceOf(Decimal128);
+    });
+});

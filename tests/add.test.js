@@ -65,4 +65,26 @@ describe("addition" + "", () => {
             ).toStrictEqual("NaN");
         });
     });
+    describe("infinity", () => {
+        let posInf = new Decimal128("Infinity");
+        let negInf = new Decimal128("-Infinity");
+        test("positive infinity plus number", () => {
+            expect(posInf.add(one).toString()).toStrictEqual("Infinity");
+        });
+        test("negative infinity plus number", () => {
+            expect(negInf.add(one).toString()).toStrictEqual("-Infinity");
+        });
+        test("positive infinity plus positive infinity", () => {
+            expect(posInf.add(posInf).toString()).toStrictEqual("Infinity");
+        });
+        test("minus infinity plus minus infinity", () => {
+            expect(negInf.add(negInf).toString()).toStrictEqual("-Infinity");
+        });
+        test("positive infinity plus negative infinity", () => {
+            expect(posInf.add(negInf).toString()).toStrictEqual("NaN");
+        });
+        test("minus infinity plus positive infinity", () => {
+            expect(negInf.add(posInf).toString()).toStrictEqual("NaN");
+        });
+    });
 });

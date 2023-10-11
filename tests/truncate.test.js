@@ -18,3 +18,16 @@ describe("truncate", () => {
         );
     });
 });
+
+describe("infinity", () => {
+    test("positive infinity", () => {
+        expect(new Decimal128("Infinity").truncate().toString()).toStrictEqual(
+            "Infinity"
+        );
+    });
+    test("negative infinity", () => {
+        expect(new Decimal128("-Infinity").truncate().toString()).toStrictEqual(
+            "-Infinity"
+        );
+    });
+});

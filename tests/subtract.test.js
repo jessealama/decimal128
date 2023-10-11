@@ -53,3 +53,82 @@ describe("subtraction", () => {
         });
     });
 });
+
+describe("infinity", () => {
+    let posInf = new Decimal128("Infinity");
+    let negInf = new Decimal128("-Infinity");
+    describe("first argument", () => {
+        describe("positive infinity", () => {
+            test("positive number", () => {
+                expect(
+                    posInf.subtract(new Decimal128("1")).toString()
+                ).toStrictEqual("Infinity");
+            });
+            test("negative number", () => {
+                expect(
+                    posInf.subtract(new Decimal128("-1")).toString()
+                ).toStrictEqual("Infinity");
+            });
+            test("positive infinity", () => {
+                expect(posInf.subtract(posInf).toString()).toStrictEqual("NaN");
+            });
+            test("negative infinity", () => {
+                expect(posInf.subtract(negInf).toString()).toStrictEqual(
+                    "Infinity"
+                );
+            });
+        });
+        describe("negative infinity", () => {
+            test("positive number", () => {
+                expect(
+                    negInf.subtract(new Decimal128("1")).toString()
+                ).toStrictEqual("-Infinity");
+            });
+            test("negative number", () => {
+                expect(
+                    negInf.subtract(new Decimal128("-1")).toString()
+                ).toStrictEqual("-Infinity");
+            });
+            test("positive infinity", () => {
+                expect(negInf.subtract(posInf).toString()).toStrictEqual(
+                    "-Infinity"
+                );
+            });
+            test("negative infinity", () => {
+                expect(negInf.subtract(negInf).toString()).toStrictEqual("NaN");
+            });
+        });
+    });
+    describe("second argument", () => {
+        describe("positive infinity", () => {
+            test("finite", () => {
+                expect(
+                    new Decimal128("42").subtract(posInf).toString()
+                ).toStrictEqual("-Infinity");
+            });
+            test("positive infinity", () => {
+                expect(posInf.subtract(posInf).toString()).toStrictEqual("NaN");
+            });
+            test("negative infinity", () => {
+                expect(posInf.subtract(negInf).toString()).toStrictEqual(
+                    "Infinity"
+                );
+            });
+        });
+        describe("negative infinity", () => {
+            test("finite", () => {
+                expect(
+                    new Decimal128("42").subtract(negInf).toString()
+                ).toStrictEqual("Infinity");
+            });
+            test("positive infinity", () => {
+                expect(negInf.subtract(posInf).toString()).toStrictEqual(
+                    "-Infinity"
+                );
+            });
+            test("negative infinity", () => {
+                expect(negInf.subtract(negInf).toString()).toStrictEqual("NaN");
+            });
+        });
+    });
+});

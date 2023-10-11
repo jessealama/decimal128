@@ -17,4 +17,14 @@ describe("ceiling", function () {
     test("NaN", () => {
         expect(new Decimal128("NaN").ceil().toString()).toStrictEqual("NaN");
     });
+    test("positive infinity", () => {
+        expect(new Decimal128("Infinity").ceil().toString()).toStrictEqual(
+            "Infinity"
+        );
+    });
+    test("minus infinity", () => {
+        expect(new Decimal128("-Infinity").ceil().toString()).toStrictEqual(
+            "-Infinity"
+        );
+    });
 });
