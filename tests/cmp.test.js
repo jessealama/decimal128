@@ -84,4 +84,21 @@ describe("many digits", () => {
             ).toStrictEqual(undefined);
         });
     });
+    describe("minus zero", () => {
+        test("left hand", () => {
+            expect(new Decimal128("-0").cmp(new Decimal128("0"))).toStrictEqual(
+                0
+            );
+        });
+        test("right hand", () => {
+            expect(new Decimal128("0").cmp(new Decimal128("-0"))).toStrictEqual(
+                0
+            );
+        });
+        test("both arguments", () => {
+            expect(
+                new Decimal128("-0").cmp(new Decimal128("-0"))
+            ).toStrictEqual(0);
+        });
+    });
 });

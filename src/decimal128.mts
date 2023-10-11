@@ -29,8 +29,9 @@ const bigZero = BigInt(0);
  *
  * + removing any initial zeros
  * + removing any trailing zeros
- * + rewriting -0 to 0
  * + rewriting 0.0 to 0
+ *
+ * Sign is preserved. Thus, -0.0 (e.g.) gets normalized to -0.
  *
  * @param s A digit string
  *
@@ -41,11 +42,7 @@ const bigZero = BigInt(0);
  */
 function normalize(s: string): string {
     if (s.match(/^-/)) {
-        let n = normalize(s.substring(1));
-        if ("0" === n) {
-            return "0";
-        }
-        return "-" + n;
+        return "-" + normalize(s.substring(1));
     }
 
     let a = s.replace(/^0+/, "");
@@ -467,6 +464,8 @@ export class Decimal128 {
                 BigInt((this.isNegative ? "-" : "") + this.significand + "0"),
                 bigOne
             );
+        } else if (this.significand === "") {
+            this.rat = new Rational(0n, 1n);
         } else {
             this.rat = new Rational(
                 BigInt((this.isNegative ? "-" : "") + this.significand),
@@ -481,6 +480,10 @@ export class Decimal128 {
     toString(): string {
         if (this.isNaN) {
             return "NaN";
+        }
+
+        if (this.isZero()) {
+            return (this.isNegative ? "-" : "") + "0";
         }
 
         return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);

@@ -153,6 +153,11 @@ describe("constructor", () => {
                 ).toString()
             ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS));
         });
+        test("minus zero", () => {
+            let minusZero = new Decimal128("-0");
+            expect(minusZero.toString()).toStrictEqual("-0");
+            expect(minusZero.isNegative).toStrictEqual(true);
+        });
     });
 
     describe("exponential string syntax", () => {
@@ -225,6 +230,7 @@ describe("exponent and significand", () => {
     let data = [
         ["123.456", "123456", -3],
         ["0", "", 0],
+        ["-0", "", 0],
         ["0.0", "", 0],
         ["5", "5", 0],
         ["-123.456", "123456", -3],
