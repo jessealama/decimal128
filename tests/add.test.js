@@ -48,4 +48,21 @@ describe("addition" + "", () => {
     test("big plus two is not OK (too many significant digits)", () => {
         expect(() => big.add(two)).toThrow(RangeError);
     });
+    describe("NaN", () => {
+        test("NaN plus NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").add(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN plus number", () => {
+            expect(
+                new Decimal128("NaN").add(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number plus NaN", () => {
+            expect(
+                new Decimal128("1").add(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+    });
 });

@@ -245,4 +245,7 @@ describe("Intl.NumberFormat examples", () => {
             );
         });
     });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").round().toString()).toStrictEqual("NaN");
+    });
 });

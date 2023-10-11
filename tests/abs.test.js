@@ -11,4 +11,7 @@ describe("absolute value", function () {
             "123.456"
         );
     });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").abs().toString()).toStrictEqual("NaN");
+    });
 });

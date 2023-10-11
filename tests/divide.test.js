@@ -25,14 +25,26 @@ describe("division", () => {
             ).toStrictEqual(c);
         });
     }
-    test("divide by zero", () => {
-        expect(() =>
-            new Decimal128("123.456").divide(new Decimal128("0.0"))
-        ).toThrow(RangeError);
-    });
-    test("divide by negative zero", () => {
-        expect(() =>
-            new Decimal128("123.456").divide(new Decimal128("-0"))
-        ).toThrow(RangeError);
+    describe("NaN", () => {
+        test("NaN divided by NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").divide(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN divided by number is NaN", () => {
+            expect(
+                new Decimal128("NaN").divide(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number divided by NaN is NaN", () => {
+            expect(
+                new Decimal128("1").divide(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("divide by zero is NaN", () => {
+            expect(
+                new Decimal128("42").divide(new Decimal128("0")).toString()
+            ).toStrictEqual("NaN");
+        });
     });
 });

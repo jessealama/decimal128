@@ -172,7 +172,7 @@ function exponent(s: string): number {
 }
 
 interface Decimal128Constructor {
-    isNan: boolean;
+    isNaN: boolean;
     significand: string;
     exponent: bigint;
     isNegative: boolean;
@@ -183,7 +183,7 @@ function isInteger(x: Decimal128Constructor): boolean {
 }
 
 function validateConstructorData(x: Decimal128Constructor): void {
-    if (x.isNan) {
+    if (x.isNaN) {
         return; // no further validation needed
     }
 
@@ -207,7 +207,7 @@ function handleNan(s: string): Decimal128Constructor {
         significand: "",
         exponent: bigZero,
         isNegative: false,
-        isNan: true,
+        isNaN: true,
     };
 }
 function handleExponentialNotation(s: string): Decimal128Constructor {
@@ -227,7 +227,7 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
         significand: sg,
         exponent: BigInt(exp),
         isNegative: isNegative,
-        isNan: false,
+        isNaN: false,
     };
 }
 
@@ -293,7 +293,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
         significand: sg,
         exponent: BigInt(exp),
         isNegative: isNegative,
-        isNan: false,
+        isNaN: false,
     };
 }
 
@@ -401,7 +401,7 @@ type RoundingMode =
     | "halfTrunc";
 
 export class Decimal128 {
-    private readonly isNan: boolean;
+    public readonly isNaN: boolean;
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;
@@ -426,7 +426,7 @@ export class Decimal128 {
 
         validateConstructorData(data);
 
-        this.isNan = data.isNan;
+        this.isNaN = data.isNaN;
         this.significand = data.significand;
         this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
         this.isNegative = data.isNegative;
@@ -479,6 +479,10 @@ export class Decimal128 {
      * Returns a digit string representing this Decimal128.
      */
     toString(): string {
+        if (this.isNaN) {
+            return "NaN";
+        }
+
         return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
     }
 
@@ -579,7 +583,11 @@ export class Decimal128 {
      *
      * @param x
      */
-    cmp(x: Decimal128): -1 | 0 | 1 {
+    cmp(x: Decimal128): -1 | 0 | 1 | undefined {
+        if (this.isNaN || x.isNaN) {
+            return undefined;
+        }
+
         return this.rat.cmp(x.rat);
     }
 
@@ -589,6 +597,10 @@ export class Decimal128 {
      * @return {Decimal128} An integer (as a Decimal128 value).
      */
     truncate(): Decimal128 {
+        if (this.isNaN) {
+            return this;
+        }
+
         let [lhs] = this.toString().split(".");
         return new Decimal128(lhs);
     }
@@ -599,6 +611,10 @@ export class Decimal128 {
      * @param x
      */
     add(x: Decimal128): Decimal128 {
+        if (this.isNaN || x.isNaN) {
+            return new Decimal128("NaN");
+        }
+
         let resultRat = Rational.add(this.rat, x.rat);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
@@ -611,6 +627,10 @@ export class Decimal128 {
      * @param x
      */
     subtract(x: Decimal128): Decimal128 {
+        if (this.isNaN || x.isNaN) {
+            return new Decimal128("NaN");
+        }
+
         return new Decimal128(
             Rational.subtract(this.rat, x.rat).toDecimalPlaces(
                 MAX_SIGNIFICANT_DIGITS + 1
@@ -626,10 +646,18 @@ export class Decimal128 {
      * @param x
      */
     multiply(x: Decimal128): Decimal128 {
+        if (this.isNaN || x.isNaN) {
+            return new Decimal128("NaN");
+        }
+
         let resultRat = Rational.multiply(this.rat, x.rat);
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
+    }
+
+    private isZero(): boolean {
+        return this.significand === "";
     }
 
     /**
@@ -642,6 +670,14 @@ export class Decimal128 {
      * @param x
      */
     divide(x: Decimal128): Decimal128 {
+        if (this.isNaN || x.isNaN) {
+            return new Decimal128("NaN");
+        }
+
+        if (x.isZero()) {
+            return new Decimal128("NaN");
+        }
+
         return new Decimal128(
             Rational.divide(this.rat, x.rat).toDecimalPlaces(
                 MAX_SIGNIFICANT_DIGITS + 1
@@ -654,6 +690,10 @@ export class Decimal128 {
      * @param {RoundingMode} mode (default: ROUNDING_MODE_DEFAULT)
      */
     round(mode: RoundingMode = ROUNDING_MODE_DEFAULT): Decimal128 {
+        if (this.isNaN) {
+            return this;
+        }
+
         let s = this.toString();
         let [lhs, rhs] = s.split(".");
 

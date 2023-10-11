@@ -67,4 +67,21 @@ describe("many digits", () => {
             )
         ).toStrictEqual(-1);
     });
+    describe("NaN", () => {
+        test("NaN cmp NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").cmp(new Decimal128("NaN"))
+            ).toStrictEqual(undefined);
+        });
+        test("number cmp NaN is NaN", () => {
+            expect(
+                new Decimal128("1").cmp(new Decimal128("NaN"))
+            ).toStrictEqual(undefined);
+        });
+        test("NaN cmp number is NaN", () => {
+            expect(
+                new Decimal128("NaN").cmp(new Decimal128("1"))
+            ).toStrictEqual(undefined);
+        });
+    });
 });

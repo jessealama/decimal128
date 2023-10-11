@@ -69,3 +69,7 @@ describe("normalization", () => {
         });
     }
 });
+
+describe("NaN", () => {
+    expect(new Decimal128("NaN").toString()).toStrictEqual("NaN");
+});

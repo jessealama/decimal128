@@ -54,4 +54,21 @@ describe("multiplication", () => {
             )
         ).toThrow(RangeError);
     });
+    describe("NaN", () => {
+        test("NaN times NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").multiply(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number times NaN is NaN", () => {
+            expect(
+                new Decimal128("1").multiply(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN times number is NaN", () => {
+            expect(
+                new Decimal128("NaN").multiply(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
+    });
 });

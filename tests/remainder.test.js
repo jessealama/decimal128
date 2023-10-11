@@ -24,18 +24,37 @@ describe("remainder", () => {
         ).toStrictEqual("-0.35");
     });
     test("divide by zero", () => {
-        expect(() =>
-            new Decimal128("42").remainder(new Decimal128("0"))
-        ).toThrow(RangeError);
+        expect(
+            new Decimal128("42").remainder(new Decimal128("0")).toString()
+        ).toStrictEqual("NaN");
     });
     test("divide by minus zero", () => {
-        expect(() =>
-            new Decimal128("42").remainder(new Decimal128("-0"))
-        ).toThrow(RangeError);
+        expect(
+            new Decimal128("42").remainder(new Decimal128("-0")).toString()
+        ).toStrictEqual("NaN");
     });
     test("cleanly divides", () => {
         expect(
             new Decimal128("10").remainder(new Decimal128("5")).toString()
         ).toStrictEqual("0");
+    });
+    describe("NaN", () => {
+        test("NaN remainder NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN")
+                    .remainder(new Decimal128("NaN"))
+                    .toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number remainder NaN is NaN", () => {
+            expect(
+                new Decimal128("1").remainder(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN remainder number is NaN", () => {
+            expect(
+                new Decimal128("NaN").remainder(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
     });
 });

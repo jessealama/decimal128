@@ -12,4 +12,9 @@ describe("truncate", () => {
             expectDecimal128(new Decimal128(key).truncate(), value);
         });
     }
+    test("NaN", () => {
+        expect(new Decimal128("NaN").truncate().toString()).toStrictEqual(
+            "NaN"
+        );
+    });
 });

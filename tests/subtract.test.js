@@ -35,4 +35,21 @@ describe("subtraction", () => {
             new Decimal128("-" + bigDigits).subtract(new Decimal128("9"))
         ).toThrow(RangeError);
     });
+    describe("NaN", () => {
+        test("NaN minus NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").subtract(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN minus number", () => {
+            expect(
+                new Decimal128("NaN").subtract(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number minus NaN", () => {
+            expect(
+                new Decimal128("1").subtract(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+    });
 });

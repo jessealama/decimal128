@@ -14,4 +14,7 @@ describe("ceiling", function () {
     test("ceiling of an integer is unchanged", () => {
         expect(new Decimal128("123").ceil().toString()).toStrictEqual("123");
     });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").ceil().toString()).toStrictEqual("NaN");
+    });
 });
