@@ -86,5 +86,15 @@ describe("addition" + "", () => {
         test("minus infinity plus positive infinity", () => {
             expect(negInf.add(posInf).toString()).toStrictEqual("NaN");
         });
+        test("add number to positive infinity", () => {
+            expect(
+                new Decimal128("123.5").add(posInf).toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("add number to negative infinity", () => {
+            expect(new Decimal128("-2").add(negInf).toString()).toStrictEqual(
+                "-Infinity"
+            );
+        });
     });
 });

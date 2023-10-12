@@ -87,5 +87,25 @@ describe("division", () => {
                 negInf.divide(new Decimal128("-99.3")).toString()
             ).toStrictEqual("Infinity");
         });
+        test("positive number divided bv positive infinity", () => {
+            expect(
+                new Decimal128("123.5").divide(posInf).toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("positive number divided bv negative infinity", () => {
+            expect(
+                new Decimal128("123.5").divide(negInf).toString()
+            ).toStrictEqual("-Infinity");
+        });
+        test("negative number divided by positive infinity", () => {
+            expect(
+                new Decimal128("-2").divide(posInf).toString()
+            ).toStrictEqual("-Infinity");
+        });
+        test("negative number divided by negative infinity", () => {
+            expect(
+                new Decimal128("-2").divide(negInf).toString()
+            ).toStrictEqual("Infinity");
+        });
     });
 });

@@ -122,5 +122,11 @@ describe("many digits", () => {
         test("negative infinity both arguments", () => {
             expect(negInf.cmp(negInf)).toStrictEqual(0);
         });
+        test("compare number to positive infinity", () => {
+            expect(new Decimal128("1").cmp(posInf)).toStrictEqual(-1);
+        });
+        test("compare number to negative infinity", () => {
+            expect(new Decimal128("1").cmp(negInf)).toStrictEqual(1);
+        });
     });
 });

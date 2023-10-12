@@ -509,9 +509,6 @@ export class Decimal128 {
             return (this.isNegative ? "-" : "") + "0";
         }
 
-        if (!this.isFinite) {
-        }
-
         return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
     }
 
@@ -801,10 +798,6 @@ export class Decimal128 {
         if (!x.isFinite) {
             if (this.isNegative === x.isNegative) {
                 return new Decimal128("Infinity");
-            }
-
-            if (this.isNegative) {
-                return this;
             }
 
             return new Decimal128("-Infinity");
