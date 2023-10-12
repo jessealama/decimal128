@@ -48,4 +48,53 @@ describe("addition" + "", () => {
     test("big plus two is not OK (too many significant digits)", () => {
         expect(() => big.add(two)).toThrow(RangeError);
     });
+    describe("NaN", () => {
+        test("NaN plus NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").add(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN plus number", () => {
+            expect(
+                new Decimal128("NaN").add(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number plus NaN", () => {
+            expect(
+                new Decimal128("1").add(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+    });
+    describe("infinity", () => {
+        let posInf = new Decimal128("Infinity");
+        let negInf = new Decimal128("-Infinity");
+        test("positive infinity plus number", () => {
+            expect(posInf.add(one).toString()).toStrictEqual("Infinity");
+        });
+        test("negative infinity plus number", () => {
+            expect(negInf.add(one).toString()).toStrictEqual("-Infinity");
+        });
+        test("positive infinity plus positive infinity", () => {
+            expect(posInf.add(posInf).toString()).toStrictEqual("Infinity");
+        });
+        test("minus infinity plus minus infinity", () => {
+            expect(negInf.add(negInf).toString()).toStrictEqual("-Infinity");
+        });
+        test("positive infinity plus negative infinity", () => {
+            expect(posInf.add(negInf).toString()).toStrictEqual("NaN");
+        });
+        test("minus infinity plus positive infinity", () => {
+            expect(negInf.add(posInf).toString()).toStrictEqual("NaN");
+        });
+        test("add number to positive infinity", () => {
+            expect(
+                new Decimal128("123.5").add(posInf).toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("add number to negative infinity", () => {
+            expect(new Decimal128("-2").add(negInf).toString()).toStrictEqual(
+                "-Infinity"
+            );
+        });
+    });
 });

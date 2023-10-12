@@ -25,14 +25,87 @@ describe("division", () => {
             ).toStrictEqual(c);
         });
     }
-    test("divide by zero", () => {
-        expect(() =>
-            new Decimal128("123.456").divide(new Decimal128("0.0"))
-        ).toThrow(RangeError);
+    test("zero divided by zero", () => {
+        expect(
+            new Decimal128("0").divide(new Decimal128("0")).toString()
+        ).toStrictEqual("NaN");
     });
-    test("divide by negative zero", () => {
-        expect(() =>
-            new Decimal128("123.456").divide(new Decimal128("-0"))
-        ).toThrow(RangeError);
+    describe("NaN", () => {
+        test("NaN divided by NaN is NaN", () => {
+            expect(
+                new Decimal128("NaN").divide(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("NaN divided by number is NaN", () => {
+            expect(
+                new Decimal128("NaN").divide(new Decimal128("1")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("number divided by NaN is NaN", () => {
+            expect(
+                new Decimal128("1").divide(new Decimal128("NaN")).toString()
+            ).toStrictEqual("NaN");
+        });
+        test("divide by zero is NaN", () => {
+            expect(
+                new Decimal128("42").divide(new Decimal128("0")).toString()
+            ).toStrictEqual("NaN");
+        });
+    });
+    describe("infinity", () => {
+        let posInf = new Decimal128("Infinity");
+        let negInf = new Decimal128("-Infinity");
+        test("infinity divided by infinity is NaN", () => {
+            expect(posInf.divide(posInf).toString()).toStrictEqual("NaN");
+        });
+        test("infinity divided by negative infinity is NaN", () => {
+            expect(posInf.divide(negInf).toString()).toStrictEqual("NaN");
+        });
+        test("negative infinity divided by infinity is NaN", () => {
+            expect(negInf.divide(posInf).toString()).toStrictEqual("NaN");
+        });
+        test("negative infinity divided by positive infinity is NaN", () => {
+            expect(negInf.divide(posInf).toString()).toStrictEqual("NaN");
+        });
+        test("positive infinity divided by positive number", () => {
+            expect(
+                posInf.divide(new Decimal128("123.5")).toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("positive infinity divided by negative number", () => {
+            expect(
+                posInf.divide(new Decimal128("-2")).toString()
+            ).toStrictEqual("-Infinity");
+        });
+        test("minus infinity divided by positive number", () => {
+            expect(
+                negInf.divide(new Decimal128("17")).toString()
+            ).toStrictEqual("-Infinity");
+        });
+        test("minus infinity divided by negative number", () => {
+            expect(
+                negInf.divide(new Decimal128("-99.3")).toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("positive number divided bv positive infinity", () => {
+            expect(
+                new Decimal128("123.5").divide(posInf).toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("positive number divided bv negative infinity", () => {
+            expect(
+                new Decimal128("123.5").divide(negInf).toString()
+            ).toStrictEqual("-Infinity");
+        });
+        test("negative number divided by positive infinity", () => {
+            expect(
+                new Decimal128("-2").divide(posInf).toString()
+            ).toStrictEqual("-Infinity");
+        });
+        test("negative number divided by negative infinity", () => {
+            expect(
+                new Decimal128("-2").divide(negInf).toString()
+            ).toStrictEqual("Infinity");
+        });
     });
 });

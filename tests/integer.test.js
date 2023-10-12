@@ -22,4 +22,13 @@ describe("is-integer", () => {
     test("negative non-integer", () => {
         expect(new Decimal128("-987.654").isInteger()).toStrictEqual(false);
     });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").isInteger()).toStrictEqual(false);
+    });
+    test("positive infinity", () => {
+        expect(new Decimal128("Infinity").isInteger()).toStrictEqual(false);
+    });
+    test("negative infinity", () => {
+        expect(new Decimal128("-Infinity").isInteger()).toStrictEqual(false);
+    });
 });

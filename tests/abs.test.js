@@ -11,4 +11,20 @@ describe("absolute value", function () {
             "123.456"
         );
     });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").abs().toString()).toStrictEqual("NaN");
+    });
+    test("minus zero", () => {
+        expect(new Decimal128("-0").abs().toString()).toStrictEqual("0");
+    });
+    test("minus infinity", () => {
+        expect(new Decimal128("-Infinity").abs().toString()).toStrictEqual(
+            "Infinity"
+        );
+    });
+    test("positive infinity", () => {
+        expect(new Decimal128("Infinity").abs().toString()).toStrictEqual(
+            "Infinity"
+        );
+    });
 });

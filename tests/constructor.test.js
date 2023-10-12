@@ -153,6 +153,11 @@ describe("constructor", () => {
                 ).toString()
             ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS));
         });
+        test("minus zero", () => {
+            let minusZero = new Decimal128("-0");
+            expect(minusZero.toString()).toStrictEqual("-0");
+            expect(minusZero.isNegative).toStrictEqual(true);
+        });
     });
 
     describe("exponential string syntax", () => {
@@ -225,6 +230,7 @@ describe("exponent and significand", () => {
     let data = [
         ["123.456", "123456", -3],
         ["0", "", 0],
+        ["-0", "", 0],
         ["0.0", "", 0],
         ["5", "5", 0],
         ["-123.456", "123456", -3],
@@ -267,5 +273,62 @@ describe("exponent and significand", () => {
                 "1.00000000000000000000000000000000000000000000000001"
             ).toString()
         ).toStrictEqual("1");
+    });
+});
+
+describe("NaN", () => {
+    describe("does not throw", () => {
+        expect(new Decimal128("NaN")).toBeInstanceOf(Decimal128);
+    });
+    describe("minus NaN", () => {
+        expect(new Decimal128("-NaN")).toBeInstanceOf(Decimal128);
+    });
+    describe("lowercase", () => {
+        expect(new Decimal128("nan")).toBeInstanceOf(Decimal128);
+    });
+    describe("minus lowercase", () => {
+        expect(new Decimal128("-nan")).toBeInstanceOf(Decimal128);
+    });
+    describe("weird case", () => {
+        expect(new Decimal128("-nAN")).toBeInstanceOf(Decimal128);
+    });
+});
+
+describe("infinity", () => {
+    describe("inf", () => {
+        expect(new Decimal128("inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("-inf", () => {
+        expect(new Decimal128("-inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("infinity", () => {
+        expect(new Decimal128("infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("-infinity", () => {
+        expect(new Decimal128("-infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("Infinity", () => {
+        expect(new Decimal128("Infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("-Infinity", () => {
+        expect(new Decimal128("-Infinity")).toBeInstanceOf(Decimal128);
+    });
+    describe("Inf", () => {
+        expect(new Decimal128("Inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("-Inf", () => {
+        expect(new Decimal128("-Inf")).toBeInstanceOf(Decimal128);
+    });
+    describe("INFINITY", () => {
+        expect(new Decimal128("INFINITY")).toBeInstanceOf(Decimal128);
+    });
+    describe("-INFINITY", () => {
+        expect(new Decimal128("-INFINITY")).toBeInstanceOf(Decimal128);
+    });
+    describe("INF", () => {
+        expect(new Decimal128("INF")).toBeInstanceOf(Decimal128);
+    });
+    describe("-INF", () => {
+        expect(new Decimal128("-INF")).toBeInstanceOf(Decimal128);
     });
 });

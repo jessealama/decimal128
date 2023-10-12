@@ -1,5 +1,17 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 
+const roundingModes = [
+    "ceil",
+    "floor",
+    "expand",
+    "trunc",
+    "halfEven",
+    "halfExpand",
+    "halfCeil",
+    "halfFloor",
+    "halfTrunc",
+];
+
 describe("rounding", () => {
     describe("no arguments (round to integer)", () => {
         test("positive odd", () => {
@@ -244,5 +256,34 @@ describe("Intl.NumberFormat examples", () => {
                 "2"
             );
         });
+    });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").round().toString()).toStrictEqual("NaN");
+    });
+    describe("infinity", () => {
+        test(`positive infinity (no argument)`, () => {
+            expect(new Decimal128("Infinity").round().toString()).toStrictEqual(
+                "Infinity"
+            );
+        });
+        for (let roundingMode of roundingModes) {
+            test(`positive infinity (${roundingMode})`, () => {
+                expect(
+                    new Decimal128("Infinity").round(roundingMode).toString()
+                ).toStrictEqual("Infinity");
+            });
+        }
+        test(`negative infinity (no argument)`, () => {
+            expect(
+                new Decimal128("-Infinity").round().toString()
+            ).toStrictEqual("-Infinity");
+        });
+        for (let roundingMode of roundingModes) {
+            test(`negative infinity (${roundingMode})`, () => {
+                expect(
+                    new Decimal128("-Infinity").round(roundingMode).toString()
+                ).toStrictEqual("-Infinity");
+            });
+        }
     });
 });
