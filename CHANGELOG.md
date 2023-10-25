@@ -13,4 +13,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Suuport for `pow` (raise a decimal to a power)
+- `pow` for raising a decimal to a power (#43)
