@@ -37,6 +37,33 @@ describe("rounding", () => {
             expect(new Decimal128("1.1").round().toString()).toStrictEqual("1");
         });
     });
+    describe("round after a certain number of decimal digits", () => {
+        test("multiple digits", () => {
+            expect(new Decimal128("42.345").round(2).toString()).toStrictEqual(
+                "42.35"
+            );
+        });
+        test("more digits than are available", () => {
+            expect(new Decimal128("1.5").round(1).toString()).toStrictEqual(
+                "1.5"
+            );
+        });
+        test("more digits than are available", () => {
+            expect(new Decimal128("1.5").round(2).toString()).toStrictEqual(
+                "1.5"
+            );
+        });
+        test("negative odd", () => {
+            expect(new Decimal128("-1.5").round(1).toString()).toStrictEqual(
+                "-1.5"
+            );
+        });
+        test("round down (positive)", () => {
+            expect(new Decimal128("1.1").round(6).toString()).toStrictEqual(
+                "1.1"
+            );
+        });
+    });
 });
 
 describe("Intl.NumberFormat examples", () => {
@@ -47,103 +74,131 @@ describe("Intl.NumberFormat examples", () => {
     let onePointFive = new Decimal128("1.5");
     describe("ceil", () => {
         test("-1.5", () => {
-            expect(minusOnePointFive.round("ceil").toString()).toStrictEqual(
+            expect(minusOnePointFive.round(0, "ceil").toString()).toStrictEqual(
                 "-1"
             );
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("ceil").toString()).toStrictEqual("1");
+            expect(zeroPointFour.round(0, "ceil").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("ceil").toString()).toStrictEqual("1");
+            expect(zeroPointFive.round(0, "ceil").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("ceil").toString()).toStrictEqual("1");
+            expect(zeroPointSix.round(0, "ceil").toString()).toStrictEqual("1");
         });
         test("1.5", () => {
-            expect(onePointFive.round("ceil").toString()).toStrictEqual("2");
+            expect(onePointFive.round(0, "ceil").toString()).toStrictEqual("2");
         });
     });
     describe("floor", () => {
         test("-1.5", () => {
-            expect(minusOnePointFive.round("floor").toString()).toStrictEqual(
-                "-2"
-            );
+            expect(
+                minusOnePointFive.round(0, "floor").toString()
+            ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("floor").toString()).toStrictEqual("0");
+            expect(zeroPointFour.round(0, "floor").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("floor").toString()).toStrictEqual("0");
+            expect(zeroPointFive.round(0, "floor").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("floor").toString()).toStrictEqual("0");
+            expect(zeroPointSix.round(0, "floor").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("1.5", () => {
-            expect(onePointFive.round("floor").toString()).toStrictEqual("1");
+            expect(onePointFive.round(0, "floor").toString()).toStrictEqual(
+                "1"
+            );
         });
     });
     describe("expand", () => {
         test("-1.5", () => {
-            expect(minusOnePointFive.round("expand").toString()).toStrictEqual(
-                "-2"
-            );
+            expect(
+                minusOnePointFive.round(0, "expand").toString()
+            ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("expand").toString()).toStrictEqual("1");
+            expect(zeroPointFour.round(0, "expand").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("expand").toString()).toStrictEqual("1");
+            expect(zeroPointFive.round(0, "expand").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("expand").toString()).toStrictEqual("1");
+            expect(zeroPointSix.round(0, "expand").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("1.5", () => {
-            expect(onePointFive.round("expand").toString()).toStrictEqual("2");
+            expect(onePointFive.round(0, "expand").toString()).toStrictEqual(
+                "2"
+            );
         });
     });
     describe("trunc", () => {
         test("-1.5", () => {
-            expect(minusOnePointFive.round("trunc").toString()).toStrictEqual(
-                "-1"
-            );
+            expect(
+                minusOnePointFive.round(0, "trunc").toString()
+            ).toStrictEqual("-1");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("trunc").toString()).toStrictEqual("0");
+            expect(zeroPointFour.round(0, "trunc").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("trunc").toString()).toStrictEqual("0");
+            expect(zeroPointFive.round(0, "trunc").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("trunc").toString()).toStrictEqual("0");
+            expect(zeroPointSix.round(0, "trunc").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("1.5", () => {
-            expect(onePointFive.round("trunc").toString()).toStrictEqual("1");
+            expect(onePointFive.round(0, "trunc").toString()).toStrictEqual(
+                "1"
+            );
         });
     });
     describe("halfCeil", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round("halfCeil").toString()
+                minusOnePointFive.round(0, "halfCeil").toString()
             ).toStrictEqual("-1");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("halfCeil").toString()).toStrictEqual(
+            expect(zeroPointFour.round(0, "halfCeil").toString()).toStrictEqual(
                 "0"
             );
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("halfCeil").toString()).toStrictEqual(
+            expect(zeroPointFive.round(0, "halfCeil").toString()).toStrictEqual(
                 "1"
             );
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("halfCeil").toString()).toStrictEqual(
+            expect(zeroPointSix.round(0, "halfCeil").toString()).toStrictEqual(
                 "1"
             );
         });
         test("1.5", () => {
-            expect(onePointFive.round("halfCeil").toString()).toStrictEqual(
+            expect(onePointFive.round(0, "halfCeil").toString()).toStrictEqual(
                 "2"
             );
         });
@@ -151,26 +206,26 @@ describe("Intl.NumberFormat examples", () => {
     describe("halfFloor", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round("halfFloor").toString()
+                minusOnePointFive.round(0, "halfFloor").toString()
             ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("halfFloor").toString()).toStrictEqual(
-                "0"
-            );
+            expect(
+                zeroPointFour.round(0, "halfFloor").toString()
+            ).toStrictEqual("0");
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("halfFloor").toString()).toStrictEqual(
-                "0"
-            );
+            expect(
+                zeroPointFive.round(0, "halfFloor").toString()
+            ).toStrictEqual("0");
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("halfFloor").toString()).toStrictEqual(
+            expect(zeroPointSix.round(0, "halfFloor").toString()).toStrictEqual(
                 "1"
             );
         });
         test("1.5", () => {
-            expect(onePointFive.round("halfFloor").toString()).toStrictEqual(
+            expect(onePointFive.round(0, "halfFloor").toString()).toStrictEqual(
                 "1"
             );
         });
@@ -179,53 +234,53 @@ describe("Intl.NumberFormat examples", () => {
         let opts = { "rounding-mode": "halfExpand" };
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round("halfExpand").toString()
+                minusOnePointFive.round(0, "halfExpand").toString()
             ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("halfExpand").toString()).toStrictEqual(
-                "0"
-            );
+            expect(
+                zeroPointFour.round(0, "halfExpand").toString()
+            ).toStrictEqual("0");
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("halfExpand").toString()).toStrictEqual(
-                "1"
-            );
+            expect(
+                zeroPointFive.round(0, "halfExpand").toString()
+            ).toStrictEqual("1");
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("halfExpand").toString()).toStrictEqual(
-                "1"
-            );
+            expect(
+                zeroPointSix.round(0, "halfExpand").toString()
+            ).toStrictEqual("1");
         });
         test("1.5", () => {
-            expect(onePointFive.round("halfExpand").toString()).toStrictEqual(
-                "2"
-            );
+            expect(
+                onePointFive.round(0, "halfExpand").toString()
+            ).toStrictEqual("2");
         });
     });
     describe("halfTrunc", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round("halfTrunc").toString()
+                minusOnePointFive.round(0, "halfTrunc").toString()
             ).toStrictEqual("-1");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("halfTrunc").toString()).toStrictEqual(
-                "0"
-            );
+            expect(
+                zeroPointFour.round(0, "halfTrunc").toString()
+            ).toStrictEqual("0");
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("halfTrunc").toString()).toStrictEqual(
-                "0"
-            );
+            expect(
+                zeroPointFive.round(0, "halfTrunc").toString()
+            ).toStrictEqual("0");
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("halfTrunc").toString()).toStrictEqual(
+            expect(zeroPointSix.round(0, "halfTrunc").toString()).toStrictEqual(
                 "1"
             );
         });
         test("1.5", () => {
-            expect(onePointFive.round("halfTrunc").toString()).toStrictEqual(
+            expect(onePointFive.round(0, "halfTrunc").toString()).toStrictEqual(
                 "1"
             );
         });
@@ -233,26 +288,26 @@ describe("Intl.NumberFormat examples", () => {
     describe("halfEven", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round("halfEven").toString()
+                minusOnePointFive.round(0, "halfEven").toString()
             ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(zeroPointFour.round("halfEven").toString()).toStrictEqual(
+            expect(zeroPointFour.round(0, "halfEven").toString()).toStrictEqual(
                 "0"
             );
         });
         test("0.5", () => {
-            expect(zeroPointFive.round("halfEven").toString()).toStrictEqual(
+            expect(zeroPointFive.round(0, "halfEven").toString()).toStrictEqual(
                 "0"
             );
         });
         test("0.6", () => {
-            expect(zeroPointSix.round("halfEven").toString()).toStrictEqual(
+            expect(zeroPointSix.round(0, "halfEven").toString()).toStrictEqual(
                 "1"
             );
         });
         test("1.5", () => {
-            expect(onePointFive.round("halfEven").toString()).toStrictEqual(
+            expect(onePointFive.round(0, "halfEven").toString()).toStrictEqual(
                 "2"
             );
         });
@@ -261,29 +316,33 @@ describe("Intl.NumberFormat examples", () => {
         expect(new Decimal128("NaN").round().toString()).toStrictEqual("NaN");
     });
     describe("infinity", () => {
+        let posInf = new Decimal128("Infinity");
+        let negInf = new Decimal128("-Infinity");
         test(`positive infinity (no argument)`, () => {
-            expect(new Decimal128("Infinity").round().toString()).toStrictEqual(
-                "Infinity"
-            );
+            expect(posInf.round().toString()).toStrictEqual("Infinity");
         });
         for (let roundingMode of roundingModes) {
             test(`positive infinity (${roundingMode})`, () => {
-                expect(
-                    new Decimal128("Infinity").round(roundingMode).toString()
-                ).toStrictEqual("Infinity");
+                expect(posInf.round(0, roundingMode).toString()).toStrictEqual(
+                    "Infinity"
+                );
             });
         }
         test(`negative infinity (no argument)`, () => {
-            expect(
-                new Decimal128("-Infinity").round().toString()
-            ).toStrictEqual("-Infinity");
+            expect(negInf.round().toString()).toStrictEqual("-Infinity");
         });
         for (let roundingMode of roundingModes) {
             test(`negative infinity (${roundingMode})`, () => {
-                expect(
-                    new Decimal128("-Infinity").round(roundingMode).toString()
-                ).toStrictEqual("-Infinity");
+                expect(negInf.round(0, roundingMode).toString()).toStrictEqual(
+                    "-Infinity"
+                );
             });
         }
+        test("rounding positive a certain number of digits makes no difference", () => {
+            expect(posInf.round(2).toString()).toStrictEqual("Infinity");
+        });
+        test("rounding negative infinity a certain number of digits makes no difference", () => {
+            expect(negInf.round(2).toString()).toStrictEqual("-Infinity");
+        });
     });
 });
