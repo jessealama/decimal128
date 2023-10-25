@@ -812,10 +812,30 @@ export class Decimal128 {
 
     /**
      *
+     * @param numDecimalDigits
      * @param {RoundingMode} mode (default: ROUNDING_MODE_DEFAULT)
      */
-    round(mode: RoundingMode = ROUNDING_MODE_DEFAULT): Decimal128 {
+    round(
+        numDecimalDigits: number = 0,
+        mode: RoundingMode = ROUNDING_MODE_DEFAULT
+    ): Decimal128 {
+        if (!Number.isSafeInteger(numDecimalDigits)) {
+            throw new TypeError(
+                "Argument for number of decimal digits must be a safe integer"
+            );
+        }
+
+        if (numDecimalDigits < 0) {
+            throw new RangeError(
+                "Argument for number of decimal digits must be non-negative"
+            );
+        }
+
         if (this.isNaN) {
+            return this;
+        }
+
+        if (!this.isFinite) {
             return this;
         }
 
@@ -823,11 +843,17 @@ export class Decimal128 {
         let [lhs, rhs] = s.split(".");
 
         if (undefined === rhs) {
-            return this;
+            rhs = "";
         }
 
-        let finalIntegerDigit = parseInt(lhs.charAt(lhs.length - 1)) as Digit;
-        let firstDecimalDigit = parseInt(rhs.charAt(0)) as Digit;
+        rhs = rhs + "0".repeat(numDecimalDigits);
+
+        let finalIntegerDigit = parseInt(
+            numDecimalDigits > 0
+                ? rhs.charAt(numDecimalDigits - 1)
+                : lhs.charAt(lhs.length - 1)
+        ) as Digit;
+        let firstDecimalDigit = parseInt(rhs.charAt(numDecimalDigits)) as Digit;
         let roundedFinalDigit = roundIt(
             this.isNegative,
             finalIntegerDigit,
@@ -835,7 +861,12 @@ export class Decimal128 {
             mode
         );
         return new Decimal128(
-            lhs.substring(0, lhs.length - 1) + `${roundedFinalDigit}`
+            numDecimalDigits > 0
+                ? lhs +
+                  "." +
+                  rhs.substring(0, numDecimalDigits - 1) +
+                  `${roundedFinalDigit}`
+                : lhs.substring(0, lhs.length - 1) + `${roundedFinalDigit}`
         );
     }
 
