@@ -21,7 +21,6 @@ const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
 
 const bigTen = BigInt(10);
-const bigOne = BigInt(1);
 const bigZero = BigInt(0);
 
 /**
@@ -171,7 +170,7 @@ function exponent(s: string): number {
 interface Decimal128Constructor {
     isNaN: boolean;
     isFinite: boolean;
-    significand: string;
+    significand: bigint;
     exponent: bigint;
     isNegative: boolean;
 }
@@ -185,7 +184,7 @@ function validateConstructorData(x: Decimal128Constructor): void {
         return; // no further validation needed
     }
 
-    let numSigDigits = countSignificantDigits(x.significand);
+    let numSigDigits = countSignificantDigits(x.significand.toString());
 
     if (isInteger(x) && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
         throw new RangeError("Integer too large");
@@ -202,7 +201,7 @@ function validateConstructorData(x: Decimal128Constructor): void {
 
 function handleNan(s: string): Decimal128Constructor {
     return {
-        significand: "",
+        significand: bigZero,
         exponent: bigZero,
         isNegative: !!s.match(/^-/),
         isNaN: true,
@@ -223,7 +222,7 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     }
 
     return {
-        significand: sg,
+        significand: BigInt(sg),
         exponent: BigInt(exp),
         isNegative: isNegative,
         isNaN: false,
@@ -290,7 +289,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     }
 
     return {
-        significand: sg,
+        significand: BigInt(sg),
         exponent: BigInt(exp),
         isNegative: isNegative,
         isNaN: false,
@@ -300,7 +299,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
 
 function handleInfinity(s: string): Decimal128Constructor {
     return {
-        significand: "",
+        significand: bigZero,
         exponent: bigZero,
         isNegative: !!s.match(/^-/),
         isNaN: false,
@@ -414,15 +413,14 @@ type RoundingMode =
 export class Decimal128 {
     public readonly isNaN: boolean;
     public readonly isFinite: boolean;
-    public readonly significand: string;
-    public readonly exponent: number;
+    public readonly significand: bigint;
+    public readonly exponent: bigint;
     public readonly isNegative: boolean;
     private readonly digitStrRegExp =
         /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
     private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
     private readonly nanRegExp = /^-?nan$/i;
     private readonly infRegExp = /^-?inf(inity)?$/i;
-    private readonly rat;
 
     constructor(n: string) {
         let data = undefined;
@@ -444,53 +442,20 @@ export class Decimal128 {
         this.isNaN = data.isNaN;
         this.isFinite = data.isFinite;
         this.significand = data.significand;
-        this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
+        this.exponent = BigInt(data.exponent.toString());
         this.isNegative = data.isNegative;
+    }
 
-        if ("1" === this.significand) {
-            // power of ten
-            if (this.exponent < 0) {
-                this.rat = new Rational(
-                    bigOne,
-                    BigInt(
-                        (this.isNegative ? "-" : "") +
-                            "1" +
-                            "0".repeat(0 - this.exponent)
-                    )
-                );
-            } else if (this.exponent === 0) {
-                this.rat = new Rational(
-                    BigInt(this.isNegative ? -1 : 1),
-                    bigOne
-                );
-            } else {
-                this.rat = new Rational(
-                    BigInt(
-                        (this.isNegative ? "-" : "") +
-                            "1" +
-                            "0".repeat(this.exponent)
-                    ),
-                    bigOne
-                );
-            }
-        } else if (this.exponent < 0) {
-            this.rat = new Rational(
-                BigInt((this.isNegative ? "-" : "") + this.significand),
-                bigTen ** BigInt(0 - this.exponent)
-            );
-        } else if (this.exponent === 1) {
-            this.rat = new Rational(
-                BigInt((this.isNegative ? "-" : "") + this.significand + "0"),
-                bigOne
-            );
-        } else if (this.significand === "") {
-            this.rat = new Rational(0n, 1n);
-        } else {
-            this.rat = new Rational(
-                BigInt((this.isNegative ? "-" : "") + this.significand),
-                bigTen ** BigInt(this.exponent)
-            );
+    normalize(): Decimal128 {
+        let significand = this.significand;
+        let exp = this.exponent;
+
+        while (0n === significand % 10n) {
+            significand /= 10n;
+            significand++;
         }
+
+        return new Decimal128(`${significand}e${exp}`);
     }
 
     /**
@@ -509,7 +474,7 @@ export class Decimal128 {
             return (this.isNegative ? "-" : "") + "0";
         }
 
-        return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
+        return `${this.significand}E${this.exponent}`;
     }
 
     /**
@@ -519,9 +484,7 @@ export class Decimal128 {
     toExponentialString(): string {
         return (
             (this.isNegative ? "-" : "") +
-            (this.significand === "" ? "0" : this.significand) +
-            "E" +
-            this.exponent
+            `${this.significand}E${this.exponent}`
         );
     }
 
@@ -634,7 +597,42 @@ export class Decimal128 {
             return x.isNegative ? 1 : -1;
         }
 
-        return this.rat.cmp(x.rat);
+        if (this.isNegative) {
+            if (x.isNegative) {
+                return x.negate().cmp(this.negate());
+            }
+
+            return 1;
+        }
+
+        if (x.isNegative) {
+            return -1;
+        }
+
+        let ourExponent = this.exponent;
+        let theirExponent = x.exponent;
+        let ourSignificand = this.significand;
+        let theirSignificand = x.significand;
+
+        while (ourExponent < theirExponent) {
+            ourSignificand *= 10n;
+            ourExponent++;
+        }
+
+        while (theirExponent < ourExponent) {
+            theirSignificand *= 10n;
+            theirExponent++;
+        }
+
+        if (ourSignificand < theirSignificand) {
+            return -1;
+        }
+
+        if (theirSignificand < ourSignificand) {
+            return 1;
+        }
+
+        return 0;
     }
 
     /**
@@ -676,10 +674,18 @@ export class Decimal128 {
         if (!x.isFinite) {
             return x;
         }
-        let resultRat = Rational.add(this.rat, x.rat);
-        return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
-        );
+
+        let ourExponent = this.exponent;
+        let theirExponent = x.exponent;
+        let ourSignificand = this.significand;
+        let theirSignificand = x.significand;
+        let preferredExponent =
+            ourExponent > theirExponent ? theirExponent : ourExponent;
+        let resultSignificant =
+            ourSignificand * bigTen ** (ourExponent - preferredExponent) +
+            theirSignificand * bigTen ** (theirExponent - preferredExponent);
+
+        return new Decimal128(`${resultSignificant}E${preferredExponent}`);
     }
 
     /**
@@ -688,31 +694,7 @@ export class Decimal128 {
      * @param x
      */
     subtract(x: Decimal128): Decimal128 {
-        if (this.isNaN || x.isNaN) {
-            return new Decimal128("NaN");
-        }
-
-        if (!this.isFinite) {
-            if (!x.isFinite) {
-                if (this.isNegative === x.isNegative) {
-                    return new Decimal128("NaN");
-                }
-
-                return this;
-            }
-
-            return this;
-        }
-
-        if (!x.isFinite) {
-            return x.negate();
-        }
-
-        return new Decimal128(
-            Rational.subtract(this.rat, x.rat).toDecimalPlaces(
-                MAX_SIGNIFICANT_DIGITS + 1
-            )
-        );
+        return this.add(x.negate());
     }
 
     /**
@@ -751,14 +733,27 @@ export class Decimal128 {
             return new Decimal128("-Infinity");
         }
 
-        let resultRat = Rational.multiply(this.rat, x.rat);
-        return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
-        );
+        let ourExponent = this.exponent;
+        let theirExponent = x.exponent;
+        let ourSignificand = this.significand;
+        let theirSignificand = x.significand;
+        let resultExponent = ourExponent + theirExponent;
+        let resultSignificand = ourSignificand * theirSignificand;
+        return new Decimal128(`${resultSignificand}E${resultExponent}`);
     }
 
     private isZero(): boolean {
-        return this.isFinite && this.significand === "";
+        return !this.isNaN && this.isFinite && this.significand === bigZero;
+    }
+
+    private toRational(): Rational {
+        let exp = this.exponent;
+
+        if (exp >= 0) {
+            return new Rational(this.significand * bigTen ** exp, 1n);
+        }
+
+        return new Rational(this.significand, bigTen ** (0n - exp));
     }
 
     /**
@@ -803,11 +798,10 @@ export class Decimal128 {
             return new Decimal128("-Infinity");
         }
 
-        return new Decimal128(
-            Rational.divide(this.rat, x.rat).toDecimalPlaces(
-                MAX_SIGNIFICANT_DIGITS + 1
-            )
-        );
+        let ourRatio = this.toRational();
+        let theirRatio = x.toRational();
+        let q = Rational.divide(ourRatio, theirRatio);
+        return new Decimal128(q.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS));
     }
 
     /**
@@ -878,5 +872,29 @@ export class Decimal128 {
 
         let q = this.divide(d).round();
         return this.subtract(d.multiply(q)).abs();
+    }
+
+    reciprocal(): Decimal128 {
+        return new Decimal128("1").divide(this);
+    }
+
+    pow(n: Decimal128): Decimal128
+    {
+        if (!n.isInteger()) {
+            throw new TypeError("Exponent must be an integer");
+        }
+
+        if (n.isNegative) {
+            return this.pow(n.negate()).reciprocal();
+        }
+
+        let i = new Decimal128("0");
+        let result: Decimal128 = this;
+        while (i.cmp(n) === -1) {
+            result = result.multiply(this);
+            i = i.add(new Decimal128("1"));
+        }
+
+        return result;
     }
 }
