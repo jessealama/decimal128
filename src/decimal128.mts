@@ -797,10 +797,10 @@ export class Decimal128 {
 
         if (!x.isFinite) {
             if (this.isNegative === x.isNegative) {
-                return new Decimal128("Infinity");
+                return new Decimal128("0");
             }
 
-            return new Decimal128("-Infinity");
+            return new Decimal128("-0");
         }
 
         return new Decimal128(
@@ -878,5 +878,29 @@ export class Decimal128 {
 
         let q = this.divide(d).round();
         return this.subtract(d.multiply(q)).abs();
+    }
+
+    reciprocal(): Decimal128 {
+        return new Decimal128("1").divide(this);
+    }
+
+    pow(n: Decimal128): Decimal128 {
+        if (!n.isInteger()) {
+            throw new TypeError("Exponent must be an integer");
+        }
+
+        if (n.isNegative) {
+            return this.pow(n.negate()).reciprocal();
+        }
+
+        let one = new Decimal128("1");
+        let i = new Decimal128("0");
+        let result: Decimal128 = one;
+        while (i.cmp(n) === -1) {
+            result = result.multiply(this);
+            i = i.add(one);
+        }
+
+        return result;
     }
 }

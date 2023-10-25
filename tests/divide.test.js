@@ -90,22 +90,22 @@ describe("division", () => {
         test("positive number divided bv positive infinity", () => {
             expect(
                 new Decimal128("123.5").divide(posInf).toString()
-            ).toStrictEqual("Infinity");
+            ).toStrictEqual("0");
         });
         test("positive number divided bv negative infinity", () => {
             expect(
                 new Decimal128("123.5").divide(negInf).toString()
-            ).toStrictEqual("-Infinity");
+            ).toStrictEqual("-0");
         });
         test("negative number divided by positive infinity", () => {
             expect(
                 new Decimal128("-2").divide(posInf).toString()
-            ).toStrictEqual("-Infinity");
+            ).toStrictEqual("-0");
         });
         test("negative number divided by negative infinity", () => {
             expect(
                 new Decimal128("-2").divide(negInf).toString()
-            ).toStrictEqual("Infinity");
+            ).toStrictEqual("0");
         });
     });
 });
