@@ -854,20 +854,20 @@ export class Decimal128 {
             return new Decimal128("NaN");
         }
 
-        if (this.isNegative) {
-            return this.negate().remainder(d).negate();
-        }
-
-        if (d.isNegative) {
-            return this.remainder(d.negate());
-        }
-
         if (!this.isFinite) {
             return new Decimal128("NaN");
         }
 
         if (!d.isFinite) {
             return this;
+        }
+
+        if (this.isNegative) {
+            return this.negate().remainder(d).negate();
+        }
+
+        if (d.isNegative) {
+            return this.remainder(d.negate());
         }
 
         let q = this.divide(d).round();
