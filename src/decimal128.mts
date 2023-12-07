@@ -76,17 +76,38 @@ function normalize(s: string): string {
 function significand(s: string): string {
     if (s.match(/^-/)) {
         return significand(s.substring(1));
-    } else if (s.match(/^0[.]/)) {
-        return significand(s.substring(2));
-    } else if (s.match(/[.]/)) {
-        return significand(s.replace(/[.]/, ""));
-    } else if (s.match(/^0+/)) {
-        return significand(s.replace(/^0+/, ""));
-    } else if (s.match(/0+$/)) {
-        return significand(s.replace(/0+$/, ""));
-    } else {
-        return s;
     }
+
+    if (s.match(/^0+[.]/)) {
+        return significand(s.replace(/^0+[.]/, ""));
+    }
+
+    if (s.match(/^0+/)) {
+        let noLeadingZeroes = s.replace(/^0+/, "");
+        if ("" === noLeadingZeroes) {
+            return "0";
+        }
+
+        if (noLeadingZeroes.match(/^[.]/)) {
+            return significand("0" + noLeadingZeroes);
+        }
+
+        return significand(noLeadingZeroes);
+    }
+
+    if (s.match(/^0[.]/)) {
+        return s.substring(2);
+    }
+
+    if (s.match(/[.]/)) {
+        return s.replace(/[.]/, "");
+    }
+
+    if (s.match(/0+$/)) {
+        return significand(s.replace(/0+$/, ""));
+    }
+
+    return s;
 }
 
 function cutoffAfterSignificantDigits(s: string, n: number): string {
@@ -153,26 +174,36 @@ function propagateCarryFromRight(s: string): string {
 function exponent(s: string): number {
     if (s.match(/^-/)) {
         return exponent(s.substring(1));
-    } else if (s.match(/[.]/)) {
+    }
+
+    if (s.match(/^0+[^0.]/)) {
+        // eliminate leading zeros
+        return exponent(s.replace(/^0+/, ""));
+    }
+
+    if (s.match(/[.]/)) {
         let rhs = s.split(".")[1];
         return 0 - rhs.length;
-    } else if (s === "0") {
-        return 0;
-    } else {
-        let m = s.match(/0+$/);
-        if (m) {
-            return m[0].length;
-        } else {
-            return 0;
-        }
     }
+
+    if (s.match(/^0+$/) || s.match(/^0+$/)) {
+        return 0;
+    }
+
+    let trailingZeros = s.match(/0+$/);
+
+    if (trailingZeros) {
+        return trailingZeros[0].length;
+    }
+
+    return 0;
 }
 
 interface Decimal128Constructor {
     isNaN: boolean;
     isFinite: boolean;
     significand: string;
-    exponent: bigint;
+    exponent: number;
     isNegative: boolean;
 }
 
@@ -203,7 +234,7 @@ function validateConstructorData(x: Decimal128Constructor): void {
 function handleNan(s: string): Decimal128Constructor {
     return {
         significand: "",
-        exponent: bigZero,
+        exponent: 0,
         isNegative: !!s.match(/^-/),
         isNaN: true,
         isFinite: false,
@@ -224,7 +255,7 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
 
     return {
         significand: sg,
-        exponent: BigInt(exp),
+        exponent: parseInt(exp),
         isNegative: isNegative,
         isNaN: false,
         isFinite: true,
@@ -233,11 +264,10 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
 
 function handleDecimalNotation(s: string): Decimal128Constructor {
     let withoutUnderscores = s.replace(/_/g, "");
-    let normalized = normalize(withoutUnderscores);
-    let isNegative = !!normalized.match(/^-/);
-    let sg = significand(normalized);
-    let exp = exponent(normalized);
-    let numSigDigits = countSignificantDigits(normalized);
+    let isNegative = !!withoutUnderscores.match(/^-/);
+    let sg = significand(withoutUnderscores);
+    let exp = exponent(withoutUnderscores);
+    let numSigDigits = countSignificantDigits(withoutUnderscores);
     let isInteger = exp >= 0;
 
     if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
@@ -246,7 +276,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
         if (lastDigit === 5) {
             if (penultimateDigit % 2 === 0) {
                 let rounded = cutoffAfterSignificantDigits(
-                    normalized,
+                    withoutUnderscores,
                     MAX_SIGNIFICANT_DIGITS - 1
                 );
                 sg = significand(rounded);
@@ -256,7 +286,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
                     cutoffAfterSignificantDigits(
                         propagateCarryFromRight(
                             cutoffAfterSignificantDigits(
-                                normalized,
+                                withoutUnderscores,
                                 MAX_SIGNIFICANT_DIGITS - 1
                             )
                         ),
@@ -267,22 +297,35 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
             } else {
                 let rounded =
                     cutoffAfterSignificantDigits(
-                        normalized,
+                        withoutUnderscores,
                         MAX_SIGNIFICANT_DIGITS - 2
                     ) + `${penultimateDigit + 1}`;
                 sg = significand(rounded);
                 exp = exponent(rounded);
             }
         } else if (lastDigit > 5) {
-            let cutoff = normalize(
-                cutoffAfterSignificantDigits(normalized, MAX_SIGNIFICANT_DIGITS)
-            );
-            let rounded = normalize(propagateCarryFromRight(cutoff));
-            sg = significand(rounded);
-            exp = exponent(rounded);
+            if (9 === penultimateDigit) {
+                let rounded = propagateCarryFromRight(
+                    cutoffAfterSignificantDigits(
+                        withoutUnderscores,
+                        MAX_SIGNIFICANT_DIGITS - 1
+                    )
+                );
+                sg = significand(rounded);
+                exp = exponent(rounded);
+            } else {
+                let cutoff = cutoffAfterSignificantDigits(
+                    withoutUnderscores,
+                    MAX_SIGNIFICANT_DIGITS
+                );
+                let rounded = propagateCarryFromRight(cutoff);
+                sg = significand(rounded);
+                exp = exponent(rounded);
+            }
         } else {
-            let rounded = normalize(
-                cutoffAfterSignificantDigits(normalized, MAX_SIGNIFICANT_DIGITS)
+            let rounded = cutoffAfterSignificantDigits(
+                withoutUnderscores,
+                MAX_SIGNIFICANT_DIGITS
             );
             sg = significand(rounded);
             exp = exponent(rounded);
@@ -291,7 +334,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
 
     return {
         significand: sg,
-        exponent: BigInt(exp),
+        exponent: exp,
         isNegative: isNegative,
         isNaN: false,
         isFinite: true,
@@ -301,11 +344,35 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
 function handleInfinity(s: string): Decimal128Constructor {
     return {
         significand: "",
-        exponent: bigZero,
+        exponent: 0,
         isNegative: !!s.match(/^-/),
         isNaN: false,
         isFinite: false,
     };
+}
+
+function adjustSignificand(
+    originalSignificand: string,
+    originalExponent: number,
+    newExponent: number
+): string {
+    if (originalExponent === newExponent) {
+        return originalSignificand;
+    }
+
+    if (originalExponent <= 0 && newExponent <= originalExponent) {
+        let diff = originalExponent - newExponent;
+        return originalSignificand + "0".repeat(diff);
+    }
+
+    if (originalExponent >= 0 && newExponent >= originalExponent) {
+        let diff = newExponent - originalExponent;
+        return originalSignificand + "0".repeat(diff);
+    }
+
+    throw new RangeError(
+        `Cannot adjust significand "${originalSignificand}" from ${originalExponent} to ${newExponent}`
+    );
 }
 
 export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
@@ -411,29 +478,33 @@ type RoundingMode =
     | "halfFloor"
     | "halfTrunc";
 
+type Decimal128ConstructorOptions = {
+    exponent?: number;
+};
+
+const digitStrRegExp = /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
+const exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
+const nanRegExp = /^-?nan$/i;
+const infRegExp = /^-?inf(inity)?$/i;
+
 export class Decimal128 {
     public readonly isNaN: boolean;
     public readonly isFinite: boolean;
     public readonly significand: string;
     public readonly exponent: number;
     public readonly isNegative: boolean;
-    private readonly digitStrRegExp =
-        /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
-    private readonly exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
-    private readonly nanRegExp = /^-?nan$/i;
-    private readonly infRegExp = /^-?inf(inity)?$/i;
     private readonly rat;
 
-    constructor(n: string) {
+    constructor(n: string, options?: Decimal128ConstructorOptions) {
         let data = undefined;
 
-        if (n.match(this.nanRegExp)) {
+        if (n.match(nanRegExp)) {
             data = handleNan(n);
-        } else if (n.match(this.exponentRegExp)) {
+        } else if (n.match(exponentRegExp)) {
             data = handleExponentialNotation(n);
-        } else if (n.match(this.digitStrRegExp)) {
+        } else if (n.match(digitStrRegExp)) {
             data = handleDecimalNotation(n);
-        } else if (n.match(this.infRegExp)) {
+        } else if (n.match(infRegExp)) {
             data = handleInfinity(n);
         } else {
             throw new SyntaxError(`Illegal number format "${n}"`);
@@ -443,9 +514,19 @@ export class Decimal128 {
 
         this.isNaN = data.isNaN;
         this.isFinite = data.isFinite;
-        this.significand = data.significand;
-        this.exponent = parseInt(data.exponent.toString()); // safe because the min & max are less than 10000
         this.isNegative = data.isNegative;
+
+        if (options && options.exponent) {
+            this.exponent = options.exponent;
+            this.significand = adjustSignificand(
+                data.significand,
+                data.exponent,
+                this.exponent
+            );
+        } else {
+            this.exponent = data.exponent;
+            this.significand = data.significand;
+        }
 
         if ("1" === this.significand) {
             // power of ten
@@ -505,11 +586,19 @@ export class Decimal128 {
             return (this.isNegative ? "-" : "") + "Infinity";
         }
 
-        if (this.isZero()) {
-            return (this.isNegative ? "-" : "") + "0";
+        let prefix = this.isNegative ? "-" : "";
+        let sg = this.significand;
+        let exp = this.exponent;
+
+        if (exp >= 0) {
+            return prefix + (sg + "0".repeat(exp)).replace(/^0+$/, "0");
         }
 
-        return this.rat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
+        if (sg.length + exp <= 0) {
+            return prefix + "0." + "0".repeat(0 - exp - sg.length) + sg;
+        }
+
+        return prefix + sg.substring(0, sg.length + exp) + "." + sg.substring(sg.length + exp);
     }
 
     /**
@@ -517,11 +606,21 @@ export class Decimal128 {
      *
      */
     toExponentialString(): string {
+        let trimmedSignificand = this.significand.replace(/^0+/, "");
+        let prefix = this.isNegative ? "-" : "";
+        let adjustedExponent = this.exponent + trimmedSignificand.length - 1;
+
+        if (trimmedSignificand.length === 1) {
+            return prefix + trimmedSignificand + "E" + this.exponent;
+        }
+
         return (
-            (this.isNegative ? "-" : "") +
-            (this.significand === "" ? "0" : this.significand) +
+            prefix +
+            trimmedSignificand.substring(0, 1) +
+            "." +
+            trimmedSignificand.substring(1) +
             "E" +
-            this.exponent
+            adjustedExponent
         );
     }
 
@@ -529,7 +628,7 @@ export class Decimal128 {
      * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
      */
     isInteger(): boolean {
-        return !this.isNaN && this.isFinite && this.exponent >= 0;
+        return !!this.toString().match(/^-?[0-9]+([.]0+)?$/);
     }
 
     /**
@@ -676,10 +775,15 @@ export class Decimal128 {
         if (!x.isFinite) {
             return x;
         }
+
         let resultRat = Rational.add(this.rat, x.rat);
-        return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        let serializedRat = resultRat.toDecimalPlaces(
+            MAX_SIGNIFICANT_DIGITS + 1
         );
+
+        return new Decimal128(serializedRat, {
+            exponent: Math.min(this.exponent, x.exponent),
+        });
     }
 
     /**
@@ -711,7 +815,10 @@ export class Decimal128 {
         return new Decimal128(
             Rational.subtract(this.rat, x.rat).toDecimalPlaces(
                 MAX_SIGNIFICANT_DIGITS + 1
-            )
+            ),
+            {
+                exponent: Math.min(this.exponent, x.exponent),
+            }
         );
     }
 
@@ -751,14 +858,27 @@ export class Decimal128 {
             return new Decimal128("-Infinity");
         }
 
+        if (this.isNegative) {
+            return this.negate().multiply(x).negate();
+        }
+
+        if (x.isNegative) {
+            return this.multiply(x.negate()).negate();
+        }
+
         let resultRat = Rational.multiply(this.rat, x.rat);
+        let renderedRat = resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
+
         return new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            renderedRat,
+            {
+                exponent: this.exponent + x.exponent
+            }
         );
     }
 
     private isZero(): boolean {
-        return this.isFinite && this.significand === "";
+        return this.isFinite && this.significand === "0";
     }
 
     /**
@@ -907,7 +1027,11 @@ export class Decimal128 {
             return this;
         }
 
-        let q = this.divide(d).round();
+        if (this.cmp(d) === -1) {
+            return this;
+        }
+
+        let q = this.divide(d).truncate();
         return this.subtract(d.multiply(q)).abs();
     }
 
@@ -933,5 +1057,9 @@ export class Decimal128 {
         }
 
         return result;
+    }
+
+    normalize(): Decimal128 {
+        return new Decimal128(normalize(this.toString()));
     }
 }

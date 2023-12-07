@@ -7,6 +7,9 @@ describe("constructor", () => {
         test("sane string works", () => {
             expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
         });
+        test("no normalization", () => {
+            expect(new Decimal128("1.20").toString()).toStrictEqual("1.20");
+        });
         test("string with underscores in integer part", () => {
             expect(new Decimal128("123_456.789").toString()).toStrictEqual(
                 "123456.789"
@@ -108,7 +111,7 @@ describe("constructor", () => {
                 () => new Decimal128("-10000000000000000000000000000000008")
             ).toThrow(RangeError);
         });
-        test("significant digits are counted, not total digits (2)", () => {
+        test("significant digits are counted, not total digits", () => {
             expect(
                 new Decimal128(
                     "10000000000000000000000000000000000000000000.0000000"
@@ -122,20 +125,20 @@ describe("constructor", () => {
                 ).toString()
             ).toStrictEqual("0.3666666666666666666666666666666667");
         });
-        test("lots of digits gets rounded to 1", () => {
+        test("close to one, too many digits, gets rounded to 1.000...", () => {
             expect(
                 new Decimal128("0." + "9".repeat(100)).toString()
-            ).toStrictEqual("1");
+            ).toStrictEqual("1.000000000000000000000000000000000");
         });
         test("lots of digits gets rounded to minus 1", () => {
             expect(
                 new Decimal128("-0." + "9".repeat(100)).toString()
-            ).toStrictEqual("-1");
+            ).toStrictEqual("-1.000000000000000000000000000000000");
         });
         test("lots of digits gets rounded to 10", () => {
             expect(
                 new Decimal128("9." + "9".repeat(100)).toString()
-            ).toStrictEqual("10");
+            ).toStrictEqual("10.00000000000000000000000000000000");
         });
         test("rounding at the limit of significant digits", () => {
             expect(
@@ -158,26 +161,82 @@ describe("constructor", () => {
             expect(minusZero.toString()).toStrictEqual("-0");
             expect(minusZero.isNegative).toStrictEqual(true);
         });
+        describe("zeros", () => {
+            test("leading zeros get stripped", () => {
+                expect(new Decimal128("00").toString()).toStrictEqual("0");
+            });
+            test("leading zeros get stripped (negative)", () => {
+                expect(new Decimal128("-00").toString()).toStrictEqual("-0");
+            });
+            test("zero point zero", () => {
+                expect(new Decimal128("0.0").toString()).toStrictEqual("0.0");
+            });
+            test("minus zero point zero", () => {
+                expect(new Decimal128("-0.0").toString()).toStrictEqual("-0.0");
+            });
+            test("multiple trailing zeros", () => {
+                expect(new Decimal128("0.000").toString()).toStrictEqual(
+                    "0.000"
+                );
+            });
+            test("multiple trailing zeros (negative)", () => {
+                expect(new Decimal128("0.000").toString()).toStrictEqual(
+                    "0.000"
+                );
+            });
+        });
     });
 
     describe("exponential string syntax", () => {
         test("sane string works (big E)", () => {
-            expect(new Decimal128("123E456")).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("123E456");
+            expect(d.significand).toStrictEqual("123");
+            expect(d.exponent).toStrictEqual(456);
+            expect(d.isNegative).toStrictEqual(false);
         });
         test("sane string works (little E)", () => {
-            expect(new Decimal128("123e456")).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("123e456");
+            expect(d.significand).toStrictEqual("123");
+            expect(d.exponent).toStrictEqual(456);
+            expect(d.isNegative).toStrictEqual(false);
         });
         test("negative works", () => {
-            expect(new Decimal128("-123E456")).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("-123E456");
+            expect(d.significand).toStrictEqual("123");
+            expect(d.exponent).toStrictEqual(456);
+            expect(d.isNegative).toStrictEqual(true);
         });
         test("negative exponent works", () => {
-            expect(new Decimal128("123E-456")).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("123E-456");
+            expect(d.significand).toStrictEqual("123");
+            expect(d.exponent).toStrictEqual(-456);
+            expect(d.isNegative).toStrictEqual(false);
         });
         test("positive exponent works", () => {
-            expect(new Decimal128("123E+456")).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("123E+456");
+            expect(d.significand).toStrictEqual("123");
+            expect(d.exponent).toStrictEqual(456);
+            expect(d.isNegative).toStrictEqual(false);
         });
         test("negative significant and negative exponent works", () => {
-            expect(new Decimal128("-123E-456")).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("-123E-456");
+            expect(d.significand).toStrictEqual("123");
+            expect(d.exponent).toStrictEqual(-456);
+            expect(d.isNegative).toStrictEqual(true);
+        });
+        describe("powers of ten", () => {
+            test("two", () => {
+                let d = new Decimal128("1E2");
+                expect(d.significand).toStrictEqual("1");
+                expect(d.exponent).toStrictEqual(2);
+                expect(d.isNegative).toStrictEqual(false);
+            });
+            test("four", () => {
+                let d = new Decimal128("1E4");
+                expect(d.significand).toStrictEqual("1");
+                expect(d.exponent).toStrictEqual(4);
+                expect(d.isNegative).toStrictEqual(false);
+            });
         });
         test("leading zero does not work", () => {
             expect(() => new Decimal128("0123E10")).toThrow(SyntaxError);
@@ -192,9 +251,12 @@ describe("constructor", () => {
             expect(() => new Decimal128(" 42E10")).toThrow(SyntaxError);
         });
         test("many significant digits", () => {
-            expect(
-                new Decimal128("3666666666666666666666666666666667E10")
-            ).toBeInstanceOf(Decimal128);
+            let d = new Decimal128("3666666666666666666666666666666667E10");
+            expect(d.significand).toStrictEqual(
+                "3666666666666666666666666666666667"
+            );
+            expect(d.exponent).toStrictEqual(10);
+            expect(d.isNegative).toStrictEqual(false);
         });
         test("too many significant digits", () => {
             expect(
@@ -229,10 +291,11 @@ describe("constructor", () => {
 describe("exponent and significand", () => {
     let data = [
         ["123.456", "123456", -3],
-        ["0", "", 0],
-        ["-0", "", 0],
-        ["0.0", "", 0],
+        ["0", "0", 0],
+        ["-0", "0", 0],
+        ["0.0", "0", -1],
         ["5", "5", 0],
+        ["1.20", "120", -2],
         ["-123.456", "123456", -3],
         ["0.0042", "42", -4],
         ["0.00000000000000000000000000000000000001", "1", -38],
@@ -266,13 +329,6 @@ describe("exponent and significand", () => {
         expect(() => new Decimal128("0." + "0".repeat(7000) + "1")).toThrow(
             RangeError
         );
-    });
-    test("non-integer works out to be integer", () => {
-        expect(
-            new Decimal128(
-                "1.00000000000000000000000000000000000000000000000001"
-            ).toString()
-        ).toStrictEqual("1");
     });
 });
 

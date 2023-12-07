@@ -50,7 +50,7 @@ describe("rounding", () => {
         });
         test("more digits than are available", () => {
             expect(new Decimal128("1.5").round(2).toString()).toStrictEqual(
-                "1.5"
+                "1.50"
             );
         });
         test("negative odd", () => {
@@ -60,7 +60,7 @@ describe("rounding", () => {
         });
         test("round down (positive)", () => {
             expect(new Decimal128("1.1").round(6).toString()).toStrictEqual(
-                "1.1"
+                "1.100000"
             );
         });
     });
