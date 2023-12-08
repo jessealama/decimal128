@@ -231,6 +231,27 @@ function validateConstructorData(x: Decimal128Constructor): void {
     }
 }
 
+function convertExponentialNotationToDecimalNotation(
+    significand: string,
+    exponent: number
+): string {
+    if (exponent >= 0) {
+        return significand + "0".repeat(exponent);
+    }
+
+    if (significand.length + exponent <= 0) {
+        return (
+            "0." + "0".repeat(0 - exponent - significand.length) + significand
+        );
+    }
+
+    return (
+        significand.substring(0, significand.length + exponent) +
+        "." +
+        significand.substring(significand.length + exponent)
+    );
+}
+
 function handleNan(s: string): Decimal128Constructor {
     return {
         significand: "",
@@ -242,24 +263,9 @@ function handleNan(s: string): Decimal128Constructor {
 }
 function handleExponentialNotation(s: string): Decimal128Constructor {
     let [sg, exp] = s.match(/e/) ? s.split("e") : s.split("E");
-
-    let isNegative = false;
-    if (sg.match(/^-/)) {
-        isNegative = true;
-        sg = sg.substring(1);
-    }
-
-    if (exp.match(/^[+]/)) {
-        exp = exp.substring(1);
-    }
-
-    return {
-        significand: sg,
-        exponent: parseInt(exp),
-        isNegative: isNegative,
-        isNaN: false,
-        isFinite: true,
-    };
+    return handleDecimalNotation(
+        convertExponentialNotationToDecimalNotation(sg, Number(exp))
+    );
 }
 
 function handleDecimalNotation(s: string): Decimal128Constructor {
@@ -483,7 +489,7 @@ type Decimal128ConstructorOptions = {
 };
 
 const digitStrRegExp = /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
-const exponentRegExp = /^-?[1-9][0-9]*[eE][-+]?[1-9][0-9]*$/;
+const exponentRegExp = /^-?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
 const nanRegExp = /^-?nan$/i;
 const infRegExp = /^-?inf(inity)?$/i;
 
@@ -598,7 +604,12 @@ export class Decimal128 {
             return prefix + "0." + "0".repeat(0 - exp - sg.length) + sg;
         }
 
-        return prefix + sg.substring(0, sg.length + exp) + "." + sg.substring(sg.length + exp);
+        return (
+            prefix +
+            sg.substring(0, sg.length + exp) +
+            "." +
+            sg.substring(sg.length + exp)
+        );
     }
 
     /**
@@ -869,12 +880,9 @@ export class Decimal128 {
         let resultRat = Rational.multiply(this.rat, x.rat);
         let renderedRat = resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
 
-        return new Decimal128(
-            renderedRat,
-            {
-                exponent: this.exponent + x.exponent
-            }
-        );
+        return new Decimal128(renderedRat, {
+            exponent: this.exponent + x.exponent,
+        });
     }
 
     private isZero(): boolean {
@@ -923,11 +931,59 @@ export class Decimal128 {
             return new Decimal128("-0");
         }
 
-        return new Decimal128(
-            Rational.divide(this.rat, x.rat).toDecimalPlaces(
-                MAX_SIGNIFICANT_DIGITS + 1
-            )
+        if (this.isNegative) {
+            return this.negate().divide(x).negate();
+        }
+
+        if (x.isNegative) {
+            return this.divide(x.negate()).negate();
+        }
+
+        let adjust = 0;
+        let dividendCoefficient = this.significand;
+        let divisorCoefficient = x.significand;
+
+        while (BigInt(dividendCoefficient) < BigInt(divisorCoefficient)) {
+            dividendCoefficient = dividendCoefficient + "0";
+            adjust++;
+        }
+
+        while (
+            BigInt(dividendCoefficient) >=
+            BigInt(divisorCoefficient) * 10n
+        ) {
+            divisorCoefficient += "0";
+            adjust--;
+        }
+
+        let resultCoefficient = 0n;
+        let done = false;
+
+        while (!done) {
+            while (BigInt(divisorCoefficient) <= BigInt(dividendCoefficient)) {
+                dividendCoefficient = String(
+                    BigInt(dividendCoefficient) - BigInt(divisorCoefficient)
+                );
+                resultCoefficient++;
+            }
+            if (
+                (BigInt(dividendCoefficient) === 0n && adjust >= 0) ||
+                resultCoefficient.toString().length > MAX_SIGNIFICANT_DIGITS
+            ) {
+                done = true;
+            } else {
+                resultCoefficient = resultCoefficient * 10n;
+                dividendCoefficient = dividendCoefficient + "0";
+                adjust++;
+            }
+        }
+
+        let resultExponent = this.exponent - (x.exponent + adjust);
+        let resultDigits = convertExponentialNotationToDecimalNotation(
+            resultCoefficient.toString(),
+            resultExponent
         );
+        return new Decimal128(resultDigits);
     }
 
     /**

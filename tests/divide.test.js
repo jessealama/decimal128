@@ -109,3 +109,59 @@ describe("division", () => {
         });
     });
 });
+
+describe("examples from the General Decimal Arithmetic Specification", () => {
+    // some examples have been tweaked because we are working with more precision in Decimal128
+    test("example one", () => {
+        expect(
+            new Decimal128("1").divide(new Decimal128("3")).toString()
+        ).toStrictEqual("0.3333333333333333333333333333333333");
+    });
+    test("example two", () => {
+        expect(
+            new Decimal128("2").divide(new Decimal128("3")).toString()
+        ).toStrictEqual("0.6666666666666666666666666666666667");
+    });
+    test("example three", () => {
+        expect(
+            new Decimal128("5").divide(new Decimal128("2")).toString()
+        ).toStrictEqual("2.5");
+    });
+    test("example four", () => {
+        expect(
+            new Decimal128("1").divide(new Decimal128("10")).toString()
+        ).toStrictEqual("0.1");
+    });
+    test("example five", () => {
+        expect(
+            new Decimal128("12").divide(new Decimal128("12")).toString()
+        ).toStrictEqual("1");
+    });
+    test("example six", () => {
+        expect(
+            new Decimal128("8.00").divide(new Decimal128("2")).toString()
+        ).toStrictEqual("4.00");
+    });
+    test("example seven", () => {
+        expect(
+            new Decimal128("2.400").divide(new Decimal128("2.0")).toString()
+        ).toStrictEqual("1.20");
+    });
+    test("example eight", () => {
+        expect(
+            new Decimal128("1000").divide(new Decimal128("100")).toString()
+        ).toStrictEqual("10");
+    });
+    test("example nine", () => {
+        expect(
+            new Decimal128("1000").divide(new Decimal128("1")).toString()
+        ).toStrictEqual("1000");
+    });
+    test("example ten", () => {
+        expect(
+            new Decimal128("2.40E+6")
+                .divide(new Decimal128("2"))
+                .toExponentialString()
+        ).toStrictEqual("1.20E6");
+    });
+});

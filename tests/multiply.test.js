@@ -158,19 +158,32 @@ describe("multiplication", () => {
 });
 
 describe("examples from the General Decimal Arithmetic specification", () => {
-   test("example one", () => {
-      expect(new Decimal128("1.20").multiply(new Decimal128("3")).toString()).toStrictEqual("3.60");
-   });
-   test("example two", () => {
-      expect(new Decimal128("7").multiply(new Decimal128("3")).toString()).toStrictEqual("21");
-   });
-   test("example three", () => {
-      expect(new Decimal128("0.9").multiply(new Decimal128("0.8")).toString()).toStrictEqual("0.72");
-   });
-   test("example four", () => {
-      expect(new Decimal128("0.9").multiply(new Decimal128("-0")).toString()).toStrictEqual("-0.0");
-   });
-   test("example five", () => { // slightly modified because we have more precision
-      expect(new Decimal128("654321").multiply(new Decimal128("654321")).toExponentialString()).toStrictEqual("4.28135971041E11");
-   });
+    test("example one", () => {
+        expect(
+            new Decimal128("1.20").multiply(new Decimal128("3")).toString()
+        ).toStrictEqual("3.60");
+    });
+    test("example two", () => {
+        expect(
+            new Decimal128("7").multiply(new Decimal128("3")).toString()
+        ).toStrictEqual("21");
+    });
+    test("example three", () => {
+        expect(
+            new Decimal128("0.9").multiply(new Decimal128("0.8")).toString()
+        ).toStrictEqual("0.72");
+    });
+    test("example four", () => {
+        expect(
+            new Decimal128("0.9").multiply(new Decimal128("-0")).toString()
+        ).toStrictEqual("-0.0");
+    });
+    test("example five", () => {
+        // slightly modified because we have more precision
+        expect(
+            new Decimal128("654321")
+                .multiply(new Decimal128("654321"))
+                .toExponentialString()
+        ).toStrictEqual("4.28135971041E11");
+    });
 });

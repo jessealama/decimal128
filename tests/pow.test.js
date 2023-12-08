@@ -12,7 +12,9 @@ describe("pow", () => {
         ).toStrictEqual("1");
     });
     test("negative base", () => {
-       expect(new Decimal128("-2").pow(new Decimal128("3")).toString()).toStrictEqual("-8");
+        expect(
+            new Decimal128("-2").pow(new Decimal128("3")).toString()
+        ).toStrictEqual("-8");
     });
     test("negative power", () => {
         expect(
@@ -25,7 +27,9 @@ describe("pow", () => {
         ).toStrictEqual("967173.11574016");
     });
     test("non-integer base", () => {
-        expect(new Decimal128("1.7").pow(new Decimal128("8")).toString()).toStrictEqual("69.75757441");
+        expect(
+            new Decimal128("1.7").pow(new Decimal128("8")).toString()
+        ).toStrictEqual("69.75757441");
     });
     describe("infinity", () => {
         test("positive infinity", () => {

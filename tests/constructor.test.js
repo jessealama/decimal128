@@ -238,14 +238,8 @@ describe("constructor", () => {
                 expect(d.isNegative).toStrictEqual(false);
             });
         });
-        test("leading zero does not work", () => {
-            expect(() => new Decimal128("0123E10")).toThrow(SyntaxError);
-        });
         test("nonsense string input", () => {
             expect(() => new Decimal128("howdy")).toThrow(SyntaxError);
-        });
-        test("leading zero in exponent does not work", () => {
-            expect(() => new Decimal128("123E05")).toThrow(SyntaxError);
         });
         test("whitespace plus number not OK", () => {
             expect(() => new Decimal128(" 42E10")).toThrow(SyntaxError);
