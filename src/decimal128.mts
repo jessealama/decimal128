@@ -120,7 +120,7 @@ function cutoffAfterSignificantDigits(s: string, n: number): string {
     }
 
     if (s.match(/[.]/)) {
-        return s.substring(0, n);
+        return s.substring(0, n + 1);
     }
 
     return s.substring(0, n);
@@ -359,7 +359,7 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
             if (penultimateDigit % 2 === 0) {
                 let rounded = cutoffAfterSignificantDigits(
                     withoutUnderscores,
-                    MAX_SIGNIFICANT_DIGITS - 1
+                    MAX_SIGNIFICANT_DIGITS
                 );
                 sg = significand(rounded);
                 exp = exponent(rounded);
@@ -369,29 +369,36 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
                         propagateCarryFromRight(
                             cutoffAfterSignificantDigits(
                                 withoutUnderscores,
-                                MAX_SIGNIFICANT_DIGITS - 1
+                                MAX_SIGNIFICANT_DIGITS - 2
                             )
                         ),
-                        MAX_SIGNIFICANT_DIGITS - 2
+                        MAX_SIGNIFICANT_DIGITS - 1
                     ) + "0";
                 sg = significand(rounded);
                 exp = exponent(rounded);
             } else {
-                let rounded =
-                    cutoffAfterSignificantDigits(
-                        withoutUnderscores,
-                        MAX_SIGNIFICANT_DIGITS - 2
-                    ) + `${penultimateDigit + 1}`;
+                let cutoff = cutoffAfterSignificantDigits(
+                    withoutUnderscores,
+                    MAX_SIGNIFICANT_DIGITS - 2
+                );
+                let withExtraDigit = cutoff + `${penultimateDigit + 1}`;
+                let rounded = cutoffAfterSignificantDigits(
+                    withExtraDigit,
+                    MAX_SIGNIFICANT_DIGITS
+                );
                 sg = significand(rounded);
                 exp = exponent(rounded);
             }
         } else if (lastDigit > 5) {
             if (9 === penultimateDigit) {
-                let rounded = propagateCarryFromRight(
-                    cutoffAfterSignificantDigits(
-                        withoutUnderscores,
-                        MAX_SIGNIFICANT_DIGITS - 1
-                    )
+                let rounded = cutoffAfterSignificantDigits(
+                    propagateCarryFromRight(
+                        cutoffAfterSignificantDigits(
+                            withoutUnderscores,
+                            MAX_SIGNIFICANT_DIGITS - 1
+                        )
+                    ),
+                    MAX_SIGNIFICANT_DIGITS
                 );
                 sg = significand(rounded);
                 exp = exponent(rounded);
