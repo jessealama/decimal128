@@ -278,8 +278,10 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     }
 
     let numSigDigits = sg.length;
+    let digitForm = convertExponentialNotationToDecimalNotation(sg, exp);
+    let isInteger = !digitForm.match(/[.]/);
 
-    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+    if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
         let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
         let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
         let excessDigits = sg.substring(MAX_SIGNIFICANT_DIGITS);

@@ -19,7 +19,7 @@ describe("pow", () => {
     test("negative power", () => {
         expect(
             new Decimal128("5.6").pow(new Decimal128("-2")).toString()
-        ).toStrictEqual("0.031887755102040816326530612244898");
+        ).toStrictEqual("0.03188775510204081632653061224489796");
     });
     test("positive power", () => {
         expect(

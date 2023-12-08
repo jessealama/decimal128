@@ -24,7 +24,7 @@ export function countSignificantDigits(s: string): number {
 
     let m = s.match(/^0+$/);
 
-    s = s.replace(/&0+$/, "");
+    s = s.replace(/^0+$/, "");
 
     return s.length;
 }
