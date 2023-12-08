@@ -119,7 +119,11 @@ function cutoffAfterSignificantDigits(s: string, n: number): string {
         return s.substring(0, n + 2);
     }
 
-    return s.substring(0, n + 1);
+    if (s.match(/[.]/)) {
+        return s.substring(0, n);
+    }
+
+    return s.substring(0, n);
 }
 
 function propagateCarryFromRight(s: string): string {
@@ -207,10 +211,6 @@ interface Decimal128Constructor {
     isNegative: boolean;
 }
 
-function isInteger(x: Decimal128Constructor): boolean {
-    return !x.isNaN && x.isFinite && x.exponent >= bigZero;
-}
-
 function validateConstructorData(x: Decimal128Constructor): void {
     if (x.isNaN) {
         return; // no further validation needed
@@ -218,8 +218,8 @@ function validateConstructorData(x: Decimal128Constructor): void {
 
     let numSigDigits = countSignificantDigits(x.significand);
 
-    if (isInteger(x) && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        throw new RangeError("Integer too large");
+    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+        throw new RangeError("Too many significant digits");
     }
 
     if (x.exponent > EXPONENT_MAX) {
@@ -262,10 +262,86 @@ function handleNan(s: string): Decimal128Constructor {
     };
 }
 function handleExponentialNotation(s: string): Decimal128Constructor {
-    let [sg, exp] = s.match(/e/) ? s.split("e") : s.split("E");
-    return handleDecimalNotation(
-        convertExponentialNotationToDecimalNotation(sg, Number(exp))
-    );
+    let [sg, expString] = s.match(/e/) ? s.split("e") : s.split("E");
+    let isNegative = false;
+    let exp = Number(expString);
+
+    if (sg.match(/^-/)) {
+        isNegative = true;
+        sg = sg.substring(1);
+    }
+
+    if (sg.match(/[.]/)) {
+        let [lhs, rhs] = sg.split(".");
+        sg = lhs + rhs;
+        exp = exp - rhs.length;
+    }
+
+    let numSigDigits = sg.length;
+
+    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+        let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
+        let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
+        let excessDigits = sg.substring(MAX_SIGNIFICANT_DIGITS);
+        let numExcessDigits = excessDigits.length;
+        exp = exp + numExcessDigits; // we will chop off the excess digits
+        if (lastDigit === 5) {
+            if (penultimateDigit % 2 === 0) {
+                let rounded = cutoffAfterSignificantDigits(
+                    sg,
+                    MAX_SIGNIFICANT_DIGITS - 1
+                );
+                sg = significand(rounded);
+            } else if (9 === penultimateDigit) {
+                let rounded =
+                    cutoffAfterSignificantDigits(
+                        propagateCarryFromRight(
+                            cutoffAfterSignificantDigits(
+                                sg,
+                                MAX_SIGNIFICANT_DIGITS - 1
+                            )
+                        ),
+                        MAX_SIGNIFICANT_DIGITS - 2
+                    ) + "0";
+                sg = significand(rounded);
+            } else {
+                let rounded =
+                    cutoffAfterSignificantDigits(
+                        sg,
+                        MAX_SIGNIFICANT_DIGITS - 2
+                    ) + `${penultimateDigit + 1}`;
+                sg = significand(rounded);
+            }
+        } else if (lastDigit > 5) {
+            if (9 === penultimateDigit) {
+                let rounded = propagateCarryFromRight(
+                    cutoffAfterSignificantDigits(sg, MAX_SIGNIFICANT_DIGITS - 1)
+                );
+                sg = significand(rounded);
+            } else {
+                let cutoff = cutoffAfterSignificantDigits(
+                    sg,
+                    MAX_SIGNIFICANT_DIGITS
+                );
+                let rounded = propagateCarryFromRight(cutoff);
+                sg = significand(rounded);
+            }
+        } else {
+            let rounded = cutoffAfterSignificantDigits(
+                sg,
+                MAX_SIGNIFICANT_DIGITS
+            );
+            sg = significand(rounded);
+        }
+    }
+
+    return {
+        significand: sg,
+        exponent: Number(exp),
+        isNegative: isNegative,
+        isNaN: false,
+        isFinite: true,
+    };
 }
 
 function handleDecimalNotation(s: string): Decimal128Constructor {
@@ -979,11 +1055,7 @@ export class Decimal128 {
         }
 
         let resultExponent = this.exponent - (x.exponent + adjust);
-        let resultDigits = convertExponentialNotationToDecimalNotation(
-            resultCoefficient.toString(),
-            resultExponent
-        );
-        return new Decimal128(resultDigits);
+        return new Decimal128(`${resultCoefficient}E${resultExponent}`);
     }
 
     /**

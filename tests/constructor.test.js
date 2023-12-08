@@ -10,6 +10,22 @@ describe("constructor", () => {
         test("no normalization", () => {
             expect(new Decimal128("1.20").toString()).toStrictEqual("1.20");
         });
+        test("no normalization (exponential notation) (positive exponent)", () => {
+            let d = new Decimal128("1.20E1");
+            expect(d.significand).toStrictEqual("120");
+            expect(d.exponent).toStrictEqual(-1);
+        });
+        test("no normalization (exponential notation) (negative exponent)", () => {
+            let d = new Decimal128("1.20E-5");
+            expect(d.significand).toStrictEqual("120");
+            expect(d.exponent).toStrictEqual(-7);
+        });
+        test("no normalization (exponential notation) (negative)", () => {
+            let d = new Decimal128("-42.79E42");
+            expect(d.significand).toStrictEqual("4279");
+            expect(d.exponent).toStrictEqual(40);
+            expect(d.isNegative).toStrictEqual(true);
+        });
         test("string with underscores in integer part", () => {
             expect(new Decimal128("123_456.789").toString()).toStrictEqual(
                 "123456.789"

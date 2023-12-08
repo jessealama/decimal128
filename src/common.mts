@@ -22,11 +22,9 @@ export function countSignificantDigits(s: string): number {
         return s.length - 1;
     }
 
-    let m = s.match(/0+$/);
+    let m = s.match(/^0+$/);
 
-    if (m) {
-        return s.length - m[0].length;
-    }
+    s = s.replace(/&0+$/, "");
 
     return s.length;
 }
