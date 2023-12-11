@@ -108,6 +108,21 @@ describe("division", () => {
             ).toStrictEqual("0");
         });
     });
+    test("negative zero", () => {
+        expect(
+            new Decimal128("-0").divide(new Decimal128("1")).toString()
+        ).toStrictEqual("-0");
+    });
+    test("negative argument", () => {
+        expect(
+            new Decimal128("42.6").divide(new Decimal128("-2.0")).toString()
+        ).toStrictEqual("-21.3");
+    });
+    test("dividend and divisor are both negative", () => {
+        expect(
+            new Decimal128("-42.6").divide(new Decimal128("-2.0")).toString()
+        ).toStrictEqual("21.3");
+    });
 });
 
 describe("examples from the General Decimal Arithmetic Specification", () => {

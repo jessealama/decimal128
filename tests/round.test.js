@@ -1,4 +1,5 @@
 import { Decimal128 } from "../src/decimal128.mjs";
+import * as string_decoder from "string_decoder";
 
 const roundingModes = [
     "ceil",
@@ -63,6 +64,20 @@ describe("rounding", () => {
                 "1.100000"
             );
         });
+    });
+    test("integer", () => {
+        expect(new Decimal128("42").round().toString()).toStrictEqual("42");
+    });
+    test("negative integer", () => {
+        expect(new Decimal128("-42").round().toString()).toStrictEqual("-42");
+    });
+    test("negative number of digits requested", () => {
+        expect(() => new Decimal128("1.5").round(-42)).toThrowError(RangeError);
+    });
+    test("too many digits requested", () => {
+        expect(() => new Decimal128("1.5").round(2 ** 53)).toThrowError(
+            RangeError
+        );
     });
 });
 

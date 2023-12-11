@@ -84,19 +84,12 @@ function significand(s: string): string {
 
     if (s.match(/^0+/)) {
         let noLeadingZeroes = s.replace(/^0+/, "");
+
         if ("" === noLeadingZeroes) {
             return "0";
         }
 
-        if (noLeadingZeroes.match(/^[.]/)) {
-            return significand("0" + noLeadingZeroes);
-        }
-
         return significand(noLeadingZeroes);
-    }
-
-    if (s.match(/^0[.]/)) {
-        return s.substring(2);
     }
 
     if (s.match(/[.]/)) {
@@ -111,61 +104,23 @@ function significand(s: string): string {
 }
 
 function cutoffAfterSignificantDigits(s: string, n: number): string {
-    if (s.match(/^-/)) {
-        return "-" + cutoffAfterSignificantDigits(s.substring(1), n);
-    }
-
-    if (s.match(/^0[.]/)) {
-        return s.substring(0, n + 2);
-    }
-
-    if (s.match(/[.]/)) {
-        return s.substring(0, n + 1);
-    }
-
     return s.substring(0, n);
 }
 
 function propagateCarryFromRight(s: string): string {
     let [left, right] = s.split(/[.]/);
 
-    if (undefined === right) {
-        let lastDigit = parseInt(left.charAt(left.length - 1));
-        if (lastDigit === 9) {
-            if (1 === left.length) {
-                return "10";
-            }
-
-            return (
-                propagateCarryFromRight(left.substring(0, left.length - 1)) +
-                "0"
-            );
-        }
-        return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
-    }
-
-    let len = right.length;
-
-    if (1 === len) {
-        return propagateCarryFromRight(left) + ".0";
-    } else {
-        let finalDigit = parseInt(right.charAt(len - 1));
-
-        if (9 === finalDigit) {
-            return (
-                propagateCarryFromRight(
-                    left + "." + right.substring(0, len - 1)
-                ) + "0"
-            );
+    let lastDigit = parseInt(left.charAt(left.length - 1));
+    if (lastDigit === 9) {
+        if (1 === left.length) {
+            return "10";
         }
 
         return (
-            left +
-            "." +
-            right.substring(0, len - 1) +
-            `${parseInt(right.charAt(len - 1)) + 1}`
+            propagateCarryFromRight(left.substring(0, left.length - 1)) + "0"
         );
     }
+    return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
 }
 
 /**
@@ -178,11 +133,6 @@ function propagateCarryFromRight(s: string): string {
 function exponent(s: string): number {
     if (s.match(/^-/)) {
         return exponent(s.substring(1));
-    }
-
-    if (s.match(/^0+[^0.]/)) {
-        // eliminate leading zeros
-        return exponent(s.replace(/^0+/, ""));
     }
 
     if (s.match(/[.]/)) {
@@ -261,6 +211,130 @@ function handleNan(s: string): Decimal128Constructor {
         isFinite: false,
     };
 }
+
+type SignificandExponent = {
+    significand: string;
+    exponent: number;
+};
+
+function adjustInteger(initialSignificand: string): SignificandExponent {
+    let m = initialSignificand.match(/(0+)$/);
+
+    if (!m) {
+        return {
+            significand: initialSignificand,
+            exponent: 0,
+        };
+    }
+
+    let numTrailingZeros = m[0].length;
+    return {
+        significand: initialSignificand.substring(
+            0,
+            initialSignificand.length - numTrailingZeros
+        ),
+        exponent: numTrailingZeros,
+    };
+}
+
+function adjustNonInteger(
+    initialSignificand: string,
+    initialExponent: number
+): SignificandExponent {
+    let lastDigit = parseInt(initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS));
+    let penultimateDigit = parseInt(
+        initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS - 1)
+    );
+    let excessDigits = initialSignificand.substring(MAX_SIGNIFICANT_DIGITS);
+    let numExcessDigits = excessDigits.length;
+    let exp = initialExponent + numExcessDigits; // we will chop off the excess digits
+    if (lastDigit === 5) {
+        if (penultimateDigit % 2 === 0) {
+            let rounded = cutoffAfterSignificantDigits(
+                initialSignificand,
+                MAX_SIGNIFICANT_DIGITS
+            );
+            return {
+                significand: rounded,
+                exponent: exp,
+            };
+        }
+
+        if (9 === penultimateDigit) {
+            let cutoff = cutoffAfterSignificantDigits(
+                initialSignificand,
+                MAX_SIGNIFICANT_DIGITS - 1
+            );
+            let carried = propagateCarryFromRight(cutoff);
+            let rounded =
+                cutoffAfterSignificantDigits(
+                    carried,
+                    MAX_SIGNIFICANT_DIGITS - 1
+                ) + "0";
+            return {
+                significand: rounded,
+                exponent: exp,
+            };
+        }
+
+        let rounded =
+            cutoffAfterSignificantDigits(
+                initialSignificand,
+                MAX_SIGNIFICANT_DIGITS - 1
+            ) + `${penultimateDigit + 1}`;
+        return {
+            significand: rounded,
+            exponent: exp,
+        };
+    }
+
+    if (lastDigit > 5) {
+        if (9 === penultimateDigit) {
+            let cutoff = cutoffAfterSignificantDigits(
+                initialSignificand,
+                MAX_SIGNIFICANT_DIGITS - 1
+            );
+            let carried = propagateCarryFromRight(cutoff);
+            let rounded =
+                cutoffAfterSignificantDigits(
+                    carried,
+                    MAX_SIGNIFICANT_DIGITS - 1
+                ) + "0";
+            let digitWasAdded = carried.length > cutoff.length;
+            if (digitWasAdded) {
+                if (exp < 0) {
+                    exp++;
+                } else {
+                    exp--;
+                }
+            }
+            return {
+                significand: rounded,
+                exponent: exp,
+            };
+        }
+
+        let cutoff = cutoffAfterSignificantDigits(
+            initialSignificand,
+            MAX_SIGNIFICANT_DIGITS
+        );
+        let rounded = propagateCarryFromRight(cutoff);
+        return {
+            significand: rounded,
+            exponent: exp,
+        };
+    }
+
+    let rounded = cutoffAfterSignificantDigits(
+        initialSignificand,
+        MAX_SIGNIFICANT_DIGITS
+    );
+    return {
+        significand: rounded,
+        exponent: exp,
+    };
+}
+
 function handleExponentialNotation(s: string): Decimal128Constructor {
     let [sg, expString] = s.match(/e/) ? s.split("e") : s.split("E");
     let isNegative = false;
@@ -281,65 +355,21 @@ function handleExponentialNotation(s: string): Decimal128Constructor {
     let digitForm = convertExponentialNotationToDecimalNotation(sg, exp);
     let isInteger = !digitForm.match(/[.]/);
 
-    if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
-        let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
-        let excessDigits = sg.substring(MAX_SIGNIFICANT_DIGITS);
-        let numExcessDigits = excessDigits.length;
-        exp = exp + numExcessDigits; // we will chop off the excess digits
-        if (lastDigit === 5) {
-            if (penultimateDigit % 2 === 0) {
-                let rounded = cutoffAfterSignificantDigits(
-                    sg,
-                    MAX_SIGNIFICANT_DIGITS - 1
-                );
-                sg = significand(rounded);
-            } else if (9 === penultimateDigit) {
-                let rounded =
-                    cutoffAfterSignificantDigits(
-                        propagateCarryFromRight(
-                            cutoffAfterSignificantDigits(
-                                sg,
-                                MAX_SIGNIFICANT_DIGITS - 1
-                            )
-                        ),
-                        MAX_SIGNIFICANT_DIGITS - 2
-                    ) + "0";
-                sg = significand(rounded);
-            } else {
-                let rounded =
-                    cutoffAfterSignificantDigits(
-                        sg,
-                        MAX_SIGNIFICANT_DIGITS - 2
-                    ) + `${penultimateDigit + 1}`;
-                sg = significand(rounded);
-            }
-        } else if (lastDigit > 5) {
-            if (9 === penultimateDigit) {
-                let rounded = propagateCarryFromRight(
-                    cutoffAfterSignificantDigits(sg, MAX_SIGNIFICANT_DIGITS - 1)
-                );
-                sg = significand(rounded);
-            } else {
-                let cutoff = cutoffAfterSignificantDigits(
-                    sg,
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                let rounded = propagateCarryFromRight(cutoff);
-                sg = significand(rounded);
-            }
+    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+        if (isInteger) {
+            let adjusted = adjustInteger(sg);
+            sg = adjusted.significand;
+            exp = adjusted.exponent;
         } else {
-            let rounded = cutoffAfterSignificantDigits(
-                sg,
-                MAX_SIGNIFICANT_DIGITS
-            );
-            sg = significand(rounded);
+            let adjusted = adjustNonInteger(sg, exp);
+            sg = adjusted.significand;
+            exp = adjusted.exponent;
         }
     }
 
     return {
         significand: sg,
-        exponent: Number(exp),
+        exponent: exp,
         isNegative: isNegative,
         isNaN: false,
         isFinite: true,
@@ -354,72 +384,15 @@ function handleDecimalNotation(s: string): Decimal128Constructor {
     let numSigDigits = countSignificantDigits(withoutUnderscores);
     let isInteger = exp >= 0;
 
-    if (!isInteger && numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        let lastDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS));
-        let penultimateDigit = parseInt(sg.charAt(MAX_SIGNIFICANT_DIGITS - 1));
-        if (lastDigit === 5) {
-            if (penultimateDigit % 2 === 0) {
-                let rounded = cutoffAfterSignificantDigits(
-                    withoutUnderscores,
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                sg = significand(rounded);
-                exp = exponent(rounded);
-            } else if (9 === penultimateDigit) {
-                let rounded =
-                    cutoffAfterSignificantDigits(
-                        propagateCarryFromRight(
-                            cutoffAfterSignificantDigits(
-                                withoutUnderscores,
-                                MAX_SIGNIFICANT_DIGITS - 2
-                            )
-                        ),
-                        MAX_SIGNIFICANT_DIGITS - 1
-                    ) + "0";
-                sg = significand(rounded);
-                exp = exponent(rounded);
-            } else {
-                let cutoff = cutoffAfterSignificantDigits(
-                    withoutUnderscores,
-                    MAX_SIGNIFICANT_DIGITS - 2
-                );
-                let withExtraDigit = cutoff + `${penultimateDigit + 1}`;
-                let rounded = cutoffAfterSignificantDigits(
-                    withExtraDigit,
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                sg = significand(rounded);
-                exp = exponent(rounded);
-            }
-        } else if (lastDigit > 5) {
-            if (9 === penultimateDigit) {
-                let rounded = cutoffAfterSignificantDigits(
-                    propagateCarryFromRight(
-                        cutoffAfterSignificantDigits(
-                            withoutUnderscores,
-                            MAX_SIGNIFICANT_DIGITS - 1
-                        )
-                    ),
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                sg = significand(rounded);
-                exp = exponent(rounded);
-            } else {
-                let cutoff = cutoffAfterSignificantDigits(
-                    withoutUnderscores,
-                    MAX_SIGNIFICANT_DIGITS
-                );
-                let rounded = propagateCarryFromRight(cutoff);
-                sg = significand(rounded);
-                exp = exponent(rounded);
-            }
+    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
+        if (isInteger) {
+            let adjusted = adjustInteger(withoutUnderscores);
+            sg = adjusted.significand;
+            exp = adjusted.exponent;
         } else {
-            let rounded = cutoffAfterSignificantDigits(
-                withoutUnderscores,
-                MAX_SIGNIFICANT_DIGITS
-            );
-            sg = significand(rounded);
-            exp = exponent(rounded);
+            let adjusted = adjustNonInteger(sg, exp);
+            sg = adjusted.significand;
+            exp = adjusted.exponent;
         }
     }
 
@@ -456,14 +429,8 @@ function adjustSignificand(
         return originalSignificand + "0".repeat(diff);
     }
 
-    if (originalExponent >= 0 && newExponent >= originalExponent) {
-        let diff = newExponent - originalExponent;
-        return originalSignificand + "0".repeat(diff);
-    }
-
-    throw new RangeError(
-        `Cannot adjust significand "${originalSignificand}" from ${originalExponent} to ${newExponent}`
-    );
+    let diff = newExponent - originalExponent;
+    return originalSignificand + "0".repeat(diff);
 }
 
 export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
@@ -702,19 +669,27 @@ export class Decimal128 {
      *
      */
     toExponentialString(): string {
-        let trimmedSignificand = this.significand.replace(/^0+/, "");
-        let prefix = this.isNegative ? "-" : "";
-        let adjustedExponent = this.exponent + trimmedSignificand.length - 1;
+        if (this.isNaN) {
+            return "NaN";
+        }
 
-        if (trimmedSignificand.length === 1) {
-            return prefix + trimmedSignificand + "E" + this.exponent;
+        if (!this.isFinite) {
+            return (this.isNegative ? "-" : "") + "Infinity";
+        }
+
+        let sig = this.significand;
+        let prefix = this.isNegative ? "-" : "";
+        let adjustedExponent = this.exponent + sig.length - 1;
+
+        if (sig.length === 1) {
+            return prefix + sig + "E" + this.exponent;
         }
 
         return (
             prefix +
-            trimmedSignificand.substring(0, 1) +
+            sig.substring(0, 1) +
             "." +
-            trimmedSignificand.substring(1) +
+            sig.substring(1) +
             "E" +
             adjustedExponent
         );
@@ -1028,9 +1003,11 @@ export class Decimal128 {
         let dividendCoefficient = this.significand;
         let divisorCoefficient = x.significand;
 
-        while (BigInt(dividendCoefficient) < BigInt(divisorCoefficient)) {
-            dividendCoefficient = dividendCoefficient + "0";
-            adjust++;
+        if (dividendCoefficient !== "0") {
+            while (BigInt(dividendCoefficient) < BigInt(divisorCoefficient)) {
+                dividendCoefficient = dividendCoefficient + "0";
+                adjust++;
+            }
         }
 
         while (
@@ -1077,7 +1054,7 @@ export class Decimal128 {
         mode: RoundingMode = ROUNDING_MODE_DEFAULT
     ): Decimal128 {
         if (!Number.isSafeInteger(numDecimalDigits)) {
-            throw new TypeError(
+            throw new RangeError(
                 "Argument for number of decimal digits must be a safe integer"
             );
         }
