@@ -113,10 +113,6 @@ export class Rational {
         return new Rational(this.numerator * minusOne, this.denominator);
     }
 
-    private reciprocal(): Rational {
-        return new Rational(this.denominator, this.numerator);
-    }
-
     private static _add(x: Rational, y: Rational): Rational {
         if (x.isNegative) {
             if (y.isNegative) {
@@ -163,10 +159,6 @@ export class Rational {
         );
     }
 
-    private static _divide(x: Rational, y: Rational): Rational {
-        return Rational._multiply(x, y.reciprocal());
-    }
-
     public static add(...theArgs: Rational[]): Rational {
         return theArgs.reduce(
             (acc, cur) => Rational._add(acc, cur),
@@ -183,10 +175,6 @@ export class Rational {
             (acc, cur) => Rational._multiply(acc, cur),
             new Rational(one, one)
         );
-    }
-
-    public static divide(x: Rational, ...theArgs: Rational[]): Rational {
-        return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
 
     public toDecimalPlaces(n: number): string {

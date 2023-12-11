@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Square root
+-   Logarithm
+-   Fused multiply-add
+
 ### Added
+
+## [6.0.0] - 2023-12-08
+
+### Added
+
+-   We now support non-normalized decimals, i.e. decimals with a non-zero integer part. This is a breaking change for some use cases. In this approach, trailing zeros are not removed; they are considered significant. For instance, `0.25` plus `0.75` is now `1.00`, not `1`.
 
 ## [5.3.0] - 2023-10-25
 

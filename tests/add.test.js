@@ -8,7 +8,7 @@ const one = new Decimal128("1");
 const minusOne = new Decimal128("-1");
 const two = new Decimal128("2");
 
-describe("addition" + "", () => {
+describe("addition", () => {
     test("one plus one equals two", () => {
         expect(one.add(one).toString()).toStrictEqual("2");
     });
@@ -47,6 +47,13 @@ describe("addition" + "", () => {
     });
     test("big plus two is not OK (too many significant digits)", () => {
         expect(() => big.add(two)).toThrow(RangeError);
+    });
+    describe("non-normalized", () => {
+        test("one point zero plus one point zero", () => {
+            expect(
+                new Decimal128("1.0").add(new Decimal128("1.0")).toString()
+            ).toStrictEqual("2.0");
+        });
     });
     describe("NaN", () => {
         test("NaN plus NaN is NaN", () => {
@@ -96,5 +103,20 @@ describe("addition" + "", () => {
                 "-Infinity"
             );
         });
+    });
+});
+
+describe("examples from the General Decimal Arithmetic specification", () => {
+    test("example one", () => {
+        expect(
+            new Decimal128("12").add(new Decimal128("7.00")).toString()
+        ).toStrictEqual("19.00");
+    });
+    test("example two", () => {
+        expect(
+            new Decimal128("1E2")
+                .add(new Decimal128("1E4"))
+                .toExponentialString()
+        ).toStrictEqual("1.01E4");
     });
 });

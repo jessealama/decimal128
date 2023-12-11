@@ -1,8 +1,9 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 
+const a = "4.1";
+const b = "1.25";
+
 describe("remainder", () => {
-    let a = "4.1";
-    let b = "1.25";
     test("simple example", () => {
         expect(
             new Decimal128(a).remainder(new Decimal128(b)).toString()
@@ -89,5 +90,38 @@ describe("remainder", () => {
                 negInf.remainder(new Decimal128("42")).toString()
             ).toStrictEqual("NaN");
         });
+    });
+});
+
+describe("examples from the General Decimal Arithmetic Specification", () => {
+    test("example one", () => {
+        expect(
+            new Decimal128("2.1").remainder(new Decimal128("3")).toString()
+        ).toStrictEqual("2.1");
+    });
+    test("example two", () => {
+        expect(
+            new Decimal128("10").remainder(new Decimal128("3")).toString()
+        ).toStrictEqual("1");
+    });
+    test("example three", () => {
+        expect(
+            new Decimal128("-10").remainder(new Decimal128("3")).toString()
+        ).toStrictEqual("-1");
+    });
+    test("example four", () => {
+        expect(
+            new Decimal128("10.2").remainder(new Decimal128("1")).toString()
+        ).toStrictEqual("0.2");
+    });
+    test("example five", () => {
+        expect(
+            new Decimal128("10").remainder(new Decimal128("0.3")).toString()
+        ).toStrictEqual("0.1");
+    });
+    test("example six", () => {
+        expect(
+            new Decimal128("3.6").remainder(new Decimal128("1.3")).toString()
+        ).toStrictEqual("1.0");
     });
 });

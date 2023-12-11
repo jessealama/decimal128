@@ -1,5 +1,5 @@
-import { Decimal128 } from "../src/decimal128.mjs";
 import { expectDecimal128 } from "./util.js";
+import { Decimal128 } from "../src/decimal128.mjs";
 
 const d = "123.456";
 
@@ -35,52 +35,7 @@ describe("to decimal places", function () {
     test("non-integer number of decimal places", () => {
         expect(() => decimalD.toDecimalPlaces(1.5).toThrow(TypeError));
     });
-});
-
-describe("to exponential string", () => {
-    let data = {
-        "123456E-2": "123456E-2",
-        123.456: "123456E-3",
-        "-123.456": "-123456E-3",
-        0: "0E0",
-        1: "1E0",
-    };
-    for (let [input, output] of Object.entries(data)) {
-        expectDecimal128(new Decimal128(input).toExponentialString(), output);
-    }
-});
-
-describe("normalization", () => {
-    let tests = [
-        ["0123.456", "123.456"],
-        ["123.4560", "123.456"],
-        ["123.0", "123"],
-        ["00.123", "0.123"],
-        ["0.0", "0"],
-        ["-0.0", "-0"],
-        ["00.0", "0"],
-        ["-00.0", "-0"],
-        ["0.00", "0"],
-        ["-0.00", "-0"],
-    ];
-    for (let [a, b] of tests) {
-        test(`${a} is actually ${b}`, () => {
-            expect(new Decimal128(a).toString()).toStrictEqual(b);
-        });
-    }
-});
-
-describe("NaN", () => {
-    expect(new Decimal128("NaN").toString()).toStrictEqual("NaN");
-});
-
-describe("infinity", () => {
-    test("positive infinity", () => {
-        expect(new Decimal128("Infinity").toString()).toStrictEqual("Infinity");
-    });
-    test("negative infinity", () => {
-        expect(new Decimal128("-Infinity").toString()).toStrictEqual(
-            "-Infinity"
-        );
+    test("non-integer argument", () => {
+        expect(() => decimalD.toDecimalPlaces("1.5")).toThrow(TypeError);
     });
 });
