@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Tests for normalization
 -   Square root
+-   Logarithm
+-   Fused multiply-add
 
 ### Added
 
