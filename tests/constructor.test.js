@@ -253,6 +253,24 @@ describe("constructor", () => {
                 expect(d.exponent).toStrictEqual(4);
                 expect(d.isNegative).toStrictEqual(false);
             });
+            test("one minus one", () => {
+                let d = new Decimal128("1E-1");
+                expect(d.significand).toStrictEqual("1");
+                expect(d.exponent).toStrictEqual(-1);
+                expect(d.isNegative).toStrictEqual(false);
+            });
+            test("minus one minus one", () => {
+                let d = new Decimal128("-1E-1");
+                expect(d.significand).toStrictEqual("1");
+                expect(d.exponent).toStrictEqual(-1);
+                expect(d.isNegative).toStrictEqual(true);
+            });
+            test("minus one one", () => {
+                let d = new Decimal128("-1E1");
+                expect(d.significand).toStrictEqual("1");
+                expect(d.exponent).toStrictEqual(1);
+                expect(d.isNegative).toStrictEqual(true);
+            });
         });
         test("nonsense string input", () => {
             expect(() => new Decimal128("howdy")).toThrow(SyntaxError);
