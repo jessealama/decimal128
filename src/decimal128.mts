@@ -1319,4 +1319,11 @@ export class Decimal128 {
 
         return new Decimal128(result);
     }
+
+    multiplyAndAdd(x: Decimal128, y: Decimal128): Decimal128 {
+        let result = Rational.add(Rational.multiply(this.rat, x.rat), y.rat);
+        return new Decimal128(
+            result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
+    }
 }
