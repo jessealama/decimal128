@@ -968,6 +968,10 @@ export class Decimal128 {
             return x;
         }
 
+        if (this.isNegative && x.isNegative) {
+            return this.negate().add(x.negate()).negate();
+        }
+
         let resultRat = Rational.add(this.rat, x.rat);
         let serializedRat = resultRat.toDecimalPlaces(
             MAX_SIGNIFICANT_DIGITS + 1
@@ -1321,9 +1325,39 @@ export class Decimal128 {
     }
 
     multiplyAndAdd(x: Decimal128, y: Decimal128): Decimal128 {
+        if (this.isNaN() || x.isNaN() || y.isNaN()) {
+            return new Decimal128(NAN);
+        }
+
+        if (!this.isFinite()) {
+            if (x.isZero()) {
+                return new Decimal128(NAN);
+            }
+            return this.multiply(x).add(y);
+        }
+
+        if (!x.isFinite()) {
+            if (this.isZero()) {
+                return new Decimal128(NAN);
+            }
+            return this.multiply(x).add(y);
+        }
+
         let result = Rational.add(Rational.multiply(this.rat, x.rat), y.rat);
-        return new Decimal128(
-            result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        let exponentForMultiplication = this.exponent + x.exponent;
+        let exponentForAddition = Math.min(
+            exponentForMultiplication,
+            y.exponent
         );
+
+        let serializedRat = result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
+        let ourLength = this.significand.length;
+        let theirLength = x.significand.length;
+        let cutoff = cutoffAfterSignificantDigits(
+            serializedRat,
+            ourLength + theirLength
+        );
+
+        return new Decimal128(`${cutoff}E${exponentForAddition}`);
     }
 }

@@ -17,7 +17,7 @@ describe("fused multiply and add", () => {
             new Decimal128("1")
                 .multiplyAndAdd(new Decimal128("-0"), new Decimal128("0"))
                 .toString()
-        ).toStrictEqual("-0");
+        ).toStrictEqual("0");
     });
     test("integers", () => {
         expect(
@@ -111,13 +111,40 @@ describe("fused multiply and add", () => {
                         .toString()
                 ).toStrictEqual("Infinity");
             });
-            test("infinity times minus infinity plus infinity is infinity", () => {
+            test("infinity times minus infinity plus infinity is NaN", () => {
                 expect(
                     new Decimal128("Infinity")
                         .multiplyAndAdd(negInf, posInf)
                         .toString()
-                ).toStrictEqual("Infinity");
+                ).toStrictEqual("NaN");
             });
         });
+    });
+});
+
+describe("tests from the General Decimal Arithmetic Specification", () => {
+    test("example one", () => {
+        expect(
+            new Decimal128("3")
+                .multiplyAndAdd(new Decimal128("5"), new Decimal128("7"))
+                .toString()
+        ).toStrictEqual("22");
+    });
+    test("example two", () => {
+        expect(
+            new Decimal128("3")
+                .multiplyAndAdd(new Decimal128("-5"), new Decimal128("7"))
+                .toString()
+        ).toStrictEqual("-8");
+    });
+    test("example three", () => {
+        expect(
+            new Decimal128("888565290")
+                .multiplyAndAdd(
+                    new Decimal128("1557.96930"),
+                    new Decimal128("-86087.7578")
+                )
+                .toExponentialString()
+        ).toStrictEqual("1.38435736E+12");
     });
 });

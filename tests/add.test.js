@@ -4,6 +4,7 @@ const MAX_SIGNIFICANT_DIGITS = 34;
 const bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
 
 const zero = new Decimal128("0");
+const minusZero = new Decimal128("-0");
 const one = new Decimal128("1");
 const minusOne = new Decimal128("-1");
 const two = new Decimal128("2");
@@ -15,6 +16,12 @@ describe("addition", () => {
     test("one plus minus one equals zero", () => {
         expect(one.add(minusOne).toString()).toStrictEqual("0");
         expect(minusOne.add(one).toString()).toStrictEqual("0");
+    });
+    test("minus zero plus zero", () => {
+        expect(minusZero.add(zero).toString()).toStrictEqual("0");
+    });
+    test("minus zero plus minus zero", () => {
+        expect(minusZero.add(minusZero).toString()).toStrictEqual("-0");
     });
     test("two negatives", () => {
         expect(minusOne.add(new Decimal128("-99")).toString()).toStrictEqual(
