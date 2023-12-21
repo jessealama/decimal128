@@ -72,12 +72,10 @@ describe("rounding", () => {
         expect(new Decimal128("-42").round().toString()).toStrictEqual("-42");
     });
     test("negative number of digits requested", () => {
-        expect(() => new Decimal128("1.5").round(-42)).toThrowError(RangeError);
+        expect(() => new Decimal128("1.5").round(-42)).toThrow(RangeError);
     });
     test("too many digits requested", () => {
-        expect(() => new Decimal128("1.5").round(2 ** 53)).toThrowError(
-            RangeError
-        );
+        expect(() => new Decimal128("1.5").round(2 ** 53)).toThrow(RangeError);
     });
 });
 

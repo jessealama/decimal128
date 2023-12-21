@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Rounding modes for all operations (#54)
 
+## [7.0.1] - 2023-12-21
+
+### Added
+
+-   LICENSE file
+
+### Fixed
+
+-   Ensure that the NPM package is nice and lean (#57) by removing unnecessary files and dependencies
+
 ## [7.0.0] - 2023-12-21
 
 ### Added
