@@ -205,7 +205,7 @@ function convertExponentialNotationToDecimalNotation(
     );
 }
 
-function handleNan(s: string): Decimal128Constructor {
+function handleNan(): Decimal128Constructor {
     return {
         significand: NAN,
         exponent: 0,
@@ -659,7 +659,7 @@ export class Decimal128 {
         let data = undefined;
 
         if (n.match(nanRegExp)) {
-            data = handleNan(n);
+            data = handleNan();
         } else if (n.match(exponentRegExp)) {
             data = handleExponentialNotation(n);
         } else if (n.match(digitStrRegExp)) {
