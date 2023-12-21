@@ -71,6 +71,38 @@ describe("fused multiply and add", () => {
         });
     });
     describe("infinity", () => {
+        describe("initial argument", () => {
+            test("first argument is zero", () => {
+                expect(
+                    posInf
+                        .multiplyAndAdd(
+                            new Decimal128("0"),
+                            new Decimal128("42")
+                        )
+                        .toString()
+                ).toStrictEqual("NaN");
+            });
+            test("first argument is non-zero", () => {
+                expect(
+                    posInf
+                        .multiplyAndAdd(
+                            new Decimal128("42"),
+                            new Decimal128("42")
+                        )
+                        .toString()
+                ).toStrictEqual("Infinity");
+            });
+            test("minus infinity, all arguments non-zero", () => {
+                expect(
+                    negInf
+                        .multiplyAndAdd(
+                            new Decimal128("42"),
+                            new Decimal128("42")
+                        )
+                        .toString()
+                ).toStrictEqual("-Infinity");
+            });
+        });
         describe("first argument", () => {
             test("42 times infinity plus 42 is infinity", () => {
                 expect(
@@ -85,6 +117,13 @@ describe("fused multiply and add", () => {
                         .multiplyAndAdd(negInf, new Decimal128("42"))
                         .toString()
                 ).toStrictEqual("-Infinity");
+            });
+            test("zero yields NaN", () => {
+                expect(
+                    new Decimal128("0")
+                        .multiplyAndAdd(posInf, new Decimal128("42"))
+                        .toString()
+                ).toStrictEqual("NaN");
             });
         });
         describe("second argument", () => {
@@ -103,7 +142,7 @@ describe("fused multiply and add", () => {
                 ).toStrictEqual("-Infinity");
             });
         });
-        describe("both arguments", () => {
+        describe("both first and second arguments", () => {
             test("infinity times infinity plus infinity is infinity", () => {
                 expect(
                     new Decimal128("Infinity")
@@ -117,6 +156,22 @@ describe("fused multiply and add", () => {
                         .multiplyAndAdd(negInf, posInf)
                         .toString()
                 ).toStrictEqual("NaN");
+            });
+        });
+        describe("third argument", () => {
+            test("one times one plus infinity is infinity", () => {
+                expect(
+                    new Decimal128("1")
+                        .multiplyAndAdd(new Decimal128("1"), posInf)
+                        .toString()
+                ).toStrictEqual("Infinity");
+            });
+            test("one times one plus minus infinity is minus infinity", () => {
+                expect(
+                    new Decimal128("1")
+                        .multiplyAndAdd(new Decimal128("1"), negInf)
+                        .toString()
+                ).toStrictEqual("-Infinity");
             });
         });
     });

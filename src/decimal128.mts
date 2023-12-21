@@ -807,7 +807,7 @@ export class Decimal128 {
                 prefix +
                 sig +
                 "E" +
-                (this.exponent < 0 ? "-" : "+") +
+                (this.exponent < 0 ? "" : "+") +
                 this.exponent
             );
         }
@@ -818,7 +818,7 @@ export class Decimal128 {
             "." +
             sig.substring(1) +
             "E" +
-            (adjustedExponent < 0 ? "-" : "+") +
+            (adjustedExponent < 0 ? "" : "+") +
             adjustedExponent
         );
     }

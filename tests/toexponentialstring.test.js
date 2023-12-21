@@ -27,6 +27,16 @@ describe("to exponential string", () => {
     test("significant has one digit", () => {
         expect(new Decimal128("1").toExponentialString()).toStrictEqual("1E+0");
     });
+    test("negative exponent", () => {
+        expect(new Decimal128("0.1").toExponentialString()).toStrictEqual(
+            "1E-1"
+        );
+    });
+    test("negative exponent, multiple digits", () => {
+        expect(new Decimal128("0.01042").toExponentialString()).toStrictEqual(
+            "1.042E-2"
+        );
+    });
 });
 
 describe("NaN", () => {
