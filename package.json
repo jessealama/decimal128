@@ -7,6 +7,10 @@
     "directories": {
         "test": "tests"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jessealama/decimal128.js.git"
+    },
     "scripts": {
         "test": "jest",
         "format": "yarn prettier . --write",
