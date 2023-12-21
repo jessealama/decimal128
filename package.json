@@ -41,5 +41,11 @@
         "prettier": "^3.0.0",
         "ts-jest": "^29.1.0",
         "typescript": "^5.1.3"
-    }
+    },
+    "licenses": [
+        {
+            "type": "BSD-2-Clause",
+            "url": "https://opensource.org/license/bsd-2-clause/"
+        }
+    ]
 }
