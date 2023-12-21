@@ -519,24 +519,6 @@ function handleInfinity(s: string): Decimal128Constructor {
     };
 }
 
-function adjustSignificand(
-    originalSignificand: string,
-    originalExponent: number,
-    newExponent: number
-): string {
-    if (originalExponent === newExponent) {
-        return originalSignificand;
-    }
-
-    if (originalExponent <= 0 && newExponent <= originalExponent) {
-        let diff = originalExponent - newExponent;
-        return originalSignificand + "0".repeat(diff);
-    }
-
-    let diff = newExponent - originalExponent;
-    return originalSignificand + "0".repeat(diff);
-}
-
 export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
 export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
 export const ROUNDING_MODE_EXPAND: RoundingMode = "expand";
@@ -640,10 +622,6 @@ type RoundingMode =
     | "halfFloor"
     | "halfTrunc";
 
-type Decimal128ConstructorOptions = {
-    exponent?: number;
-};
-
 const digitStrRegExp = /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
 const exponentRegExp = /^-?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
 const nanRegExp = /^-?nan$/i;
@@ -655,7 +633,7 @@ export class Decimal128 {
     public readonly isNegative: boolean;
     private readonly rat;
 
-    constructor(n: string, options?: Decimal128ConstructorOptions) {
+    constructor(n: string) {
         let data = undefined;
 
         if (n.match(nanRegExp)) {
@@ -673,18 +651,8 @@ export class Decimal128 {
         validateConstructorData(data);
 
         this.isNegative = data.isNegative;
-
-        if (options && options.exponent) {
-            this.exponent = options.exponent;
-            this.significand = adjustSignificand(
-                data.significand,
-                data.exponent,
-                this.exponent
-            );
-        } else {
-            this.exponent = data.exponent;
-            this.significand = data.significand;
-        }
+        this.exponent = data.exponent;
+        this.significand = data.significand;
 
         if (
             this.significand === NAN ||
@@ -980,13 +948,10 @@ export class Decimal128 {
         }
 
         let resultRat = Rational.add(this.rat, x.rat);
-        let serializedRat = resultRat.toDecimalPlaces(
-            MAX_SIGNIFICANT_DIGITS + 1
+        let initialResult = new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
-
-        return new Decimal128(serializedRat, {
-            exponent: Math.min(this.exponent, x.exponent),
-        });
+        return initialResult.setExponent(Math.min(this.exponent, x.exponent));
     }
 
     /**
@@ -1015,14 +980,12 @@ export class Decimal128 {
             return x.negate();
         }
 
-        return new Decimal128(
+        let initialResult = new Decimal128(
             Rational.subtract(this.rat, x.rat).toDecimalPlaces(
                 MAX_SIGNIFICANT_DIGITS + 1
-            ),
-            {
-                exponent: Math.min(this.exponent, x.exponent),
-            }
+            )
         );
+        return initialResult.setExponent(Math.min(this.exponent, x.exponent));
     }
 
     /**
@@ -1070,11 +1033,10 @@ export class Decimal128 {
         }
 
         let resultRat = Rational.multiply(this.rat, x.rat);
-        let renderedRat = resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
-
-        return new Decimal128(renderedRat, {
-            exponent: this.exponent + x.exponent,
-        });
+        let initialResult = new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
+        return initialResult.setExponent(this.exponent + x.exponent);
     }
 
     private isZero(): boolean {
@@ -1358,5 +1320,48 @@ export class Decimal128 {
         return new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
+    }
+
+    private incrementExponent(): Decimal128 {
+        let exp = this.exponent;
+        let sig = this.significand;
+
+        if (!sig.match(/0$/)) {
+            throw new RangeError("Significand must end in zero");
+        }
+
+        let prefix = this.isNegative ? "-" : "";
+        let newExp = exp + 1;
+        let newSig = sig.substring(0, sig.length - 1);
+
+        return new Decimal128(`${prefix}${newSig}E${newExp}`);
+    }
+
+    private decrementExponent(): Decimal128 {
+        let exp = this.exponent;
+        let sig = this.significand;
+
+        let prefix = this.isNegative ? "-" : "";
+        let newExp = exp - 1;
+        let newSig = sig + "0";
+
+        return new Decimal128(`${prefix}${newSig}E${newExp}`);
+    }
+
+    setExponent(newExp: number): Decimal128 {
+        let oldExp = this.exponent;
+        let result: Decimal128 = this;
+
+        while (oldExp < newExp) {
+            result = result.incrementExponent();
+            oldExp++;
+        }
+
+        while (oldExp > newExp) {
+            result = result.decrementExponent();
+            oldExp--;
+        }
+
+        return result;
     }
 }
