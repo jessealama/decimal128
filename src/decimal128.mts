@@ -803,7 +803,13 @@ export class Decimal128 {
         let adjustedExponent = this.exponent + sig.length - 1;
 
         if (sig.length === 1) {
-            return prefix + sig + "E" + this.exponent;
+            return (
+                prefix +
+                sig +
+                "E" +
+                (this.exponent < 0 ? "" : "+") +
+                this.exponent
+            );
         }
 
         return (
@@ -812,6 +818,7 @@ export class Decimal128 {
             "." +
             sig.substring(1) +
             "E" +
+            (adjustedExponent < 0 ? "" : "+") +
             adjustedExponent
         );
     }
@@ -966,6 +973,10 @@ export class Decimal128 {
 
         if (!x.isFinite()) {
             return x;
+        }
+
+        if (this.isNegative && x.isNegative) {
+            return this.negate().add(x.negate()).negate();
         }
 
         let resultRat = Rational.add(this.rat, x.rat);
@@ -1318,5 +1329,34 @@ export class Decimal128 {
         }
 
         return new Decimal128(result);
+    }
+
+    multiplyAndAdd(x: Decimal128, y: Decimal128): Decimal128 {
+        if (this.isNaN() || x.isNaN() || y.isNaN()) {
+            return new Decimal128(NAN);
+        }
+
+        if (!this.isFinite()) {
+            if (x.isZero()) {
+                return new Decimal128(NAN);
+            }
+            return this.multiply(x).add(y);
+        }
+
+        if (!x.isFinite()) {
+            if (this.isZero()) {
+                return new Decimal128(NAN);
+            }
+            return this.multiply(x).add(y);
+        }
+
+        if (!y.isFinite()) {
+            return y;
+        }
+
+        let resultRat = Rational.add(Rational.multiply(this.rat, x.rat), y.rat);
+        return new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        );
     }
 }
