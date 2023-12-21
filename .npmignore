@@ -4,4 +4,4 @@ node_modules/
 tests/
 .github/
 .prettierignore
-jest.config.js
+jest.config.cjs
