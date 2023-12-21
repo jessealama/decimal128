@@ -138,6 +138,7 @@ describe("tests from the General Decimal Arithmetic Specification", () => {
         ).toStrictEqual("-8");
     });
     test("example three", () => {
+        // in the docs, the answer is 1.38435736E+12 but we have more precision
         expect(
             new Decimal128("888565290")
                 .multiplyAndAdd(
@@ -145,6 +146,6 @@ describe("tests from the General Decimal Arithmetic Specification", () => {
                     new Decimal128("-86087.7578")
                 )
                 .toExponentialString()
-        ).toStrictEqual("1.38435736E+12");
+        ).toStrictEqual("1.3843573567778392E+12");
     });
 });

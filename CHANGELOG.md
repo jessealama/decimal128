@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Fused multiply-add
+-   Rounding modes for all operations (#54)
+
+## [7.0.0] - 2023-12-21
+
+### Added
+
+-   `toExponentialString`: Output a sign (`+` or `-`) in the exponent part. This is a breaking change.
+-   [Fused multiply-and-add](https://en.wikipedia.org/wiki/Multiply–accumulate_operation#Fused_multiply–add) (`multiplyAdd`)
 
 ## [6.2.0] - 2023-12-18
 

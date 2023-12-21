@@ -124,6 +124,6 @@ describe("examples from the General Decimal Arithmetic specification", () => {
             new Decimal128("1E2")
                 .add(new Decimal128("1E4"))
                 .toExponentialString()
-        ).toStrictEqual("1.01E4");
+        ).toStrictEqual("1.01E+4");
     });
 });

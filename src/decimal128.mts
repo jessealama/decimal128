@@ -803,7 +803,13 @@ export class Decimal128 {
         let adjustedExponent = this.exponent + sig.length - 1;
 
         if (sig.length === 1) {
-            return prefix + sig + "E" + this.exponent;
+            return (
+                prefix +
+                sig +
+                "E" +
+                (this.exponent < 0 ? "-" : "+") +
+                this.exponent
+            );
         }
 
         return (
@@ -812,6 +818,7 @@ export class Decimal128 {
             "." +
             sig.substring(1) +
             "E" +
+            (adjustedExponent < 0 ? "-" : "+") +
             adjustedExponent
         );
     }
@@ -1343,21 +1350,13 @@ export class Decimal128 {
             return this.multiply(x).add(y);
         }
 
-        let result = Rational.add(Rational.multiply(this.rat, x.rat), y.rat);
-        let exponentForMultiplication = this.exponent + x.exponent;
-        let exponentForAddition = Math.min(
-            exponentForMultiplication,
-            y.exponent
-        );
+        if (!y.isFinite()) {
+            return y;
+        }
 
-        let serializedRat = result.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
-        let ourLength = this.significand.length;
-        let theirLength = x.significand.length;
-        let cutoff = cutoffAfterSignificantDigits(
-            serializedRat,
-            ourLength + theirLength
+        let resultRat = Rational.add(Rational.multiply(this.rat, x.rat), y.rat);
+        return new Decimal128(
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
-
-        return new Decimal128(`${cutoff}E${exponentForAddition}`);
     }
 }
