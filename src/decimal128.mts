@@ -901,6 +901,18 @@ type RoundingMode =
     | "halfFloor"
     | "halfTrunc";
 
+const ROUNDING_MODELS: RoundingMode[] = [
+    "ceil",
+    "floor",
+    "expand",
+    "trunc",
+    "halfEven",
+    "halfExpand",
+    "halfCeil",
+    "halfFloor",
+    "halfTrunc",
+];
+
 const digitStrRegExp = /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
 const exponentRegExp = /^-?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
 const nanRegExp = /^-?nan$/i;
@@ -927,6 +939,10 @@ function ensureFullySpecifiedConstructorOptions(
 
     if (undefined === options.roundingMode) {
         return DEFAULT_CONSTRUCTOR_OPTIONS;
+    }
+
+    if (!ROUNDING_MODELS.includes(options.roundingMode)) {
+        throw new Error(`Unsupported rounding mode "${options.roundingMode}"`);
     }
 
     return options as FullySpecifiedConstructorOptions;

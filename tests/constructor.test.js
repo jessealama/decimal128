@@ -437,4 +437,14 @@ describe("rounding options", () => {
             ).toStrictEqual(expected);
         });
     }
+    test("unknown options passed in", () => {
+        expect(new Decimal128("0.1", { foo: "bar" }).toString()).toStrictEqual(
+            "0.1"
+        );
+    });
+    test("unknown rounding mode throws error", () => {
+        expect(() => new Decimal128("0.1", { roundingMode: "jazzy" })).toThrow(
+            Error
+        );
+    });
 });
