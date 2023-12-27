@@ -416,3 +416,25 @@ describe("infinity", () => {
         expect(new Decimal128("-INF")).toBeInstanceOf(Decimal128);
     });
 });
+
+describe("rounding options", () => {
+    let val = "-1234567890123456789012345678901234.5";
+    let answers = {
+        ceil: "-1234567890123456789012345678901234",
+        floor: "-1234567890123456789012345678901234",
+        expand: "-1234567890123456789012345678901235",
+        trunc: "-1234567890123456789012345678901234",
+        halfEven: "-1234567890123456789012345678901234",
+        halfExpand: "-1234567890123456789012345678901234",
+        halfCeil: "-1234567890123456789012345678901234",
+        halfFloor: "-1234567890123456789012345678901234",
+        halfTrunc: "-1234567890123456789012345678901234",
+    };
+    for (const [mode, expected] of Object.entries(answers)) {
+        test(`constructor with rounding mode "${mode}"`, () => {
+            expect(
+                new Decimal128(val, { roundingMode: mode }).toString()
+            ).toStrictEqual(expected);
+        });
+    }
+});

@@ -218,7 +218,11 @@ type SignificandExponent = {
     exponent: number;
 };
 
-function adjustInteger(initialSignificand: string): SignificandExponent {
+function adjustInteger(
+    isNegative: boolean,
+    initialSignificand: string,
+    options: FullySpecifiedConstructorOptions
+): SignificandExponent {
     let m = initialSignificand.match(/(0+)$/);
 
     if (!m) {
@@ -238,17 +242,32 @@ function adjustInteger(initialSignificand: string): SignificandExponent {
     };
 }
 
-function adjustNonInteger(
+function roundHalfEven(
+    isNegative: boolean,
     initialSignificand: string,
     initialExponent: number
 ): SignificandExponent {
-    let lastDigit = parseInt(initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS));
+    let lastDigit = parseInt(
+        initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS)
+    ) as Digit;
+    let cutoff = cutoffAfterSignificantDigits(
+        initialSignificand,
+        MAX_SIGNIFICANT_DIGITS - 1
+    );
     let penultimateDigit = parseInt(
         initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    );
+    ) as Digit;
     let excessDigits = initialSignificand.substring(MAX_SIGNIFICANT_DIGITS);
     let numExcessDigits = excessDigits.length;
     let exp = initialExponent + numExcessDigits; // we will chop off the excess digits
+
+    let finalDigit = roundIt(
+        false,
+        lastDigit,
+        penultimateDigit,
+        ROUNDING_MODE_HALF_EVEN
+    );
+    // original
     if (lastDigit === 5) {
         if (penultimateDigit % 2 === 0) {
             let rounded = cutoffAfterSignificantDigits(
@@ -262,10 +281,6 @@ function adjustNonInteger(
         }
 
         if (9 === penultimateDigit) {
-            let cutoff = cutoffAfterSignificantDigits(
-                initialSignificand,
-                MAX_SIGNIFICANT_DIGITS - 1
-            );
             let carried = propagateCarryFromRight(cutoff);
             let rounded =
                 cutoffAfterSignificantDigits(
@@ -291,10 +306,6 @@ function adjustNonInteger(
 
     if (lastDigit > 5) {
         if (9 === penultimateDigit) {
-            let cutoff = cutoffAfterSignificantDigits(
-                initialSignificand,
-                MAX_SIGNIFICANT_DIGITS - 1
-            );
             let carried = propagateCarryFromRight(cutoff);
             let rounded =
                 cutoffAfterSignificantDigits(
@@ -311,11 +322,11 @@ function adjustNonInteger(
             };
         }
 
-        let cutoff = cutoffAfterSignificantDigits(
+        let nextCutoff = cutoffAfterSignificantDigits(
             initialSignificand,
             MAX_SIGNIFICANT_DIGITS
         );
-        let rounded = propagateCarryFromRight(cutoff);
+        let rounded = propagateCarryFromRight(nextCutoff);
         return {
             significand: rounded,
             exponent: exp,
@@ -330,6 +341,68 @@ function adjustNonInteger(
         significand: rounded,
         exponent: exp,
     };
+}
+
+function roundCeiling(
+    isNegative: boolean,
+    initialSignificand: string,
+    initialExponent: number
+): SignificandExponent {
+    let lastDigit = parseInt(
+        initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS)
+    ) as Digit;
+    let cutoff = cutoffAfterSignificantDigits(
+        initialSignificand,
+        MAX_SIGNIFICANT_DIGITS - 1
+    );
+    let penultimateDigit = parseInt(
+        initialSignificand.charAt(MAX_SIGNIFICANT_DIGITS - 1)
+    ) as Digit;
+    let excessDigits = initialSignificand.substring(MAX_SIGNIFICANT_DIGITS);
+    let numExcessDigits = excessDigits.length;
+    let exp = initialExponent + numExcessDigits; // we will chop off the excess digits
+
+    let finalDigit = roundIt(
+        isNegative,
+        lastDigit,
+        penultimateDigit,
+        ROUNDING_MODE_HALF_EVEN
+    );
+
+    if (finalDigit < 10) {
+        return {
+            significand: `${cutoff}${finalDigit}`,
+            exponent: exp,
+        };
+    }
+
+    throw new Error("Not implemented");
+}
+
+function adjustNonInteger(
+    isNegative: boolean,
+    initialSignificand: string,
+    initialExponent: number,
+    options: FullySpecifiedConstructorOptions
+): SignificandExponent {
+    switch (options.roundingMode) {
+        case ROUNDING_MODE_HALF_EVEN:
+            return roundHalfEven(
+                isNegative,
+                initialSignificand,
+                initialExponent
+            );
+        case ROUNDING_MODE_CEILING:
+            return roundCeiling(
+                isNegative,
+                initialSignificand,
+                initialExponent
+            );
+        default:
+            throw new Error(
+                `Unsupported rounding mode ${options.roundingMode}`
+            );
+    }
 }
 
 type DigitPair = [Digit, Digit];
@@ -470,11 +543,11 @@ function handleExponentialNotation(
 
     if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
         if (isInteger) {
-            let adjusted = adjustInteger(sg);
+            let adjusted = adjustInteger(isNegative, sg, options);
             sg = adjusted.significand;
             exp = adjusted.exponent;
         } else {
-            let adjusted = adjustNonInteger(sg, exp);
+            let adjusted = adjustNonInteger(isNegative, sg, exp, options);
             sg = adjusted.significand;
             exp = adjusted.exponent;
         }
@@ -498,21 +571,27 @@ function handleDecimalNotation(
     let numSigDigits = countSignificantDigits(withoutUnderscores);
     let isInteger = exp >= 0;
 
-    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        if (isInteger) {
-            let adjusted = adjustInteger(withoutUnderscores);
-            sg = adjusted.significand;
-            exp = adjusted.exponent;
-        } else {
-            let adjusted = adjustNonInteger(sg, exp);
-            sg = adjusted.significand;
-            exp = adjusted.exponent;
-        }
+    if (numSigDigits <= MAX_SIGNIFICANT_DIGITS) {
+        return {
+            significand: sg,
+            exponent: exp,
+            isNegative: isNegative,
+        };
     }
 
+    if (isInteger) {
+        let adjusted = adjustInteger(isNegative, withoutUnderscores, options);
+        return {
+            significand: adjusted.significand,
+            exponent: adjusted.exponent,
+            isNegative: isNegative,
+        };
+    }
+
+    let adjusted = adjustNonInteger(isNegative, sg, exp, options);
     return {
-        significand: sg,
-        exponent: exp,
+        significand: adjusted.significand,
+        exponent: adjusted.exponent,
         isNegative: isNegative,
     };
 }
@@ -535,7 +614,7 @@ export const ROUNDING_MODE_HALF_CEILING: RoundingMode = "halfCeil";
 export const ROUNDING_MODE_HALF_FLOOR: RoundingMode = "halfFloor";
 export const ROUNDING_MODE_HALF_TRUNCATE: RoundingMode = "halfTrunc";
 
-const ROUNDING_MODE_DEFAULT = ROUNDING_MODE_HALF_EXPAND;
+const ROUNDING_MODE_DEFAULT = ROUNDING_MODE_HALF_EVEN;
 
 function roundIt(
     isNegative: boolean,
@@ -1386,21 +1465,6 @@ export class Decimal128 {
         );
     }
 
-    private incrementExponent(): Decimal128 {
-        let exp = this.exponent;
-        let sig = this.significand;
-
-        if (!sig.match(/0$/)) {
-            throw new RangeError("Significand must end in zero");
-        }
-
-        let prefix = this.isNegative ? "-" : "";
-        let newExp = exp + 1;
-        let newSig = sig.substring(0, sig.length - 1);
-
-        return new Decimal128(`${prefix}${newSig}E${newExp}`);
-    }
-
     private decrementExponent(): Decimal128 {
         let exp = this.exponent;
         let sig = this.significand;
@@ -1415,11 +1479,6 @@ export class Decimal128 {
     private setExponent(newExp: number): Decimal128 {
         let oldExp = this.exponent;
         let result: Decimal128 = this;
-
-        while (oldExp < newExp) {
-            result = result.incrementExponent();
-            oldExp++;
-        }
 
         while (oldExp > newExp) {
             result = result.decrementExponent();
