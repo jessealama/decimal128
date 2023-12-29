@@ -115,12 +115,24 @@ describe("constructor", () => {
                 new Decimal128("0.3666666666666666666666666666666667")
             ).toBeInstanceOf(Decimal128);
         });
-        test("significant digits are counted, not total digits (1)", () => {
+        test("significant digits are counted, not total digits", () => {
             expect(
                 new Decimal128(
                     "100000000000000000000000000000000000000000000000000"
                 )
             ).toBeInstanceOf(Decimal128);
+        });
+        test("decimal with very fine precision, small significand", () => {
+            let s = "0.00000000000000000000000000000000000001";
+            let val = new Decimal128(s);
+            expect(val.significand).toStrictEqual("1");
+            expect(val.exponent).toStrictEqual(-38);
+            expect(val.toString()).toStrictEqual(s);
+        });
+        test("decimal number with trailing zero", () => {
+            let val = new Decimal128("0.67890");
+            expect(val.significand).toStrictEqual("67890");
+            expect(val.exponent).toStrictEqual(-5);
         });
         test("too many significant digits", () => {
             expect(
@@ -196,8 +208,8 @@ describe("constructor", () => {
                 );
             });
             test("multiple trailing zeros (negative)", () => {
-                expect(new Decimal128("0.000").toString()).toStrictEqual(
-                    "0.000"
+                expect(new Decimal128("-0.000").toString()).toStrictEqual(
+                    "-0.000"
                 );
             });
         });
@@ -418,33 +430,68 @@ describe("infinity", () => {
 });
 
 describe("rounding options", () => {
-    let val = "-1234567890123456789012345678901234.5";
-    let answers = {
-        ceil: "-1234567890123456789012345678901234",
-        floor: "-1234567890123456789012345678901235",
-        expand: "-1234567890123456789012345678901235",
-        trunc: "-1234567890123456789012345678901234",
-        halfEven: "-1234567890123456789012345678901234",
-        halfExpand: "-1234567890123456789012345678901235",
-        halfCeil: "-1234567890123456789012345678901234",
-        halfFloor: "-1234567890123456789012345678901235",
-        halfTrunc: "-1234567890123456789012345678901234",
-    };
-    for (const [mode, expected] of Object.entries(answers)) {
-        test(`constructor with rounding mode "${mode}"`, () => {
+    describe("weird options", () => {
+        test("unknown options passed in does not throw", () => {
             expect(
-                new Decimal128(val, { roundingMode: mode }).toString()
-            ).toStrictEqual(expected);
+                new Decimal128("0.1", { foo: "bar" }).toString()
+            ).toStrictEqual("0.1");
         });
-    }
-    test("unknown options passed in", () => {
-        expect(new Decimal128("0.1", { foo: "bar" }).toString()).toStrictEqual(
-            "0.1"
-        );
+        test("unknown rounding mode throws", () => {
+            expect(
+                () => new Decimal128("0.1", { roundingMode: "jazzy" })
+            ).toThrow(Error);
+        });
+        test("unknown rounding mode throws on large input", () => {
+            expect(
+                () =>
+                    new Decimal128("0." + "9".repeat(10000), {
+                        roundingMode: "cool",
+                    })
+            ).toThrow(Error);
+        });
     });
-    test("unknown rounding mode throws error", () => {
-        expect(() => new Decimal128("0.1", { roundingMode: "jazzy" })).toThrow(
-            Error
-        );
+    describe("negative value, final decimal digit is five, penultimate digit is less than nine", () => {
+        let val = "-1234567890123456789012345678901234.5";
+        let answers = {
+            ceil: "-1234567890123456789012345678901234",
+            floor: "-1234567890123456789012345678901235",
+            expand: "-1234567890123456789012345678901235",
+            trunc: "-1234567890123456789012345678901234",
+            halfEven: "-1234567890123456789012345678901234",
+            halfExpand: "-1234567890123456789012345678901235",
+            halfCeil: "-1234567890123456789012345678901234",
+            halfFloor: "-1234567890123456789012345678901235",
+            halfTrunc: "-1234567890123456789012345678901234",
+        };
+        for (const [mode, expected] of Object.entries(answers)) {
+            test(`constructor with rounding mode "${mode}"`, () => {
+                expect(
+                    new Decimal128(val, { roundingMode: mode }).toString()
+                ).toStrictEqual(expected);
+            });
+        }
+    });
+    describe("negative value, final decimal digit is five, penultimate digit is nine", () => {
+        let roundNineVal = "-1234567890123456789012345678901239.5";
+        let roundUpAnswers = {
+            ceil: "-1234567890123456789012345678901239",
+            floor: "-1234567890123456789012345678901240",
+            expand: "-1234567890123456789012345678901240",
+            trunc: "-1234567890123456789012345678901239",
+            halfEven: "-1234567890123456789012345678901240",
+            halfExpand: "-1234567890123456789012345678901240",
+            halfCeil: "-1234567890123456789012345678901239",
+            halfFloor: "-1234567890123456789012345678901240",
+            halfTrunc: "-1234567890123456789012345678901239",
+        };
+        for (const [mode, expected] of Object.entries(roundUpAnswers)) {
+            test(`constructor with rounding mode "${mode}"`, () => {
+                expect(
+                    new Decimal128(roundNineVal, {
+                        roundingMode: mode,
+                    }).toString()
+                ).toStrictEqual(expected);
+            });
+        }
     });
 });

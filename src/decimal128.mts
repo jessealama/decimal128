@@ -74,29 +74,45 @@ function normalize(s: string): string {
  */
 function significand(s: string): string {
     if (s.match(/^-/)) {
+        // negative
         return significand(s.substring(1));
     }
 
-    if (s.match(/^0+[.]/)) {
-        return significand(s.replace(/^0+[.]/, ""));
+    if (s.match(/^00+/)) {
+        // leading zeros
+        return significand(s.replace(/^00+/, ""));
     }
 
-    if (s.match(/^0+/)) {
-        let noLeadingZeroes = s.replace(/^0+/, "");
-
-        if ("" === noLeadingZeroes) {
-            return "0";
-        }
-
-        return significand(noLeadingZeroes);
+    if (s.match(/^0+[.]/)) {
+        // less than one
+        let [_, rhs] = s.split(/[.]/);
+        let trailingZeros = rhs.match(/0+$/);
+        let withoutTrailingZeros = rhs.replace(/0+$/, "");
+        return (
+            significand(withoutTrailingZeros) +
+            (trailingZeros ? trailingZeros[0] : "")
+        );
     }
 
     if (s.match(/[.]/)) {
+        // greater than one
         return s.replace(/[.]/, "");
     }
 
+    // we are dealing with integers at this point
+
+    if (s.match(/^0+/)) {
+        // leading zeros
+        return significand(s.replace(/^0+/, ""));
+    }
+
     if (s.match(/0+$/)) {
+        // trailing zeros
         return significand(s.replace(/0+$/, ""));
+    }
+
+    if (s === "") {
+        return "0";
     }
 
     return s;
@@ -358,15 +374,11 @@ function roundCeiling(x: SignedSignificandExponent): SignedSignificandExponent {
         ROUNDING_MODE_CEILING
     );
 
-    if (finalDigit < 10) {
-        return {
-            isNegative: x.isNegative,
-            significand: `${cutoff}${finalDigit}`,
-            exponent: exp,
-        };
-    }
-
-    throw new Error("Not implemented");
+    return {
+        isNegative: x.isNegative,
+        significand: `${cutoff}${finalDigit}`,
+        exponent: exp,
+    };
 }
 
 function roundFloor(x: SignedSignificandExponent): SignedSignificandExponent {
@@ -395,7 +407,13 @@ function roundFloor(x: SignedSignificandExponent): SignedSignificandExponent {
         };
     }
 
-    throw new Error("Not implemented");
+    let rounded = propagateCarryFromRight(cutoff);
+
+    return {
+        isNegative: x.isNegative,
+        significand: `${rounded}0`,
+        exponent: exp,
+    };
 }
 
 function roundExpand(x: SignedSignificandExponent): SignedSignificandExponent {
@@ -424,7 +442,13 @@ function roundExpand(x: SignedSignificandExponent): SignedSignificandExponent {
         };
     }
 
-    throw new Error("Not implemented");
+    let rounded = propagateCarryFromRight(cutoff);
+
+    return {
+        isNegative: x.isNegative,
+        significand: `${rounded}0`,
+        exponent: exp,
+    };
 }
 
 function roundTrunc(x: SignedSignificandExponent): SignedSignificandExponent {
@@ -445,15 +469,11 @@ function roundTrunc(x: SignedSignificandExponent): SignedSignificandExponent {
         ROUNDING_MODE_TRUNCATE
     );
 
-    if (finalDigit < 10) {
-        return {
-            isNegative: x.isNegative,
-            significand: `${cutoff}${finalDigit}`,
-            exponent: exp,
-        };
-    }
-
-    throw new Error("Not implemented");
+    return {
+        isNegative: x.isNegative,
+        significand: `${cutoff}${finalDigit}`,
+        exponent: exp,
+    };
 }
 
 function roundHalfExpand(
@@ -484,7 +504,13 @@ function roundHalfExpand(
         };
     }
 
-    throw new Error("Not implemented");
+    let rounded = propagateCarryFromRight(cutoff);
+
+    return {
+        isNegative: x.isNegative,
+        significand: `${rounded}0`,
+        exponent: exp,
+    };
 }
 
 function roundHalfCeil(
@@ -507,15 +533,11 @@ function roundHalfCeil(
         ROUNDING_MODE_HALF_CEILING
     );
 
-    if (finalDigit < 10) {
-        return {
-            isNegative: x.isNegative,
-            significand: `${cutoff}${finalDigit}`,
-            exponent: exp,
-        };
-    }
-
-    throw new Error("Not implemented");
+    return {
+        isNegative: x.isNegative,
+        significand: `${cutoff}${finalDigit}`,
+        exponent: exp,
+    };
 }
 
 function roundHalfFloor(
@@ -546,7 +568,13 @@ function roundHalfFloor(
         };
     }
 
-    throw new Error("Not implemented");
+    let rounded = propagateCarryFromRight(cutoff);
+
+    return {
+        isNegative: x.isNegative,
+        significand: `${rounded}0`,
+        exponent: exp,
+    };
 }
 
 function roundHalfTrunc(
@@ -569,23 +597,18 @@ function roundHalfTrunc(
         ROUNDING_MODE_HALF_TRUNCATE
     );
 
-    if (finalDigit < 10) {
-        return {
-            isNegative: x.isNegative,
-            significand: `${cutoff}${finalDigit}`,
-            exponent: exp,
-        };
-    }
-
-    throw new Error("Not implemented");
+    return {
+        isNegative: x.isNegative,
+        significand: `${cutoff}${finalDigit}`,
+        exponent: exp,
+    };
 }
 
 function adjustNonInteger(
     x: SignedSignificandExponent,
     options: FullySpecifiedConstructorOptions
 ): SignedSignificandExponent {
-    let mode = options.roundingMode;
-    switch (mode) {
+    switch (options.roundingMode) {
         case ROUNDING_MODE_HALF_EVEN:
             return roundHalfEven(x);
         case ROUNDING_MODE_CEILING:
@@ -605,7 +628,9 @@ function adjustNonInteger(
         case ROUNDING_MODE_HALF_TRUNCATE:
             return roundHalfTrunc(x);
         default:
-            throw new Error(`Unsupported rounding mode "${mode}"`);
+            throw new Error(
+                `Unsupported rounding mode "${options.roundingMode}"`
+            );
     }
 }
 
@@ -1065,8 +1090,16 @@ export class Decimal128 {
             return prefix + (sg + "0".repeat(exp)).replace(/^0+$/, "0");
         }
 
-        if (sg.length + exp <= 0) {
+        if (sg === "0") {
+            return prefix + "0." + "0".repeat(0 - exp);
+        }
+
+        if (sg.length + exp < 0) {
             return prefix + "0." + "0".repeat(0 - exp - sg.length) + sg;
+        }
+
+        if (sg.length + exp == 0) {
+            return prefix + "0." + sg;
         }
 
         return (
