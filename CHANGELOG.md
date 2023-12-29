@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.1.0] - 2023-12-29
+
+### Added
+
 -   Rounding modes for all operations (#54)
 
 ## [7.0.1] - 2023-12-21

@@ -1,30 +1,38 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 
-let tests = {
-    "simple example": ["4.1", "1.25", "3.28"],
-    "finite decimal representation": ["0.654", "0.12", "5.45"],
-    "infinite decimal representation": [
-        "0.11",
-        "0.3",
-        "0.3666666666666666666666666666666667",
-    ],
-    "many digits, few significant": [
-        "0.00000000000000000000000000000000000001",
-        "2",
-        "0.000000000000000000000000000000000000005",
-    ],
-    "one third": ["1", "3", "0.3333333333333333333333333333333333"],
-    "one tenth": ["1", "10", "0.1"],
-};
-
 describe("division", () => {
-    for (let [name, [a, b, c]] of Object.entries(tests)) {
-        test(name, () => {
-            expect(
-                new Decimal128(a).divide(new Decimal128(b)).toString()
-            ).toStrictEqual(c);
-        });
-    }
+    test("simple example", () => {
+        expect(
+            new Decimal128("4.1").divide(new Decimal128("1.25")).toString()
+        ).toStrictEqual("3.28");
+    });
+    test("finite decimal representation", () => {
+        expect(
+            new Decimal128("0.654").divide(new Decimal128("0.12")).toString()
+        ).toStrictEqual("5.45");
+    });
+    test("infinite decimal representation", () => {
+        expect(
+            new Decimal128("0.11").divide(new Decimal128("0.3")).toString()
+        ).toStrictEqual("0.3666666666666666666666666666666667");
+    });
+    test("many digits, few significant", () => {
+        expect(
+            new Decimal128("0.00000000000000000000000000000000000001")
+                .divide(new Decimal128("2"))
+                .toString()
+        ).toStrictEqual("0.000000000000000000000000000000000000005");
+    });
+    test("one third", () => {
+        expect(
+            new Decimal128("1").divide(new Decimal128("3")).toString()
+        ).toStrictEqual("0.3333333333333333333333333333333333");
+    });
+    test("one tenth", () => {
+        expect(
+            new Decimal128("1").divide(new Decimal128("10")).toString()
+        ).toStrictEqual("0.1");
+    });
     test("zero divided by zero", () => {
         expect(
             new Decimal128("0").divide(new Decimal128("0")).toString()

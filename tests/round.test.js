@@ -19,7 +19,7 @@ describe("rounding", () => {
             expect(new Decimal128("1.5").round().toString()).toStrictEqual("2");
         });
         test("positive even", () => {
-            expect(new Decimal128("2.5").round().toString()).toStrictEqual("3");
+            expect(new Decimal128("2.5").round().toString()).toStrictEqual("2");
         });
         test("round up (positive)", () => {
             expect(new Decimal128("2.6").round().toString()).toStrictEqual("3");
@@ -31,7 +31,7 @@ describe("rounding", () => {
         });
         test("negative even", () => {
             expect(new Decimal128("-2.5").round().toString()).toStrictEqual(
-                "-3"
+                "-2"
             );
         });
         test("round down (positive)", () => {
@@ -41,7 +41,7 @@ describe("rounding", () => {
     describe("round after a certain number of decimal digits", () => {
         test("multiple digits", () => {
             expect(new Decimal128("42.345").round(2).toString()).toStrictEqual(
-                "42.35"
+                "42.34"
             );
         });
         test("more digits than are available", () => {

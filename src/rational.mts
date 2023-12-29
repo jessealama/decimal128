@@ -115,10 +115,6 @@ export class Rational {
 
     private static _add(x: Rational, y: Rational): Rational {
         if (x.isNegative) {
-            if (y.isNegative) {
-                return Rational._add(x.negate(), y.negate()).negate();
-            }
-
             return Rational._subtract(y, x.negate());
         }
 
@@ -134,15 +130,7 @@ export class Rational {
 
     private static _subtract(x: Rational, y: Rational): Rational {
         if (x.isNegative) {
-            if (y.isNegative) {
-                return Rational.subtract(y.negate(), x.negate());
-            }
-
             return Rational._add(x.negate(), y).negate();
-        }
-
-        if (y.isNegative) {
-            return Rational._add(x, y.negate());
         }
 
         return new Rational(
