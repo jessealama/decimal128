@@ -6,12 +6,10 @@
 -   subtraction (`subtract`)
 -   multiplication (`multiply`)
 -   division (`divide`)
--   truncate (`trunctate`)
--   floor (`floor`)
--   ceiling (`ceiling`)
+-   remainder (`remainder`)
 -   absolute value (`abs`)
 -   `toString`
--   `toDecimalDigits`
+-   `toExponential`
 
 ## Implementation
 

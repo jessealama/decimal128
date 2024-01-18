@@ -229,11 +229,6 @@ function handleNan(): Decimal128Constructor {
     };
 }
 
-type SignificandExponent = {
-    significand: string;
-    exponent: number;
-};
-
 type SignedSignificandExponent = {
     significand: string;
     exponent: number;
@@ -241,8 +236,7 @@ type SignedSignificandExponent = {
 };
 
 function adjustInteger(
-    x: SignedSignificandExponent,
-    options: FullySpecifiedConstructorOptions
+    x: SignedSignificandExponent
 ): SignedSignificandExponent {
     let sig = x.significand;
     let m = sig.match(/(0+)$/);
@@ -273,12 +267,6 @@ function roundHalfEven(
     let numExcessDigits = excessDigits.length;
     let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
 
-    let finalDigit = roundIt(
-        x.isNegative,
-        lastDigit,
-        penultimateDigit,
-        ROUNDING_MODE_HALF_EVEN
-    );
     // original
     if (lastDigit === 5) {
         if (penultimateDigit % 2 === 0) {
@@ -634,119 +622,6 @@ function adjustNonInteger(
     }
 }
 
-type DigitPair = [Digit, Digit];
-
-function prepareLeftHandSideForSquareRoot(s: string): DigitPair[] {
-    let [lhs] = s.split(".");
-    let numDigits = lhs.length;
-
-    let digitPairs: DigitPair[] = [];
-
-    if (numDigits % 2 === 1) {
-        let firstDigit = parseInt(lhs.charAt(0)) as Digit;
-        digitPairs.push([0, firstDigit]);
-        numDigits--;
-    }
-
-    for (let i = 0; i < numDigits / 2; i++) {
-        let d1 = parseInt(lhs.charAt(2 * i)) as Digit;
-        let d2 = parseInt(lhs.charAt(2 * i + 1)) as Digit;
-        digitPairs.push([d1, d2]);
-    }
-
-    return digitPairs;
-}
-
-function prepareRightHandSideForSquareRoot(s: string): DigitPair[] {
-    let [_, rhs] = s.split(".");
-
-    if (undefined === rhs) {
-        return [];
-    }
-
-    let numDigits = rhs.length;
-
-    let digitPairs: DigitPair[] = [];
-
-    for (let i = 0; i < (numDigits - 1) / 2; i++) {
-        let d1 = parseInt(rhs.charAt(2 * i)) as Digit;
-        let d2 = parseInt(rhs.charAt(2 * i + 1)) as Digit;
-        digitPairs.push([d1, d2]);
-    }
-
-    if (numDigits % 2 === 1) {
-        let lastDigit = parseInt(rhs.charAt(numDigits - 1)) as Digit;
-        digitPairs.push([0, lastDigit]);
-    }
-
-    return digitPairs;
-}
-
-function valueOfDigitPair(digitPair: DigitPair): bigint {
-    let [d1, d2] = digitPair;
-    return BigInt(`${d1}${d2}`);
-}
-
-function nextDigit(p: bigint, c: DigitPair, r: bigint): bigint {
-    let x: bigint = 0n;
-    let v: bigint = 100n * r + valueOfDigitPair(c);
-    while (x * (20n * p + x) <= v) {
-        x = x + 1n;
-    }
-    return x - 1n;
-}
-
-function* nextDigitForSquareRoot(s: string): Generator<Digit> {
-    let leftDigits = prepareLeftHandSideForSquareRoot(s);
-    let rightDigits = prepareRightHandSideForSquareRoot(s);
-    let numDigitsEmitted = 0;
-
-    let p: bigint = 0n;
-    let c = 0n;
-    let r = 0n;
-    for (let digitPair of leftDigits) {
-        let x = nextDigit(p, digitPair, r);
-        let y = x * (20n * p + x);
-        let d = parseInt(x.toString()) as Digit;
-        yield d;
-        numDigitsEmitted++;
-        p = 10n * p + x;
-        c = 100n * r + valueOfDigitPair(digitPair);
-        r = c - y;
-    }
-
-    if (r === 0n && rightDigits.length === 0) {
-        return; // exact integer square root
-    }
-
-    yield -1;
-
-    for (let digitPair of rightDigits) {
-        let x = nextDigit(p, digitPair, r);
-        let y = x * (20n * p + x);
-        let d = parseInt(x.toString()) as Digit;
-        yield d;
-        numDigitsEmitted++;
-        p = 10n * p + x;
-        c = 100n * r + valueOfDigitPair(digitPair);
-        r = c - y;
-    }
-
-    // we may still be able to emit more digits
-    while (r !== 0n && numDigitsEmitted < MAX_SIGNIFICANT_DIGITS + 1) {
-        let x = nextDigit(p, [0, 0], r);
-        let y = x * (20n * p + x);
-        let d = parseInt(x.toString()) as Digit;
-        yield d;
-        numDigitsEmitted++;
-        p = 10n * p + x;
-        c = 100n * r + valueOfDigitPair([0, 0]);
-        r = c - y;
-    }
-
-    return;
-}
-
 function handleExponentialNotation(
     s: string,
     options: FullySpecifiedConstructorOptions
@@ -781,7 +656,7 @@ function handleExponentialNotation(
     }
 
     if (isInteger) {
-        return adjustInteger(data, options);
+        return adjustInteger(data);
     }
 
     return adjustNonInteger(data, options);
@@ -809,7 +684,7 @@ function handleDecimalNotation(
     }
 
     if (isInteger) {
-        return adjustInteger(data, options);
+        return adjustInteger(data);
     }
 
     return adjustNonInteger(data, options);
@@ -847,8 +722,16 @@ function roundIt(
                 return digitToRound;
             }
 
+            if (0 === decidingDigit) {
+                return digitToRound;
+            }
+
             return (digitToRound + 1) as DigitOrTen;
         case ROUNDING_MODE_FLOOR:
+            if (0 === decidingDigit) {
+                return digitToRound;
+            }
+
             if (isNegative) {
                 return (digitToRound + 1) as DigitOrTen;
             }
@@ -1060,13 +943,8 @@ export class Decimal128 {
         return this.significand === NAN;
     }
 
-    isFinite(): boolean {
-        if (this.isNaN()) {
-            return false;
-        }
-
+    private isFinite(): boolean {
         let sig = this.significand;
-
         return sig !== POSITIVE_INFINITY && sig !== NEGATIVE_INFINITY;
     }
 
@@ -1088,10 +966,6 @@ export class Decimal128 {
 
         if (exp >= 0) {
             return prefix + (sg + "0".repeat(exp)).replace(/^0+$/, "0");
-        }
-
-        if (sg === "0") {
-            return prefix + "0." + "0".repeat(0 - exp);
         }
 
         if (sg.length + exp < 0) {
@@ -1201,29 +1075,6 @@ export class Decimal128 {
     }
 
     /**
-     * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
-     */
-    ceil(): Decimal128 {
-        if (this.isInteger()) {
-            return this;
-        }
-
-        if (this.isNegative) {
-            return this.truncate();
-        }
-
-        return this.add(new Decimal128("1")).truncate();
-    }
-
-    /**
-     * Return the floor of this number. That is: the largest integer less than or equal to this number.
-     *
-     */
-    floor(): Decimal128 {
-        return this.truncate();
-    }
-
-    /**
      * Compare two values. Return
      *
      * + -1 if this value is strictly less than the other,
@@ -1258,20 +1109,6 @@ export class Decimal128 {
         }
 
         return this.rat.cmp(x.rat);
-    }
-
-    /**
-     * Truncate the decimal part of this number (if any), returning an integer.
-     *
-     * @return {Decimal128} An integer (as a Decimal128 value).
-     */
-    truncate(): Decimal128 {
-        if (!this.isFinite()) {
-            return this;
-        }
-
-        let [lhs] = this.toString().split(".");
-        return new Decimal128(lhs);
     }
 
     /**
@@ -1555,6 +1392,11 @@ export class Decimal128 {
                 : lhs.charAt(lhs.length - 1)
         ) as Digit;
         let firstDecimalDigit = parseInt(rhs.charAt(numDecimalDigits)) as Digit;
+
+        if (Number.isNaN(firstDecimalDigit)) {
+            firstDecimalDigit = 0;
+        }
+
         let roundedFinalDigit = roundIt(
             this.isNegative,
             finalIntegerDigit,
@@ -1616,62 +1458,12 @@ export class Decimal128 {
             return this;
         }
 
-        let q = this.divide(d).truncate();
+        let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
         return this.subtract(d.multiply(q), options).abs();
-    }
-
-    reciprocal(options?: Decimal128ConstructorOptions): Decimal128 {
-        return new Decimal128("1").divide(this, options);
-    }
-
-    pow(n: Decimal128, options?: Decimal128ConstructorOptions): Decimal128 {
-        if (!n.isInteger()) {
-            throw new TypeError("Exponent must be an integer");
-        }
-
-        if (n.isNegative) {
-            return this.pow(n.negate()).reciprocal(options);
-        }
-
-        let one = new Decimal128("1");
-        let i = new Decimal128("0");
-        let result: Decimal128 = one;
-        while (i.cmp(n) === -1) {
-            result = result.multiply(this, options);
-            i = i.add(one);
-        }
-
-        return result;
     }
 
     normalize(): Decimal128 {
         return new Decimal128(normalize(this.toString()));
-    }
-
-    squareRoot(options?: Decimal128ConstructorOptions): Decimal128 {
-        if (this.isNegative) {
-            throw new RangeError(
-                "Cannot compute square root of negative numbers"
-            );
-        }
-
-        let digitGenerator = nextDigitForSquareRoot(this.toString());
-
-        let digit = digitGenerator.next();
-        let result = "";
-
-        while (!digit.done) {
-            let v = digit.value;
-            if (-1 === v) {
-                result = result + ".";
-            } else {
-                result = result + `${v}`;
-            }
-
-            digit = digitGenerator.next();
-        }
-
-        return new Decimal128(result, options);
     }
 
     multiplyAndAdd(
