@@ -847,8 +847,16 @@ function roundIt(
                 return digitToRound;
             }
 
+            if (0 === decidingDigit) {
+                return digitToRound;
+            }
+
             return (digitToRound + 1) as DigitOrTen;
         case ROUNDING_MODE_FLOOR:
+            if (0 === decidingDigit) {
+                return digitToRound;
+            }
+
             if (isNegative) {
                 return (digitToRound + 1) as DigitOrTen;
             }
@@ -1060,13 +1068,8 @@ export class Decimal128 {
         return this.significand === NAN;
     }
 
-    isFinite(): boolean {
-        if (this.isNaN()) {
-            return false;
-        }
-
+    private isFinite(): boolean {
         let sig = this.significand;
-
         return sig !== POSITIVE_INFINITY && sig !== NEGATIVE_INFINITY;
     }
 
@@ -1088,10 +1091,6 @@ export class Decimal128 {
 
         if (exp >= 0) {
             return prefix + (sg + "0".repeat(exp)).replace(/^0+$/, "0");
-        }
-
-        if (sg === "0") {
-            return prefix + "0." + "0".repeat(0 - exp);
         }
 
         if (sg.length + exp < 0) {
@@ -1201,29 +1200,6 @@ export class Decimal128 {
     }
 
     /**
-     * Return the ceiling of this number. That is: the smallest integer greater than or equal to this number.
-     */
-    ceil(): Decimal128 {
-        if (this.isInteger()) {
-            return this;
-        }
-
-        if (this.isNegative) {
-            return this.truncate();
-        }
-
-        return this.add(new Decimal128("1")).truncate();
-    }
-
-    /**
-     * Return the floor of this number. That is: the largest integer less than or equal to this number.
-     *
-     */
-    floor(): Decimal128 {
-        return this.truncate();
-    }
-
-    /**
      * Compare two values. Return
      *
      * + -1 if this value is strictly less than the other,
@@ -1258,20 +1234,6 @@ export class Decimal128 {
         }
 
         return this.rat.cmp(x.rat);
-    }
-
-    /**
-     * Truncate the decimal part of this number (if any), returning an integer.
-     *
-     * @return {Decimal128} An integer (as a Decimal128 value).
-     */
-    truncate(): Decimal128 {
-        if (!this.isFinite()) {
-            return this;
-        }
-
-        let [lhs] = this.toString().split(".");
-        return new Decimal128(lhs);
     }
 
     /**
@@ -1555,6 +1517,11 @@ export class Decimal128 {
                 : lhs.charAt(lhs.length - 1)
         ) as Digit;
         let firstDecimalDigit = parseInt(rhs.charAt(numDecimalDigits)) as Digit;
+
+        if (Number.isNaN(firstDecimalDigit)) {
+            firstDecimalDigit = 0;
+        }
+
         let roundedFinalDigit = roundIt(
             this.isNegative,
             finalIntegerDigit,
@@ -1616,7 +1583,7 @@ export class Decimal128 {
             return this;
         }
 
-        let q = this.divide(d).truncate();
+        let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
         return this.subtract(d.multiply(q), options).abs();
     }
 

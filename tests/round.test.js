@@ -1,5 +1,6 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 import * as string_decoder from "string_decoder";
+import { expectDecimal128 } from "./util.js";
 
 const roundingModes = [
     "ceil",
@@ -357,5 +358,109 @@ describe("Intl.NumberFormat examples", () => {
         test("rounding negative infinity a certain number of digits makes no difference", () => {
             expect(negInf.round(2).toString()).toStrictEqual("-Infinity");
         });
+    });
+});
+
+describe("ceiling", function () {
+    test("ceiling works (positive)", () => {
+        expect(
+            new Decimal128("123.456").round(0, "ceil").toString()
+        ).toStrictEqual("124");
+    });
+    test("ceiling works (negative)", () => {
+        expect(
+            new Decimal128("-123.456").round(0, "ceil").toString()
+        ).toStrictEqual("-123");
+    });
+    test("ceiling of an integer is unchanged", () => {
+        expect(new Decimal128("123").round(0, "ceil").toString()).toStrictEqual(
+            "123"
+        );
+    });
+    test("NaN", () => {
+        expect(new Decimal128("NaN").round(0, "ceil").toString()).toStrictEqual(
+            "NaN"
+        );
+    });
+    test("positive infinity", () => {
+        expect(
+            new Decimal128("Infinity").round(0, "ceil").toString()
+        ).toStrictEqual("Infinity");
+    });
+    test("minus infinity", () => {
+        expect(
+            new Decimal128("-Infinity").round(0, "ceil").toString()
+        ).toStrictEqual("-Infinity");
+    });
+});
+
+describe("truncate", () => {
+    describe("truncate", () => {
+        let data = {
+            123.45678: "123",
+            "-42.99": "-42",
+            0.00765: "0",
+        };
+        for (let [key, value] of Object.entries(data)) {
+            test(key, () => {
+                expectDecimal128(new Decimal128(key).round(0, "trunc"), value);
+            });
+        }
+        test("NaN", () => {
+            expect(
+                new Decimal128("NaN").round(0, "trunc").toString()
+            ).toStrictEqual("NaN");
+        });
+    });
+
+    describe("infinity", () => {
+        test("positive infinity", () => {
+            expect(
+                new Decimal128("Infinity").round(0, "trunc").toString()
+            ).toStrictEqual("Infinity");
+        });
+        test("negative infinity", () => {
+            expect(
+                new Decimal128("-Infinity").round(0, "trunc").toString()
+            ).toStrictEqual("-Infinity");
+        });
+    });
+});
+
+describe("floor", function () {
+    test("floor works (positive)", () => {
+        expect(
+            new Decimal128("123.456").round(0, "floor").toString()
+        ).toStrictEqual("123");
+    });
+    test("floor works (negative)", () => {
+        expect(
+            new Decimal128("-123.456").round(0, "floor").toString()
+        ).toStrictEqual("-124");
+    });
+    test("floor of integer is unchanged", () => {
+        expect(
+            new Decimal128("123").round(0, "floor").toString()
+        ).toStrictEqual("123");
+    });
+    test("floor of zero is unchanged", () => {
+        expect(new Decimal128("0").round(0, "floor").toString()).toStrictEqual(
+            "0"
+        );
+    });
+    test("NaN", () => {
+        expect(
+            new Decimal128("NaN").round(0, "floor").toString()
+        ).toStrictEqual("NaN");
+    });
+    test("positive infinity", () => {
+        expect(
+            new Decimal128("Infinity").round(0, "floor").toString()
+        ).toStrictEqual("Infinity");
+    });
+    test("minus infinity", () => {
+        expect(
+            new Decimal128("-Infinity").round(0, "floor").toString()
+        ).toStrictEqual("-Infinity");
     });
 });
