@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.0.0] - 2024-01-19
+
+### Changed
+
+-   Addition, subtraction, multiplication, division, and remainder are now static methods. This is a breaking change.
+
 ## [8.0.0] - 2024-01-19
 
 ### Removed
