@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.1.0] - 2024-01.19
+
+### Added
+
+-   Option to normalize (remove trailing zeros) in `Decimal128` constructor (true by default) (#67)n
+
 ## [9.0.0] - 2024-01-19
 
 ### Changed

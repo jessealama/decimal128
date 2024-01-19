@@ -7,9 +7,6 @@ describe("constructor", () => {
         test("sane string works", () => {
             expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
         });
-        test("no normalization", () => {
-            expect(new Decimal128("1.20").toString()).toStrictEqual("1.20");
-        });
         test("no normalization (exponential notation) (positive exponent)", () => {
             let d = new Decimal128("1.20E1");
             expect(d.significand).toStrictEqual("120");
@@ -129,11 +126,6 @@ describe("constructor", () => {
             expect(val.exponent).toStrictEqual(-38);
             expect(val.toString()).toStrictEqual(s);
         });
-        test("decimal number with trailing zero", () => {
-            let val = new Decimal128("0.67890");
-            expect(val.significand).toStrictEqual("67890");
-            expect(val.exponent).toStrictEqual(-5);
-        });
         test("too many significant digits", () => {
             expect(
                 () => new Decimal128("-10000000000000000000000000000000008")
@@ -197,20 +189,33 @@ describe("constructor", () => {
                 expect(new Decimal128("-00").toString()).toStrictEqual("-0");
             });
             test("zero point zero", () => {
-                expect(new Decimal128("0.0").toString()).toStrictEqual("0.0");
+                expect(new Decimal128("0.0").toString()).toStrictEqual("0");
+                expect(
+                    new Decimal128("0.0", {
+                        stripTrailingZeroes: false,
+                    }).toString()
+                ).toStrictEqual("0.0");
             });
             test("minus zero point zero", () => {
-                expect(new Decimal128("-0.0").toString()).toStrictEqual("-0.0");
+                expect(
+                    new Decimal128("-0.0", {
+                        stripTrailingZeroes: false,
+                    }).toString()
+                ).toStrictEqual("-0.0");
             });
             test("multiple trailing zeros", () => {
-                expect(new Decimal128("0.000").toString()).toStrictEqual(
-                    "0.000"
-                );
+                expect(
+                    new Decimal128("0.000", {
+                        stripTrailingZeroes: false,
+                    }).toString()
+                ).toStrictEqual("0.000");
             });
             test("multiple trailing zeros (negative)", () => {
-                expect(new Decimal128("-0.000").toString()).toStrictEqual(
-                    "-0.000"
-                );
+                expect(
+                    new Decimal128("-0.000", {
+                        stripTrailingZeroes: false,
+                    }).toString()
+                ).toStrictEqual("-0.000");
             });
         });
     });
@@ -493,5 +498,31 @@ describe("rounding options", () => {
                 ).toStrictEqual(expected);
             });
         }
+    });
+});
+
+describe("normalization", () => {
+    test("normalize by default", () => {
+        expect(new Decimal128("1.20").toString()).toStrictEqual("1.2");
+    });
+    test("normalize by default", () => {
+        expect(
+            new Decimal128("1.20", { stripTrailingZeroes: true }).toString()
+        ).toStrictEqual("1.2");
+    });
+    test("normalize can be done, if specified", () => {
+        expect(
+            new Decimal128("1.20", { stripTrailingZeroes: false }).toString()
+        ).toStrictEqual("1.20");
+    });
+    test("decimal number with trailing zero", () => {
+        let normalizedVal = new Decimal128("0.67890");
+        let nonNormalizedVal = new Decimal128("0.67890", {
+            stripTrailingZeroes: false,
+        });
+        expect(normalizedVal.significand).toStrictEqual("6789");
+        expect(nonNormalizedVal.significand).toStrictEqual("67890");
+        expect(normalizedVal.exponent).toStrictEqual(-4);
+        expect(nonNormalizedVal.exponent).toStrictEqual(-5);
     });
 });

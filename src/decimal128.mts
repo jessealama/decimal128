@@ -667,6 +667,11 @@ function handleDecimalNotation(
     options: FullySpecifiedConstructorOptions
 ): Decimal128Constructor {
     let withoutUnderscores = s.replace(/_/g, "");
+
+    if (options.stripTrailingZeroes) {
+        withoutUnderscores = normalize(withoutUnderscores);
+    }
+
     let isNegative = !!withoutUnderscores.match(/^-/);
     let sg = significand(withoutUnderscores);
     let exp = exponent(withoutUnderscores);
@@ -828,14 +833,17 @@ const infRegExp = /^-?inf(inity)?$/i;
 
 interface Decimal128ConstructorOptions {
     roundingMode?: RoundingMode;
+    stripTrailingZeroes?: boolean;
 }
 
 interface FullySpecifiedConstructorOptions {
     roundingMode: RoundingMode;
+    stripTrailingZeroes: boolean;
 }
 
 const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions = {
     roundingMode: ROUNDING_MODE_DEFAULT,
+    stripTrailingZeroes: true,
 };
 
 function ensureFullySpecifiedConstructorOptions(
@@ -845,15 +853,18 @@ function ensureFullySpecifiedConstructorOptions(
         return DEFAULT_CONSTRUCTOR_OPTIONS;
     }
 
-    if (undefined === options.roundingMode) {
-        return DEFAULT_CONSTRUCTOR_OPTIONS;
-    }
+    let roundingMode = options.roundingMode ?? ROUNDING_MODE_DEFAULT;
 
-    if (!ROUNDING_MODELS.includes(options.roundingMode)) {
+    if (!ROUNDING_MODELS.includes(roundingMode)) {
         throw new Error(`Unsupported rounding mode "${options.roundingMode}"`);
     }
 
-    return options as FullySpecifiedConstructorOptions;
+    let stripTrailingZeroes = options.stripTrailingZeroes ?? true;
+
+    return {
+        roundingMode: roundingMode,
+        stripTrailingZeroes: stripTrailingZeroes,
+    };
 }
 
 export class Decimal128 {
