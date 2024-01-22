@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.2.0] - 2024-01-22
+
+### Added
+
+-   A `toFixed` method that returns a string with the specified number of decimal places
+-   A couple of code samples in a new `examples` directory
+-   Implement a "normalize by default" strategy: normalization happens when constructing Decimal128 values from strings and serializing a Deimal128 value to a string, but can be turned off if desired.
+
 ## [9.1.0] - 2024-01.19
 
 ### Added
