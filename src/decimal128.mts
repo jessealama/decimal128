@@ -922,12 +922,15 @@ function ensureFullySpecifiedToStringOptions(
         return opts;
     }
 
-    if (options.format && TO_STRING_FORMATS.includes(options.format)) {
+    if (
+        "string" === typeof options.format &&
+        TO_STRING_FORMATS.includes(options.format)
+    ) {
         opts.format = options.format;
     }
 
     if (
-        options.hasOwnProperty("numDecimalDigits") &&
+        "number" === typeof options.numDecimalDigits &&
         Number.isInteger(options.numDecimalDigits)
     ) {
         opts.numDecimalDigits = options.numDecimalDigits;
