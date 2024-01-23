@@ -5,6 +5,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@master
+            - uses: actions/setup-node@master
+              with:
+                  node-version: 20
             - name: check node version
               run: node --version
             - name: check npm version
