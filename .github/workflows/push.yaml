@@ -5,6 +5,10 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@master
+            - name: check node version
+              run: node --version
+            - name: check npm version
+              run: npm --version
             - name: npm install
               run: npm install
             - name: lint
