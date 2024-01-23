@@ -23,7 +23,7 @@ jobs:
             - name: compile typescript
               run: tsc
             - name: test
-              run: npx c8 npx jest
+              run: npm run test
             - name: coverage
               run: npx c8 check-coverage --lines 99 --functions 99 --branches 99 --statements 99
             - name: examples do not crash
