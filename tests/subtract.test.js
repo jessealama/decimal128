@@ -8,7 +8,7 @@ describe("subtraction", () => {
     test("subtract decimal part", () => {
         expectDecimal128(
             new Decimal128("123.456").subtract(new Decimal128("0.456")),
-            "123.000"
+            "123"
         );
     });
     test("minus negative number", () => {
@@ -141,7 +141,9 @@ describe("examples from the General Decimal Arithmetic specification", () => {
     });
     test("example two", () => {
         expect(
-            new Decimal128("1.3").subtract(new Decimal128("1.30")).toString()
+            new Decimal128("1.3")
+                .subtract(new Decimal128("1.30", { normalize: false }))
+                .toString()
         ).toStrictEqual("0.00");
     });
     test("example three", () => {

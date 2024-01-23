@@ -7,8 +7,13 @@ describe("constructor", () => {
         test("sane string works", () => {
             expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
         });
-        test("no normalization", () => {
-            expect(new Decimal128("1.20").toString()).toStrictEqual("1.20");
+        test("normalization by default", () => {
+            expect(new Decimal128("1.20").toString()).toStrictEqual("1.2");
+        });
+        test("normalization can be disabled", () => {
+            expect(
+                new Decimal128("1.20", { normalize: false }).toString()
+            ).toStrictEqual("1.20");
         });
         test("no normalization (exponential notation) (positive exponent)", () => {
             let d = new Decimal128("1.20E1");
@@ -436,18 +441,17 @@ describe("rounding options", () => {
                 new Decimal128("0.1", { foo: "bar" }).toString()
             ).toStrictEqual("0.1");
         });
-        test("unknown rounding mode throws", () => {
+        test("unknown rounding mode works out to default", () => {
             expect(
-                () => new Decimal128("0.1", { roundingMode: "jazzy" })
-            ).toThrow(Error);
+                new Decimal128("0.5", { roundingMode: "jazzy" }).toString()
+            ).toStrictEqual("0.5");
         });
         test("unknown rounding mode throws on large input", () => {
             expect(
-                () =>
-                    new Decimal128("0." + "9".repeat(10000), {
-                        roundingMode: "cool",
-                    })
-            ).toThrow(Error);
+                new Decimal128("0." + "9".repeat(10000), {
+                    roundingMode: "cool",
+                }).toString()
+            ).toStrictEqual("1.000000000000000000000000000000000");
         });
     });
     describe("negative value, final decimal digit is five, penultimate digit is less than nine", () => {

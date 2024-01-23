@@ -162,7 +162,9 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
     });
     test("example six", () => {
         expect(
-            new Decimal128("8.00").divide(new Decimal128("2")).toString()
+            new Decimal128("8.00", { normalize: false })
+                .divide(new Decimal128("2"), { normalize: false })
+                .toString()
         ).toStrictEqual("4.00");
     });
     test("example seven", () => {
@@ -184,7 +186,7 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
         expect(
             new Decimal128("2.40E+6")
                 .divide(new Decimal128("2"))
-                .toExponentialString()
+                .toString({ format: "exponential" })
         ).toStrictEqual("1.20E+6");
     });
 });
