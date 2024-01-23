@@ -16,10 +16,8 @@ function calculateMonthlyPayment(p, r, y) {
     const onePlusInterestRate = Decimal128.add(one, monthlyInterestRate);
     const ratePower = pow(onePlusInterestRate, paymentCount);
 
-    let numerator = Decimal128.multiply(
-        Decimal128.multiply(principal, monthlyInterestRate),
-        ratePower
-    );
+    let x = Decimal128.multiply(principal, monthlyInterestRate);
+    let numerator = Decimal128.multiply(x, ratePower);
 
     let denominator = Decimal128.subtract(ratePower, one);
 

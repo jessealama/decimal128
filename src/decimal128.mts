@@ -999,7 +999,7 @@ export class Decimal128 {
      * Returns an exponential string representing this Decimal128.
      *
      */
-    toExponentialString(): string {
+    toExponential(): string {
         if (this.isNaN()) {
             return NAN;
         }
@@ -1031,6 +1031,30 @@ export class Decimal128 {
             (adjustedExponent < 0 ? "" : "+") +
             adjustedExponent
         );
+    }
+
+    toFixed(n: number): string {
+        if (!Number.isInteger(n)) {
+            throw new TypeError("Argument must be an integer");
+        }
+
+        if (n < 0) {
+            throw new RangeError("Argument must be non-negative");
+        }
+
+        let s = this.toString();
+
+        let [lhs, rhs] = s.split(".");
+
+        if (undefined === rhs) {
+            return lhs + "." + "0".repeat(n);
+        }
+
+        if (rhs.length <= n) {
+            return s + "0".repeat(n - rhs.length);
+        }
+
+        return lhs + "." + rhs.substring(0, n);
     }
 
     /**
@@ -1163,11 +1187,10 @@ export class Decimal128 {
         }
 
         let resultRat = Rational.add(x.rat, y.rat);
-        let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            options
-        );
-        return initialResult.setExponent(Math.min(x.exponent, y.exponent));
+
+        let rendered = resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
+        let newExponent = Math.min(x.exponent, y.exponent);
+        return new Decimal128(`${rendered}E${newExponent}`, options);
     }
 
     /**
@@ -1206,13 +1229,11 @@ export class Decimal128 {
             return Decimal128.add(x, y.negate(), options);
         }
 
-        let initialResult = new Decimal128(
-            Rational.subtract(x.rat, y.rat).toDecimalPlaces(
-                MAX_SIGNIFICANT_DIGITS + 1
-            ),
-            options
+        let rendered = Rational.subtract(x.rat, y.rat).toDecimalPlaces(
+            MAX_SIGNIFICANT_DIGITS + 1
         );
-        return initialResult.setExponent(Math.min(x.exponent, y.exponent));
+        let newExponent = Math.min(x.exponent, y.exponent);
+        return new Decimal128(`${rendered}E${newExponent}`, options);
     }
 
     /**
@@ -1266,11 +1287,9 @@ export class Decimal128 {
         }
 
         let resultRat = Rational.multiply(x.rat, y.rat);
-        let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            options
-        );
-        return initialResult.setExponent(x.exponent + y.exponent);
+        let rendered = resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1);
+        let newExponent = x.exponent + y.exponent;
+        return new Decimal128(`${rendered}E${newExponent}`, options);
     }
 
     private isZero(): boolean {
@@ -1529,28 +1548,5 @@ export class Decimal128 {
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
             options
         );
-    }
-
-    private decrementExponent(): Decimal128 {
-        let exp = this.exponent;
-        let sig = this.significand;
-
-        let prefix = this.isNegative ? "-" : "";
-        let newExp = exp - 1;
-        let newSig = sig + "0";
-
-        return new Decimal128(`${prefix}${newSig}E${newExp}`);
-    }
-
-    private setExponent(newExp: number): Decimal128 {
-        let oldExp = this.exponent;
-        let result: Decimal128 = this;
-
-        while (oldExp > newExp) {
-            result = result.decrementExponent();
-            oldExp--;
-        }
-
-        return result;
     }
 }
