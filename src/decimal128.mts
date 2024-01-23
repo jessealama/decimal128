@@ -916,7 +916,10 @@ function ensureFullySpecifiedConstructorOptions(
 function ensureFullySpecifiedToStringOptions(
     options?: ToStringOptions
 ): FullySpecifiedToStringOptions {
-    let opts = DEFAULT_TO_STRING_OPTIONS;
+    let opts: FullySpecifiedToStringOptions = {
+        format: "decimal",
+        numDecimalDigits: undefined,
+    };
 
     if (undefined === options) {
         return opts;
