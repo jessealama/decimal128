@@ -9,6 +9,10 @@ jobs:
               run: node --version
             - name: check npm version
               run: npm --version
+            - name: check npx version
+              run: npx --version
+            - name: check c8 version
+              run: npx c8 --version
             - name: npm install
               run: npm install
             - name: lint
