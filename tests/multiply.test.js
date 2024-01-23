@@ -22,7 +22,7 @@ const examples = [
 
 function checkProduct(a, b, c) {
     expect(
-        Decimal128.multiply(new Decimal128(a), new Decimal128(b)).toString()
+        new Decimal128(a).multiply(new Decimal128(b)).toString()
     ).toStrictEqual(c);
 }
 
@@ -44,16 +44,14 @@ describe("multiplication", () => {
     });
     test("integer overflow", () => {
         expect(() =>
-            Decimal128.multiply(
-                new Decimal128("123456789123456789"),
+            new Decimal128("123456789123456789").multiply(
                 new Decimal128("987654321987654321")
             )
         ).toThrow(RangeError);
     });
     test("decimal overflow", () => {
         expect(() =>
-            Decimal128.multiply(
-                new Decimal128("123456789123456789.987654321"),
+            new Decimal128("123456789123456789.987654321").multiply(
                 new Decimal128("987654321123456789.123456789")
             )
         ).toThrow(RangeError);
@@ -61,26 +59,17 @@ describe("multiplication", () => {
     describe("NaN", () => {
         test("NaN times NaN is NaN", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("NaN"),
-                    new Decimal128("NaN")
-                ).toString()
+                new Decimal128("NaN").multiply(new Decimal128("NaN")).toString()
             ).toStrictEqual("NaN");
         });
         test("number times NaN is NaN", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("1"),
-                    new Decimal128("NaN")
-                ).toString()
+                new Decimal128("1").multiply(new Decimal128("NaN")).toString()
             ).toStrictEqual("NaN");
         });
         test("NaN times number is NaN", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("NaN"),
-                    new Decimal128("1")
-                ).toString()
+                new Decimal128("NaN").multiply(new Decimal128("1")).toString()
             ).toStrictEqual("NaN");
         });
     });
@@ -88,95 +77,83 @@ describe("multiplication", () => {
         describe("invalid operation", () => {
             test("zero times positive infinity is NaN", () => {
                 expect(
-                    Decimal128.multiply(
-                        new Decimal128("0"),
-                        new Decimal128("Infinity")
-                    ).toString()
+                    new Decimal128("0")
+                        .multiply(new Decimal128("Infinity"))
+                        .toString()
                 ).toStrictEqual("NaN");
                 expect(
-                    Decimal128.multiply(
-                        new Decimal128("Infinity"),
-                        new Decimal128("0")
-                    ).toString()
+                    new Decimal128("Infinity")
+                        .multiply(new Decimal128("0"))
+                        .toString()
                 ).toStrictEqual("NaN");
             });
             test("zero times negative infinity is NaN", () => {
                 expect(
-                    Decimal128.multiply(
-                        new Decimal128("0"),
-                        new Decimal128("-Infinity")
-                    ).toString()
+                    new Decimal128("0")
+                        .multiply(new Decimal128("-Infinity"))
+                        .toString()
                 ).toStrictEqual("NaN");
                 expect(
-                    Decimal128.multiply(
-                        new Decimal128("-Infinity"),
-                        new Decimal128("0")
-                    ).toString()
+                    new Decimal128("-Infinity")
+                        .multiply(new Decimal128("0"))
+                        .toString()
                 ).toStrictEqual("NaN");
             });
         });
         test("positive infinity times positive number is positive infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("Infinity"),
-                    new Decimal128("42")
-                ).toString()
+                new Decimal128("Infinity")
+                    .multiply(new Decimal128("42"))
+                    .toString()
             ).toStrictEqual("Infinity");
         });
         test("positive number times positive infinity is positive infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("42"),
-                    new Decimal128("Infinity")
-                ).toString()
+                new Decimal128("42")
+                    .multiply(new Decimal128("Infinity"))
+                    .toString()
             ).toStrictEqual("Infinity");
         });
         test("positive infinity times negative number is negative infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("Infinity"),
-                    new Decimal128("-42")
-                ).toString()
+                new Decimal128("Infinity")
+                    .multiply(new Decimal128("-42"))
+                    .toString()
             ).toStrictEqual("-Infinity");
         });
         test("negative number times positive infinity is negative infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("-42"),
-                    new Decimal128("Infinity")
-                ).toString()
+                new Decimal128("-42")
+                    .multiply(new Decimal128("Infinity"))
+                    .toString()
             ).toStrictEqual("-Infinity");
         });
         test("positive infinity times negative infinity is negative infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("Infinity"),
-                    new Decimal128("-Infinity")
-                ).toString()
+                new Decimal128("Infinity")
+                    .multiply(new Decimal128("-Infinity"))
+                    .toString()
             ).toStrictEqual("-Infinity");
         });
         test("positive infinity times positive infinity is positive infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("Infinity"),
-                    new Decimal128("Infinity")
-                ).toString()
+                new Decimal128("Infinity")
+                    .multiply(new Decimal128("Infinity"))
+                    .toString()
             ).toStrictEqual("Infinity");
         });
         test("negative infinity times negative infinity is positive infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("-Infinity"),
-                    new Decimal128("-Infinity")
-                ).toString()
+                new Decimal128("-Infinity")
+                    .multiply(new Decimal128("-Infinity"))
+                    .toString()
             ).toStrictEqual("Infinity");
         });
         test("negative infinity times positive infinity is negative infinity", () => {
             expect(
-                Decimal128.multiply(
-                    new Decimal128("-Infinity"),
-                    new Decimal128("Infinity")
-                ).toString()
+                new Decimal128("-Infinity")
+                    .multiply(new Decimal128("Infinity"))
+                    .toString()
             ).toStrictEqual("-Infinity");
         });
     });
@@ -185,43 +162,30 @@ describe("multiplication", () => {
 describe("examples from the General Decimal Arithmetic specification", () => {
     test("example one", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("1.20"),
-                new Decimal128("3")
-            ).toString()
+            new Decimal128("1.20").multiply(new Decimal128("3")).toString()
         ).toStrictEqual("3.60");
     });
     test("example two", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("7"),
-                new Decimal128("3")
-            ).toString()
+            new Decimal128("7").multiply(new Decimal128("3")).toString()
         ).toStrictEqual("21");
     });
     test("example three", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("0.9"),
-                new Decimal128("0.8")
-            ).toString()
+            new Decimal128("0.9").multiply(new Decimal128("0.8")).toString()
         ).toStrictEqual("0.72");
     });
     test("example four", () => {
         expect(
-            Decimal128.multiply(
-                new Decimal128("0.9"),
-                new Decimal128("-0")
-            ).toString()
+            new Decimal128("0.9").multiply(new Decimal128("-0")).toString()
         ).toStrictEqual("-0.0");
     });
     test("example five", () => {
         // slightly modified because we have more precision
         expect(
-            Decimal128.multiply(
-                new Decimal128("654321"),
-                new Decimal128("654321")
-            ).toExponentialString()
+            new Decimal128("654321")
+                .multiply(new Decimal128("654321"))
+                .toExponentialString()
         ).toStrictEqual("4.28135971041E+11");
     });
 });
