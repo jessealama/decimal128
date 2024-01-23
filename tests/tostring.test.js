@@ -2,11 +2,18 @@ import { Decimal128 } from "../src/decimal128.mjs";
 import { expectDecimal128 } from "./util.js";
 
 describe("NaN", () => {
-    expect(new Decimal128("NaN").toString()).toStrictEqual("NaN");
+    test("works", () => {
+        expect(new Decimal128("NaN").toString()).toStrictEqual("NaN");
+    });
 });
 
 describe("zero", () => {
-    expect(new Decimal128("0").toString()).toStrictEqual("0");
+    test("positive zero", () => {
+        expect(new Decimal128("0").toString()).toStrictEqual("0");
+    });
+    test("negative zero", () => {
+        expect(new Decimal128("-0").toString()).toStrictEqual("-0");
+    });
 });
 
 describe("infinity", () => {
