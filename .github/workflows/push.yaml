@@ -24,7 +24,9 @@ jobs:
               run: tsc
             - name: test
               run: npm run test
-            - name: coverage
+            - name: generate coverage
+              run: npm run coverage
+            - name: check coverage
               run: npx c8 check-coverage --lines 99 --functions 99 --branches 99 --statements 99
             - name: examples do not crash
               run: for f in examples/*.js; do node $f || exit 1; done
