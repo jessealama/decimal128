@@ -8,20 +8,17 @@ function calculateMonthlyPayment(p, r, y) {
     let principal = new Decimal128(p);
     let annualInterestRate = new Decimal128(r);
     let years = new Decimal128(y);
-    const monthlyInterestRate = Decimal128.divide(
-        annualInterestRate,
-        paymentsPerYear
-    );
-    const paymentCount = Decimal128.multiply(paymentsPerYear, years);
-    const onePlusInterestRate = Decimal128.add(one, monthlyInterestRate);
+    const monthlyInterestRate = annualInterestRate.divide(paymentsPerYear);
+    const paymentCount = paymentsPerYear.multiply(years);
+    const onePlusInterestRate = monthlyInterestRate.add(one);
     const ratePower = pow(onePlusInterestRate, paymentCount);
 
-    let x = Decimal128.multiply(principal, monthlyInterestRate);
-    let numerator = Decimal128.multiply(x, ratePower);
+    let x = principal.multiply(monthlyInterestRate);
+    let numerator = x.multiply(ratePower);
 
-    let denominator = Decimal128.subtract(ratePower, one);
+    let denominator = ratePower.subtract(one);
 
-    return Decimal128.divide(numerator, denominator);
+    return numerator.divide(denominator);
 }
 
 console.log(calculateMonthlyPayment("5000000", "0.05", "30").toString());
