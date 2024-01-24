@@ -1104,18 +1104,6 @@ export class Decimal128 {
     }
 
     /**
-     * Return the absolute value of this Decimal128 value.
-     *
-     */
-    private abs(): Decimal128 {
-        if (this.isNegative) {
-            return new Decimal128(this.toString().substring(1));
-        }
-
-        return this;
-    }
-
-    /**
      * Compare two values. Return
      *
      * + -1 if this value is strictly less than the other,
@@ -1493,7 +1481,7 @@ export class Decimal128 {
         }
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
-        return this.subtract(d.multiply(q)).abs();
+        return this.subtract(d.multiply(q));
     }
 
     normalize(): Decimal128 {
