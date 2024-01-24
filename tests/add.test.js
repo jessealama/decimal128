@@ -120,7 +120,9 @@ describe("addition", () => {
 describe("examples from the General Decimal Arithmetic specification", () => {
     test("example one", () => {
         expect(
-            new Decimal128("12").add(new Decimal128("7.00")).toString()
+            new Decimal128("12")
+                .add(new Decimal128("7.00", { normalize: false }))
+                .toString()
         ).toStrictEqual("19.00");
     });
     test("example two", () => {

@@ -871,7 +871,7 @@ const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions = {
 };
 
 type ToStringFormat = "decimal" | "exponential";
-const TO_STRING_FORMATS: string[] = ["decimal", "exponential"];
+const TOSTRING_FORMATS: string[] = ["decimal", "exponential"];
 
 interface ToStringOptions {
     format?: ToStringFormat;
@@ -883,7 +883,7 @@ interface FullySpecifiedToStringOptions {
     numDecimalDigits: number | undefined;
 }
 
-const DEFAULT_TO_STRING_OPTIONS: FullySpecifiedToStringOptions = {
+const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = {
     format: "decimal",
     numDecimalDigits: undefined,
 };
@@ -891,7 +891,7 @@ const DEFAULT_TO_STRING_OPTIONS: FullySpecifiedToStringOptions = {
 function ensureFullySpecifiedConstructorOptions(
     options?: ConstructorOptions
 ): FullySpecifiedConstructorOptions {
-    let opts = DEFAULT_CONSTRUCTOR_OPTIONS;
+    let opts = { ...DEFAULT_CONSTRUCTOR_OPTIONS };
 
     if (undefined === options) {
         return opts;
@@ -904,9 +904,7 @@ function ensureFullySpecifiedConstructorOptions(
         opts.roundingMode = options.roundingMode;
     }
 
-    if (undefined === options.normalize) {
-        opts.normalize = CONSTRUCTOR_SHOULD_NORMALIZE;
-    } else {
+    if ("boolean" === typeof options.normalize) {
         opts.normalize = options.normalize;
     }
 
@@ -916,10 +914,7 @@ function ensureFullySpecifiedConstructorOptions(
 function ensureFullySpecifiedToStringOptions(
     options?: ToStringOptions
 ): FullySpecifiedToStringOptions {
-    let opts: FullySpecifiedToStringOptions = {
-        format: "decimal",
-        numDecimalDigits: undefined,
-    };
+    let opts: FullySpecifiedToStringOptions = { ...DEFAULT_TOSTRING_OPTIONS };
 
     if (undefined === options) {
         return opts;
@@ -927,7 +922,7 @@ function ensureFullySpecifiedToStringOptions(
 
     if (
         "string" === typeof options.format &&
-        TO_STRING_FORMATS.includes(options.format)
+        TOSTRING_FORMATS.includes(options.format)
     ) {
         opts.format = options.format;
     }
@@ -1055,7 +1050,7 @@ export class Decimal128 {
         function emitDecimal(): string {
             if (exp >= 0) {
                 return ensureDecimalDigits(
-                    prefix + (sg + "0".repeat(exp)).replace(/^0+$/, "0"),
+                    prefix + sg + "0".repeat(exp),
                     options.numDecimalDigits
                 );
             }
@@ -1106,13 +1101,6 @@ export class Decimal128 {
         }
 
         return emitDecimal();
-    }
-
-    /**
-     * Is this Decimal128 actually an integer? That is: is there nothing after the decimal point?
-     */
-    private isInteger(): boolean {
-        return !!this.toString().match(/^-?[0-9]+([.]0+)?$/);
     }
 
     /**
@@ -1168,9 +1156,8 @@ export class Decimal128 {
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
-     * @param options
      */
-    add(x: Decimal128, options?: ConstructorOptions): Decimal128 {
+    add(x: Decimal128): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1187,33 +1174,31 @@ export class Decimal128 {
             return this.clone();
         }
 
-        if (!this.isFinite()) {
-            return this.clone();
-        }
-
         if (!x.isFinite()) {
             return x.clone();
         }
 
         if (this.isNegative && x.isNegative) {
-            return this.negate().add(x.negate(), options).negate();
+            return this.negate().add(x.negate()).negate();
         }
 
         let resultRat = Rational.add(this.rat, x.rat);
         let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            options
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
-        return initialResult.setExponent(Math.min(this.exponent, x.exponent));
+        let adjusted = initialResult.setExponent(
+            Math.min(this.exponent, x.exponent)
+        );
+
+        return new Decimal128(adjusted.toString(), { normalize: false });
     }
 
     /**
      * Subtract another Decimal128 value from one or more Decimal128 values.
      *
      * @param x
-     * @param options
      */
-    subtract(x: Decimal128, options?: ConstructorOptions): Decimal128 {
+    subtract(x: Decimal128): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1235,7 +1220,7 @@ export class Decimal128 {
         }
 
         if (x.isNegative) {
-            return this.add(x.negate(), options);
+            return this.add(x.negate());
         }
 
         let rendered = Rational.subtract(this.rat, x.rat).toDecimalPlaces(
@@ -1246,7 +1231,7 @@ export class Decimal128 {
         let adjusted = initialResult.setExponent(
             Math.min(this.exponent, x.exponent)
         );
-        return new Decimal128(adjusted.toString(), options);
+        return new Decimal128(adjusted.toString(), { normalize: false });
     }
 
     /**
@@ -1255,9 +1240,8 @@ export class Decimal128 {
      * If no arguments are given, return this value.
      *
      * @param x
-     * @param options
      */
-    multiply(x: Decimal128, options?: ConstructorOptions): Decimal128 {
+    multiply(x: Decimal128): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1287,19 +1271,20 @@ export class Decimal128 {
         }
 
         if (this.isNegative) {
-            return this.negate().multiply(x, options).negate();
+            return this.negate().multiply(x).negate();
         }
 
         if (x.isNegative) {
-            return this.multiply(x.negate(), options).negate();
+            return this.multiply(x.negate()).negate();
         }
 
         let resultRat = Rational.multiply(this.rat, x.rat);
         let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            options
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
-        return initialResult.setExponent(this.exponent + x.exponent);
+        let adjusted = initialResult.setExponent(this.exponent + x.exponent);
+
+        return new Decimal128(adjusted.toString(), { normalize: false });
     }
 
     private isZero(): boolean {
@@ -1319,7 +1304,7 @@ export class Decimal128 {
      *
      * @param x
      */
-    divide(x: Decimal128, options?: ConstructorOptions): Decimal128 {
+    divide(x: Decimal128): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1353,11 +1338,11 @@ export class Decimal128 {
         }
 
         if (this.isNegative) {
-            return this.negate().divide(x, options).negate();
+            return this.negate().divide(x).negate();
         }
 
         if (x.isNegative) {
-            return this.divide(x.negate(), options).negate();
+            return this.divide(x.negate()).negate();
         }
 
         let adjust = 0;
@@ -1402,10 +1387,7 @@ export class Decimal128 {
         }
 
         let resultExponent = this.exponent - (x.exponent + adjust);
-        return new Decimal128(
-            `${resultCoefficient}E${resultExponent}`,
-            options
-        );
+        return new Decimal128(`${resultCoefficient}E${resultExponent}`);
     }
 
     /**
@@ -1473,30 +1455,29 @@ export class Decimal128 {
         let s = this.toString();
 
         if (s.match(/^-/)) {
-            return new Decimal128(s.substring(1));
+            return new Decimal128(s.substring(1), { normalize: false });
         }
 
-        return new Decimal128("-" + s);
+        return new Decimal128("-" + s, { normalize: false });
     }
 
     /**
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
      * @param d
-     * @param options
      * @throws RangeError If argument is zero
      */
-    remainder(d: Decimal128, options?: ConstructorOptions): Decimal128 {
+    remainder(d: Decimal128): Decimal128 {
         if (this.isNaN() || d.isNaN()) {
             return new Decimal128(NAN);
         }
 
         if (this.isNegative) {
-            return this.negate().remainder(d, options).negate();
+            return this.negate().remainder(d).negate();
         }
 
         if (d.isNegative) {
-            return this.remainder(d.negate(), options);
+            return this.remainder(d.negate());
         }
 
         if (!this.isFinite()) {
@@ -1512,7 +1493,7 @@ export class Decimal128 {
         }
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
-        return this.subtract(d.multiply(q), options).abs();
+        return this.subtract(d.multiply(q)).abs();
     }
 
     normalize(): Decimal128 {
@@ -1527,7 +1508,9 @@ export class Decimal128 {
         let newExp = exp - 1;
         let newSig = sig + "0";
 
-        return new Decimal128(`${prefix}${newSig}E${newExp}`);
+        return new Decimal128(`${prefix}${newSig}E${newExp}`, {
+            normalize: false,
+        });
     }
 
     private setExponent(newExp: number): Decimal128 {

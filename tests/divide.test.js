@@ -169,7 +169,9 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
     });
     test("example seven", () => {
         expect(
-            new Decimal128("2.400").divide(new Decimal128("2.0")).toString()
+            new Decimal128("2.400", { normalize: false })
+                .divide(new Decimal128("2.0", { normalize: false }))
+                .toString()
         ).toStrictEqual("1.20");
     });
     test("example eight", () => {
