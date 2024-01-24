@@ -2,6 +2,8 @@
 
 // Examples from the Intl.NumberFormat spec
 
+import { Decimal128 } from "../src/decimal128.mjs";
+
 let minusOnePointFive = new Decimal128("-1.5");
 let zeroPointFour = new Decimal128("0.4");
 let zeroPointFive = new Decimal128("0.5");
