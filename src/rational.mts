@@ -140,9 +140,8 @@ export class Rational {
     }
 
     private static _multiply(x: Rational, y: Rational): Rational {
-        let neg = x.isNegative !== y.isNegative;
         return new Rational(
-            (neg ? minusOne : one) * x.numerator * y.numerator,
+            x.numerator * y.numerator,
             x.denominator * y.denominator
         );
     }

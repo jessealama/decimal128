@@ -7,8 +7,13 @@ describe("constructor", () => {
         test("sane string works", () => {
             expect(new Decimal128("123.456")).toBeInstanceOf(Decimal128);
         });
-        test("no normalization", () => {
-            expect(new Decimal128("1.20").toString()).toStrictEqual("1.20");
+        test("normalization by default", () => {
+            expect(new Decimal128("1.20").toString()).toStrictEqual("1.2");
+        });
+        test("normalization can be disabled", () => {
+            expect(
+                new Decimal128("1.20", { normalize: false }).toString()
+            ).toStrictEqual("1.20");
         });
         test("no normalization (exponential notation) (positive exponent)", () => {
             let d = new Decimal128("1.20E1");
@@ -130,7 +135,7 @@ describe("constructor", () => {
             expect(val.toString()).toStrictEqual(s);
         });
         test("decimal number with trailing zero", () => {
-            let val = new Decimal128("0.67890");
+            let val = new Decimal128("0.67890", { normalize: false });
             expect(val.significand).toStrictEqual("67890");
             expect(val.exponent).toStrictEqual(-5);
         });
@@ -197,20 +202,24 @@ describe("constructor", () => {
                 expect(new Decimal128("-00").toString()).toStrictEqual("-0");
             });
             test("zero point zero", () => {
-                expect(new Decimal128("0.0").toString()).toStrictEqual("0.0");
+                expect(
+                    new Decimal128("0.0", { normalize: false }).toString()
+                ).toStrictEqual("0.0");
             });
             test("minus zero point zero", () => {
-                expect(new Decimal128("-0.0").toString()).toStrictEqual("-0.0");
+                expect(
+                    new Decimal128("-0.0", { normalize: false }).toString()
+                ).toStrictEqual("-0.0");
             });
             test("multiple trailing zeros", () => {
-                expect(new Decimal128("0.000").toString()).toStrictEqual(
-                    "0.000"
-                );
+                expect(
+                    new Decimal128("0.000", { normalize: false }).toString()
+                ).toStrictEqual("0.000");
             });
             test("multiple trailing zeros (negative)", () => {
-                expect(new Decimal128("-0.000").toString()).toStrictEqual(
-                    "-0.000"
-                );
+                expect(
+                    new Decimal128("-0.000", { normalize: false }).toString()
+                ).toStrictEqual("-0.000");
             });
         });
     });
@@ -436,18 +445,17 @@ describe("rounding options", () => {
                 new Decimal128("0.1", { foo: "bar" }).toString()
             ).toStrictEqual("0.1");
         });
-        test("unknown rounding mode throws", () => {
+        test("unknown rounding mode works out to default", () => {
             expect(
-                () => new Decimal128("0.1", { roundingMode: "jazzy" })
-            ).toThrow(Error);
+                new Decimal128("0.5", { roundingMode: "jazzy" }).toString()
+            ).toStrictEqual("0.5");
         });
         test("unknown rounding mode throws on large input", () => {
             expect(
-                () =>
-                    new Decimal128("0." + "9".repeat(10000), {
-                        roundingMode: "cool",
-                    })
-            ).toThrow(Error);
+                new Decimal128("0." + "9".repeat(10000), {
+                    roundingMode: "cool",
+                }).toString()
+            ).toStrictEqual("1.000000000000000000000000000000000");
         });
     });
     describe("negative value, final decimal digit is five, penultimate digit is less than nine", () => {

@@ -5,6 +5,17 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@master
+            - uses: actions/setup-node@master
+              with:
+                  node-version: 20
+            - name: check node version
+              run: node --version
+            - name: check npm version
+              run: npm --version
+            - name: check npx path
+              run: which npx
+            - name: check npx version
+              run: npx --version
             - name: npm install
               run: npm install
             - name: lint
@@ -12,6 +23,10 @@ jobs:
             - name: compile typescript
               run: tsc
             - name: test
-              run: npx c8 npx jest
-            - name: coverage
+              run: npm run test
+            - name: generate coverage
+              run: npm run coverage
+            - name: check coverage
               run: npx c8 check-coverage --lines 99 --functions 99 --branches 99 --statements 99
+            - name: examples do not crash
+              run: for f in examples/*.js; do node $f || exit 1; done
