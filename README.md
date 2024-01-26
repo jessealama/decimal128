@@ -7,36 +7,39 @@
 -   multiplication (`multiply`)
 -   division (`divide`)
 -   remainder (`remainder`)
--   absolute value (`abs`)
+-   rounding (`round`)
 -   `toString`
--   `toExponential`
 
 ## Implementation
 
-This package is written in TypeScript. Unit tests are in (typed) Jest. There are no other external dependencies.
+This package is written in TypeScript. Unit tests are in Jest. There are no other external dependencies.
 
 ## Data model
 
 This package aims to reproduce the IEEE 754 [Decimal128](https://en.wikipedia.org/wiki/Decimal128_floating-point_format) decimal floating-point numbers in JavaScript. These **decimal** (not binary!) numbers take up 128 bits of information per number. This format allows for an exact representation of decimal numbers with 34 (decimal) significant digits and an exponent between -6143 and 6144. That's a _vast_ amount of range and precision! Decimal128 is a fantastic standard. Let's implement it in JavaScript.
 
-This package also supports minus zero, positive and negative infinity, and NaN.
-
-This package aims to work with only _normalized_ values in the Decimal128 universe. With this package, there is no way to represent, say, `1.2` and `1.20` as distinct values. Digit strings are normalized right away, so `1.20` becomes `1.2`.
+This package also supports minus zero, positive and negative infinity, and NaN. These values are distinct from JS's built-in `-0`, `Infinity`, `-Infinity`, and `NaN`, since those are all JS Numbers.
 
 ### Differences with the official Decimal128
 
-This package is not literally an implementation of Decimal128. In time, it may _become_ one, but initially, this package is working with a subspace of Decimal128 that makes sense for the use cases we have in mind (mainly, finance).
+This package is not literally an implementation of Decimal128. This package is working with a subset of Decimal128 that makes sense for the use cases we have in mind (mainly, though not exclusively, finance). Only a handful of arithmetic operations are implemented. We do not offer, for instance, the various trigonometric functions.
 
 #### Lack of support for specifying context
 
-IEEE 754 Decimal128 allows one to globally specify configuration values (e.g., precision) that control all mathematical operations on Decimal128 values. This JavaScript package does not support that. Calculations are always done using all available digits.
+IEEE 754 Decimal128 allows one to globally specify configuration values (e.g., precision) that control all mathematical operations on Decimal128 values. This JavaScript package does not support that. This package offers a purely functional subset of Decimal128; there's no ambient context to specify and set. If one wishes to control, e.g., rounding, then one needs to specify that when constructing Decimal128 values or doing arithmetic operations.
 
-Think of this package as providing, basically, arbitrary-precision decimal numbers limited to those that fit into 128 bits the way that Decimal128 does it. No need to specify context. Just imagine that you're working in an ideal arbitrary-precision world, do the operation, and enjoy the results. If you need to cut off a calculation after a certain point, just perform the operation (e.g., addition) and then use `toDecimalDigits` on the result.
+Think of this package as providing, basically, arbitrary-precision decimal numbers limited to those that fit into 128 bits the way that Decimal128 does it. No need to specify context. Just imagine that you're working in an ideal arbitrary-precision world, do the operation, and enjoy the results. If you need to cut off a calculation after a certain point, just perform the operation (e.g., addition) and use `round`.
 
-#### Values always normalized
+#### Serialized values normalized by default
 
-Decimal128 is a universe of **unnormalized** values. In the Decimal128 world, `1.2` and `1.20` are _distinct_ values. There's good reason for adopting such an approach, and some benefits. But this package deliberately works in a world of _normalized_ values. Given the string `1.20`, this package will turn that into `1.2`; that extra trailing zero will be lost. To recover the string `1.20`, additional, out-of-band information needs to be supplied. For instance: if you're working with numbers as financial quantities, you know, out-of-band, how to interpret your numbers. Thus, if I tell you that the cost of something is `1.2` USD, you know that means, and you know that, if you need to present that data to someone, you'd add an extra digit there. This package provides a `toDecimalDigits` method that allows you to generate `1.20` from the underlying `1.2`.
+Decimal128 is a universe of **unnormalized** values. In the Decimal128 world, `1.2` and `1.20` are _distinct_ values. There's good reason for adopting such an approach, and has some benefits. But there can be surprises when working with non-normal values. This package supports IEEE 754 Decimal128, but it also aims to minimize surprises. In IEEE 754 Decimal128, if one adds, say, 1.2 and 3.8, the result is 5.0, not 5. (Again, those are *distinct* values in IEEE 754 Decimal128.) Reproducing that example with this package, one has
 
-#### Missing operations
+```javascript
+new Decimal128("1.2").add(new Decimal128("3.8")).toString() // "5"
+```
 
-This package focuses on the bread and butter of arithmetic: addition, multiplication, subtraction, and division. To round things out from there (ha!), we have the absolute value function, trunction, floor/ceiling.
+One can switch off normalization by setting the `normalize` option to `false` in `toString`, like this:
+
+```javascript
+new Decimal128("1.2").add(new Decimal128("3.8")).toString({ normalize: false }) // "5.0"
+```
