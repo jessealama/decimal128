@@ -32,14 +32,14 @@ Think of this package as providing, basically, arbitrary-precision decimal numbe
 
 #### Serialized values normalized by default
 
-Decimal128 is a universe of **unnormalized** values. In the Decimal128 world, `1.2` and `1.20` are _distinct_ values. There's good reason for adopting such an approach, and has some benefits. But there can be surprises when working with non-normal values. This package supports IEEE 754 Decimal128, but it also aims to minimize surprises. In IEEE 754 Decimal128, if one adds, say, 1.2 and 3.8, the result is 5.0, not 5. (Again, those are *distinct* values in IEEE 754 Decimal128.) Reproducing that example with this package, one has
+Decimal128 is a universe of **unnormalized** values. In the Decimal128 world, `1.2` and `1.20` are _distinct_ values. There's good reason for adopting such an approach, and has some benefits. But there can be surprises when working with non-normal values. This package supports IEEE 754 Decimal128, but it also aims to minimize surprises. In IEEE 754 Decimal128, if one adds, say, 1.2 and 3.8, the result is 5.0, not 5. (Again, those are _distinct_ values in IEEE 754 Decimal128.) Reproducing that example with this package, one has
 
 ```javascript
-new Decimal128("1.2").add(new Decimal128("3.8")).toString() // "5"
+new Decimal128("1.2").add(new Decimal128("3.8")).toString(); // "5"
 ```
 
 One can switch off normalization by setting the `normalize` option to `false` in `toString`, like this:
 
 ```javascript
-new Decimal128("1.2").add(new Decimal128("3.8")).toString({ normalize: false }) // "5.0"
+new Decimal128("1.2").add(new Decimal128("3.8")).toString({ normalize: false }); // "5.0"
 ```
