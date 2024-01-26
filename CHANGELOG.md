@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.1.0] - 2024-01-26
+
+### Added
+
+-   Restore possibility to specify rounding mode in arithmetic operations and constructor (#72)
+
 ## [9.0.0] - 2024-01-19
 
 ### Changed
