@@ -117,6 +117,16 @@ describe("addition", () => {
     });
 });
 
+describe("specify rounding mode", () => {
+    test("truncate rounding mode", () => {
+        expect(
+            new Decimal128("1234567890123456789012345678901234")
+                .add(new Decimal128("0.5"), { roundingMode: "trunc" })
+                .toString()
+        ).toStrictEqual("1234567890123456789012345678901234");
+    });
+});
+
 describe("examples from the General Decimal Arithmetic specification", () => {
     test("example one", () => {
         expect(

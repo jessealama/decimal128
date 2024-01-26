@@ -1,3 +1,4 @@
+---
 on: push
 name: CI
 jobs:
@@ -21,7 +22,7 @@ jobs:
             - name: lint
               run: npm run lint
             - name: compile typescript
-              run: tsc
+              run: npx tsc
             - name: test
               run: npm run test
             - name: generate coverage
