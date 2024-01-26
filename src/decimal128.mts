@@ -865,10 +865,24 @@ interface FullySpecifiedConstructorOptions {
     normalize: boolean;
 }
 
-const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions = {
-    roundingMode: ROUNDING_MODE_DEFAULT,
-    normalize: CONSTRUCTOR_SHOULD_NORMALIZE,
-};
+const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions =
+    Object.freeze({
+        roundingMode: ROUNDING_MODE_DEFAULT,
+        normalize: CONSTRUCTOR_SHOULD_NORMALIZE,
+    });
+
+interface ArithmeticOperationOptions {
+    roundingMode?: RoundingMode;
+}
+
+interface FullySpecifiedArithmeticOperationOptions {
+    roundingMode: RoundingMode;
+}
+
+const DEFAULT_ARITHMETIC_OPERATION_OPTIONS: FullySpecifiedArithmeticOperationOptions =
+    Object.freeze({
+        roundingMode: ROUNDING_MODE_DEFAULT,
+    });
 
 type ToStringFormat = "decimal" | "exponential";
 const TOSTRING_FORMATS: string[] = ["decimal", "exponential"];
@@ -883,10 +897,10 @@ interface FullySpecifiedToStringOptions {
     numDecimalDigits: number | undefined;
 }
 
-const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = {
+const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
     format: "decimal",
     numDecimalDigits: undefined,
-};
+});
 
 function ensureFullySpecifiedConstructorOptions(
     options?: ConstructorOptions
@@ -906,6 +920,25 @@ function ensureFullySpecifiedConstructorOptions(
 
     if ("boolean" === typeof options.normalize) {
         opts.normalize = options.normalize;
+    }
+
+    return opts;
+}
+
+function ensureFullySpecifiedArithmeticOperationOptions(
+    options?: ArithmeticOperationOptions
+): FullySpecifiedArithmeticOperationOptions {
+    let opts = { ...DEFAULT_ARITHMETIC_OPERATION_OPTIONS };
+
+    if (undefined === options) {
+        return opts;
+    }
+
+    if (
+        "string" === typeof options.roundingMode &&
+        ROUNDING_MODES.includes(options.roundingMode)
+    ) {
+        opts.roundingMode = options.roundingMode;
     }
 
     return opts;
@@ -1144,8 +1177,9 @@ export class Decimal128 {
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
+     * @param opts
      */
-    add(x: Decimal128): Decimal128 {
+    add(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1167,12 +1201,14 @@ export class Decimal128 {
         }
 
         if (this.isNegative && x.isNegative) {
-            return this.negate().add(x.negate()).negate();
+            return this.negate().add(x.negate(), opts).negate();
         }
 
         let resultRat = Rational.add(this.rat, x.rat);
+        let options = ensureFullySpecifiedArithmeticOperationOptions(opts);
         let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
+            { roundingMode: options.roundingMode }
         );
         let adjusted = initialResult.setExponent(
             Math.min(this.exponent, x.exponent)
@@ -1185,8 +1221,9 @@ export class Decimal128 {
      * Subtract another Decimal128 value from one or more Decimal128 values.
      *
      * @param x
+     * @param opts
      */
-    subtract(x: Decimal128): Decimal128 {
+    subtract(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1215,7 +1252,9 @@ export class Decimal128 {
             MAX_SIGNIFICANT_DIGITS + 1
         );
 
-        let initialResult = new Decimal128(rendered);
+        let options = ensureFullySpecifiedArithmeticOperationOptions(opts);
+
+        let initialResult = new Decimal128(rendered, options);
         let adjusted = initialResult.setExponent(
             Math.min(this.exponent, x.exponent)
         );
@@ -1228,8 +1267,9 @@ export class Decimal128 {
      * If no arguments are given, return this value.
      *
      * @param x
+     * @param opts
      */
-    multiply(x: Decimal128): Decimal128 {
+    multiply(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1268,7 +1308,8 @@ export class Decimal128 {
 
         let resultRat = Rational.multiply(this.rat, x.rat);
         let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
+            ensureFullySpecifiedArithmeticOperationOptions(opts)
         );
         let adjusted = initialResult.setExponent(this.exponent + x.exponent);
 
@@ -1291,8 +1332,9 @@ export class Decimal128 {
      * If only one argument is given, just return the first argument.
      *
      * @param x
+     * @param opts
      */
-    divide(x: Decimal128): Decimal128 {
+    divide(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
         if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1375,7 +1417,10 @@ export class Decimal128 {
         }
 
         let resultExponent = this.exponent - (x.exponent + adjust);
-        return new Decimal128(`${resultCoefficient}E${resultExponent}`);
+        return new Decimal128(
+            `${resultCoefficient}E${resultExponent}`,
+            ensureFullySpecifiedArithmeticOperationOptions(opts)
+        );
     }
 
     /**
@@ -1453,9 +1498,10 @@ export class Decimal128 {
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
      * @param d
+     * @param opts
      * @throws RangeError If argument is zero
      */
-    remainder(d: Decimal128): Decimal128 {
+    remainder(d: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
         if (this.isNaN() || d.isNaN()) {
             return new Decimal128(NAN);
         }
@@ -1481,7 +1527,7 @@ export class Decimal128 {
         }
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
-        return this.subtract(d.multiply(q));
+        return this.subtract(d.multiply(q), opts);
     }
 
     normalize(): Decimal128 {
