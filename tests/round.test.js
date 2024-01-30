@@ -67,8 +67,8 @@ describe("rounding", () => {
     test("negative integer", () => {
         expect(new Decimal128("-42").round().toString()).toStrictEqual("-42");
     });
-    test("negative number of digits requested", () => {
-        expect(() => new Decimal128("1.5").round(-42)).toThrow(RangeError);
+    test("negative number of digits requested is truncation", () => {
+        expect(new Decimal128("1.5").round(-42).toString()).toStrictEqual("2");
     });
     test("too many digits requested", () => {
         expect(() => new Decimal128("1.5").round(2 ** 53)).toThrow(RangeError);

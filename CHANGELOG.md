@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.0.0] - 2024-01-30
+
+### Changed
+
+-   Added an option to `cmp` to normalize values values before comparison (default is `true`, i.e., compare mathematical values).
+
+### Removed
+
+-   `normalize` method (can now be safely defined in user space as `new Decimal128(x.toString())`.
+-   Option to normalize strings in the constructor (we now accept the given digit string as-is)
+
 ## [9.1.0] - 2024-01-26
 
 ### Added

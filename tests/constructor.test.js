@@ -10,11 +10,6 @@ describe("constructor", () => {
         test("normalization by default", () => {
             expect(new Decimal128("1.20").toString()).toStrictEqual("1.2");
         });
-        test("normalization can be disabled", () => {
-            expect(
-                new Decimal128("1.20", { normalize: false }).toString()
-            ).toStrictEqual("1.20");
-        });
         test("no normalization (exponential notation) (positive exponent)", () => {
             let d = new Decimal128("1.20E1");
             expect(d.significand).toStrictEqual("120");
@@ -160,17 +155,23 @@ describe("constructor", () => {
         });
         test("close to one, too many digits, gets rounded to 1.000...", () => {
             expect(
-                new Decimal128("0." + "9".repeat(100)).toString()
+                new Decimal128("0." + "9".repeat(100)).toString({
+                    normalize: false,
+                })
             ).toStrictEqual("1.000000000000000000000000000000000");
         });
         test("lots of digits gets rounded to minus 1", () => {
             expect(
-                new Decimal128("-0." + "9".repeat(100)).toString()
+                new Decimal128("-0." + "9".repeat(100)).toString({
+                    normalize: false,
+                })
             ).toStrictEqual("-1.000000000000000000000000000000000");
         });
         test("lots of digits gets rounded to 10", () => {
             expect(
-                new Decimal128("9." + "9".repeat(100)).toString()
+                new Decimal128("9." + "9".repeat(100)).toString({
+                    normalize: false,
+                })
             ).toStrictEqual("10.00000000000000000000000000000000");
         });
         test("rounding at the limit of significant digits", () => {
@@ -203,22 +204,22 @@ describe("constructor", () => {
             });
             test("zero point zero", () => {
                 expect(
-                    new Decimal128("0.0", { normalize: false }).toString()
+                    new Decimal128("0.0").toString({ normalize: false })
                 ).toStrictEqual("0.0");
             });
             test("minus zero point zero", () => {
                 expect(
-                    new Decimal128("-0.0", { normalize: false }).toString()
+                    new Decimal128("-0.0").toString({ normalize: false })
                 ).toStrictEqual("-0.0");
             });
             test("multiple trailing zeros", () => {
                 expect(
-                    new Decimal128("0.000", { normalize: false }).toString()
+                    new Decimal128("0.000").toString({ normalize: false })
                 ).toStrictEqual("0.000");
             });
             test("multiple trailing zeros (negative)", () => {
                 expect(
-                    new Decimal128("-0.000", { normalize: false }).toString()
+                    new Decimal128("-0.000").toString({ normalize: false })
                 ).toStrictEqual("-0.000");
             });
         });
@@ -450,11 +451,11 @@ describe("rounding options", () => {
                 new Decimal128("0.5", { roundingMode: "jazzy" }).toString()
             ).toStrictEqual("0.5");
         });
-        test("unknown rounding mode throws on large input", () => {
+        test("unknown rounding mode does not throw error", () => {
             expect(
                 new Decimal128("0." + "9".repeat(10000), {
                     roundingMode: "cool",
-                }).toString()
+                }).toString({ normalize: false })
             ).toStrictEqual("1.000000000000000000000000000000000");
         });
     });

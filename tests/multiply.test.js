@@ -22,9 +22,9 @@ const examples = [
 
 function checkProduct(a, b, c) {
     expect(
-        new Decimal128(a, { normalize: false })
-            .multiply(new Decimal128(b, { normalize: false }))
-            .toString()
+        new Decimal128(a)
+            .multiply(new Decimal128(b))
+            .toString({ normalize: false })
     ).toStrictEqual(c);
 }
 
@@ -166,7 +166,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
         expect(
             new Decimal128("1.20", { normalize: false })
                 .multiply(new Decimal128("3"))
-                .toString()
+                .toString({ normalize: false })
         ).toStrictEqual("3.60");
     });
     test("example two", () => {
@@ -181,7 +181,9 @@ describe("examples from the General Decimal Arithmetic specification", () => {
     });
     test("example four", () => {
         expect(
-            new Decimal128("0.9").multiply(new Decimal128("-0")).toString()
+            new Decimal128("0.9")
+                .multiply(new Decimal128("-0"))
+                .toString({ normalize: false })
         ).toStrictEqual("-0.0");
     });
     test("example five", () => {

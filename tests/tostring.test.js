@@ -104,3 +104,14 @@ describe("to exponential string", () => {
         ).toStrictEqual("1.042E-2");
     });
 });
+
+describe("normalization", () => {
+    test("on by default", () => {
+        expect(new Decimal128("1.20").toString()).toStrictEqual("1.2");
+    });
+    test("can be disabled", () => {
+        expect(
+            new Decimal128("1.20").toString({ normalize: false })
+        ).toStrictEqual("1.20");
+    });
+});
