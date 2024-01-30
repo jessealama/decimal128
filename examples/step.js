@@ -11,4 +11,4 @@ function stepUp(d, n, x) {
 
 let starting = new Decimal128("1.23");
 let stepped = stepUp(starting, new Decimal128("3"), new Decimal128("-4"));
-console.log(stepped.toString({ numDecimalDigits: 4 })); // 1.2305
+console.log(stepped.toString({ numFractionalDigits: 4 })); // 1.2305
