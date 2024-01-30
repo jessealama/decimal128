@@ -24,45 +24,6 @@ const bigTen = BigInt(10);
 const bigOne = BigInt(1);
 
 /**
- * Normalize a digit string. This means:
- *
- * + removing any initial zeros
- * + removing any trailing zeros
- * + rewriting 0.0 to 0
- *
- * Sign is preserved. Thus, -0.0 (e.g.) gets normalized to -0.
- *
- * @param s A digit string
- *
- * @example normalize("000123.456000") // => "123.456"
- * @example normalize("000000.000000") // => "0"
- * @example normalize("000000.000001") // => "0.000001"
- * @example normalize("000000.100000") // => "0.1"
- */
-function normalize(s: string): string {
-    if (s.match(/^-/)) {
-        return "-" + normalize(s.substring(1));
-    }
-
-    let a = s.replace(/^0+/, "");
-    let b = a.match(/[.]/) ? a.replace(/0+$/, "") : a;
-
-    if (b.match(/^[.]/)) {
-        b = "0" + b;
-    }
-
-    if (b.match(/[.]$/)) {
-        b = b.substring(0, b.length - 1);
-    }
-
-    if ("" === b) {
-        b = "0";
-    }
-
-    return b;
-}
-
-/**
  * Return the significand of a digit string, assumed to be normalized.
  * The returned value is a digit string that has no decimal point, even if the original
  * digit string had one.
@@ -123,6 +84,10 @@ function cutoffAfterSignificantDigits(s: string, n: number): string {
 }
 
 function ensureDecimalDigits(s: string, n?: number): string {
+    if (s.match(/^-/)) {
+        return "-" + ensureDecimalDigits(s.substring(1), n);
+    }
+
     if (undefined === n) {
         return s;
     }
@@ -690,11 +655,6 @@ function handleDecimalNotation(
     options: FullySpecifiedConstructorOptions
 ): Decimal128Constructor {
     let withoutUnderscores = s.replace(/_/g, "");
-
-    if (options.normalize) {
-        withoutUnderscores = normalize(withoutUnderscores);
-    }
-
     let isNegative = !!withoutUnderscores.match(/^-/);
     let sg = significand(withoutUnderscores);
     let exp = exponent(withoutUnderscores);
@@ -737,7 +697,7 @@ export const ROUNDING_MODE_HALF_FLOOR: RoundingMode = "halfFloor";
 export const ROUNDING_MODE_HALF_TRUNCATE: RoundingMode = "halfTrunc";
 
 const ROUNDING_MODE_DEFAULT = ROUNDING_MODE_HALF_EVEN;
-const CONSTRUCTOR_SHOULD_NORMALIZE = true;
+const CONSTRUCTOR_SHOULD_NORMALIZE = false;
 
 function roundIt(
     isNegative: boolean,
@@ -890,16 +850,31 @@ const TOSTRING_FORMATS: string[] = ["decimal", "exponential"];
 interface ToStringOptions {
     format?: ToStringFormat;
     numDecimalDigits?: number;
+    normalize?: boolean;
 }
 
 interface FullySpecifiedToStringOptions {
     format: string;
     numDecimalDigits: number | undefined;
+    normalize: boolean;
 }
 
 const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
     format: "decimal",
     numDecimalDigits: undefined,
+    normalize: true,
+});
+
+interface CmpOptions {
+    normalize?: boolean;
+}
+
+interface FullySpecifiedCmpOptions {
+    normalize: boolean;
+}
+
+const DEFAULT_CMP_OPTIONS: FullySpecifiedCmpOptions = Object.freeze({
+    normalize: true,
 });
 
 function ensureFullySpecifiedConstructorOptions(
@@ -965,6 +940,26 @@ function ensureFullySpecifiedToStringOptions(
         Number.isInteger(options.numDecimalDigits)
     ) {
         opts.numDecimalDigits = options.numDecimalDigits;
+    }
+
+    if ("boolean" === typeof options.normalize) {
+        opts.normalize = options.normalize;
+    }
+
+    return opts;
+}
+
+function ensureFullySpecifiedCmpOptions(
+    options?: CmpOptions
+): FullySpecifiedCmpOptions {
+    let opts = { ...DEFAULT_CMP_OPTIONS };
+
+    if (undefined === options) {
+        return opts;
+    }
+
+    if ("boolean" === typeof options.normalize) {
+        opts.normalize = options.normalize;
     }
 
     return opts;
@@ -1076,11 +1071,39 @@ export class Decimal128 {
             return (this.isNegative ? "-" : "") + POSITIVE_INFINITY;
         }
 
-        let prefix = this.isNegative ? "-" : "";
+        let neg = this.isNegative;
+        let prefix = neg ? "-" : "";
         let sg = this.significand;
         let exp = this.exponent;
+        let isZ = this.isZero();
+        let numFractionalDigits = options.numDecimalDigits;
+
+        if (
+            "number" === typeof numFractionalDigits &&
+            numFractionalDigits < 0
+        ) {
+            numFractionalDigits = undefined;
+        }
+
+        let renderedRat = this.rat.toDecimalPlaces(
+            numFractionalDigits ?? MAX_SIGNIFICANT_DIGITS
+        );
 
         function emitDecimal(): string {
+            if (options.normalize && options.numDecimalDigits === undefined) {
+                if (isZ) {
+                    if (neg) {
+                        return "-0";
+                    }
+
+                    return "0";
+                }
+                return ensureDecimalDigits(
+                    renderedRat,
+                    options.numDecimalDigits
+                );
+            }
+
             if (exp >= 0) {
                 return ensureDecimalDigits(
                     prefix + sg + "0".repeat(exp),
@@ -1144,8 +1167,9 @@ export class Decimal128 {
      * + 1 otherwise.
      *
      * @param x
+     * @param opts
      */
-    cmp(x: Decimal128): -1 | 0 | 1 | undefined {
+    cmp(x: Decimal128, opts?: CmpOptions): -1 | 0 | 1 | undefined {
         if (this.isNaN() || x.isNaN()) {
             return undefined;
         }
@@ -1170,7 +1194,25 @@ export class Decimal128 {
             return x.isNegative ? 1 : -1;
         }
 
-        return this.rat.cmp(x.rat);
+        let options = ensureFullySpecifiedCmpOptions(opts);
+
+        let ratCmp = this.rat.cmp(x.rat);
+
+        if (ratCmp !== 0) {
+            return ratCmp;
+        }
+
+        if (this.isZero() || options.normalize) {
+            return 0;
+        }
+
+        let renderedThis = this.toString({
+            format: "decimal",
+            normalize: false,
+        });
+        let renderedThat = x.toString({ format: "decimal", normalize: false });
+
+        return renderedThis > renderedThat ? -1 : 1;
     }
 
     /**
@@ -1214,7 +1256,7 @@ export class Decimal128 {
             Math.min(this.exponent, x.exponent)
         );
 
-        return new Decimal128(adjusted.toString(), { normalize: false });
+        return new Decimal128(adjusted.toString({ normalize: false }));
     }
 
     /**
@@ -1258,7 +1300,7 @@ export class Decimal128 {
         let adjusted = initialResult.setExponent(
             Math.min(this.exponent, x.exponent)
         );
-        return new Decimal128(adjusted.toString(), { normalize: false });
+        return new Decimal128(adjusted.toString({ normalize: false }));
     }
 
     /**
@@ -1313,11 +1355,11 @@ export class Decimal128 {
         );
         let adjusted = initialResult.setExponent(this.exponent + x.exponent);
 
-        return new Decimal128(adjusted.toString(), { normalize: false });
+        return new Decimal128(adjusted.toString({ normalize: false }));
     }
 
     private isZero(): boolean {
-        return this.isFinite() && this.significand === "0";
+        return this.isFinite() && !!this.significand.match(/^0+$/);
     }
 
     private clone(): Decimal128 {
@@ -1432,23 +1474,15 @@ export class Decimal128 {
         numDecimalDigits: number = 0,
         mode: RoundingMode = ROUNDING_MODE_DEFAULT
     ): Decimal128 {
-        if (!Number.isSafeInteger(numDecimalDigits)) {
-            throw new RangeError(
-                "Argument for number of decimal digits must be a safe integer"
-            );
+        if (this.isNaN() || !this.isFinite()) {
+            return this.clone();
         }
 
         if (numDecimalDigits < 0) {
-            throw new RangeError(
-                "Argument for number of decimal digits must be non-negative"
-            );
+            numDecimalDigits = 0;
         }
 
-        if (this.isNaN() || !this.isFinite()) {
-            return this;
-        }
-
-        let s = this.toString();
+        let s = this.toString({ normalize: false });
         let [lhs, rhs] = s.split(".");
 
         if (undefined === rhs) {
@@ -1485,13 +1519,13 @@ export class Decimal128 {
     }
 
     private negate(): Decimal128 {
-        let s = this.toString();
+        let s = this.toString({ normalize: false });
 
         if (s.match(/^-/)) {
-            return new Decimal128(s.substring(1), { normalize: false });
+            return new Decimal128(s.substring(1));
         }
 
-        return new Decimal128("-" + s, { normalize: false });
+        return new Decimal128("-" + s);
     }
 
     /**
@@ -1530,10 +1564,6 @@ export class Decimal128 {
         return this.subtract(d.multiply(q), opts);
     }
 
-    normalize(): Decimal128 {
-        return new Decimal128(normalize(this.toString()));
-    }
-
     private decrementExponent(): Decimal128 {
         let exp = this.exponent;
         let sig = this.significand;
@@ -1542,9 +1572,7 @@ export class Decimal128 {
         let newExp = exp - 1;
         let newSig = sig + "0";
 
-        return new Decimal128(`${prefix}${newSig}E${newExp}`, {
-            normalize: false,
-        });
+        return new Decimal128(`${prefix}${newSig}E${newExp}`);
     }
 
     private setExponent(newExp: number): Decimal128 {

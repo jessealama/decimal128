@@ -122,8 +122,8 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
     test("example six", () => {
         expect(
             new Decimal128("3.6")
-                .remainder(new Decimal128("1.3"), { normalize: false })
-                .toString()
+                .remainder(new Decimal128("1.3"))
+                .toString({ normalize: false })
         ).toStrictEqual("1.0");
     });
 });

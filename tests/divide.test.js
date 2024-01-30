@@ -162,16 +162,16 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
     });
     test("example six", () => {
         expect(
-            new Decimal128("8.00", { normalize: false })
-                .divide(new Decimal128("2"), { normalize: false })
-                .toString()
+            new Decimal128("8.00")
+                .divide(new Decimal128("2"))
+                .toString({ normalize: false })
         ).toStrictEqual("4.00");
     });
     test("example seven", () => {
         expect(
-            new Decimal128("2.400", { normalize: false })
-                .divide(new Decimal128("2.0", { normalize: false }))
-                .toString()
+            new Decimal128("2.400")
+                .divide(new Decimal128("2.0"))
+                .toString({ normalize: false })
         ).toStrictEqual("1.20");
     });
     test("example eight", () => {

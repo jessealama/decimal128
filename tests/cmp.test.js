@@ -130,3 +130,47 @@ describe("many digits", () => {
         });
     });
 });
+
+describe("zero", () => {
+    let zero = new Decimal128("0");
+    let negZero = new Decimal128("-0");
+    test("positive zero", () => {
+        expect(zero.cmp(zero)).toStrictEqual(0);
+    });
+    test("negative zero", () => {
+        expect(negZero.cmp(negZero)).toStrictEqual(0);
+    });
+    test("negative zero vs zero", () => {
+        expect(negZero.cmp(zero)).toStrictEqual(0);
+    });
+    test("negative zero vs zero, normalization disabled", () => {
+        expect(negZero.cmp(zero, { normalize: false })).toStrictEqual(0);
+    });
+});
+
+describe("normalization", () => {
+    let d1 = new Decimal128("1.2");
+    let d2 = new Decimal128("1.20");
+    let d3 = new Decimal128("1.200");
+    test("compare normalized to normalized", () => {
+        expect(d1.cmp(d2)).toStrictEqual(0);
+    });
+    test("compare normalized to normalized", () => {
+        expect(d2.cmp(d3)).toStrictEqual(0);
+    });
+    test("compare normalized to normalized", () => {
+        expect(d1.cmp(d3)).toStrictEqual(0);
+    });
+    test("compare non-normal (1)", () => {
+        expect(d1.cmp(d2, { normalize: false })).toStrictEqual(1);
+    });
+    test("compare non-normal (2)", () => {
+        expect(d2.cmp(d1, { normalize: false })).toStrictEqual(-1);
+    });
+    test("compare two non-normal values", () => {
+        expect(d2.cmp(d3, { normalize: false })).toStrictEqual(1);
+    });
+    test("compare two non-normal values", () => {
+        expect(d3.cmp(d2, { normalize: false })).toStrictEqual(-1);
+    });
+});
