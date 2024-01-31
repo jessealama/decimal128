@@ -8,7 +8,7 @@
 -   division (`divide`)
 -   remainder (`remainder`)
 -   rounding (`round`)
--   `toString`
+-   `toString` emitting both decimal and exponential syntax (default is decimal)
 
 ## Implementation
 
