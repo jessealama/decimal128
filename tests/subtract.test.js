@@ -142,7 +142,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
     test("example two", () => {
         expect(
             new Decimal128("1.3")
-                .subtract(new Decimal128("1.30", { normalize: false }))
+                .subtract(new Decimal128("1.30"))
                 .toString({ normalize: false })
         ).toStrictEqual("0.00");
     });

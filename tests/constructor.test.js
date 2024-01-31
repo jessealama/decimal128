@@ -130,7 +130,7 @@ describe("constructor", () => {
             expect(val.toString()).toStrictEqual(s);
         });
         test("decimal number with trailing zero", () => {
-            let val = new Decimal128("0.67890", { normalize: false });
+            let val = new Decimal128("0.67890");
             expect(val.significand).toStrictEqual("67890");
             expect(val.exponent).toStrictEqual(-5);
         });

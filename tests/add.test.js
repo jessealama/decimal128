@@ -58,10 +58,8 @@ describe("addition", () => {
     describe("non-normalized", () => {
         test("one point zero plus one point zero", () => {
             expect(
-                new Decimal128("1.0", { normalize: false })
-                    .add(new Decimal128("1.0", { normalize: false }), {
-                        normalize: false,
-                    })
+                new Decimal128("1.0")
+                    .add(new Decimal128("1.0"))
                     .toString({ normalize: false })
             ).toStrictEqual("2.0");
         });
@@ -131,7 +129,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
     test("example one", () => {
         expect(
             new Decimal128("12")
-                .add(new Decimal128("7.00", { normalize: false }))
+                .add(new Decimal128("7.00"))
                 .toString({ normalize: false })
         ).toStrictEqual("19.00");
     });
