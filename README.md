@@ -24,7 +24,7 @@ This package also supports minus zero, positive and negative infinity, and NaN. 
 
 ### Differences with the official Decimal128
 
-This package is not literally an implementation of Decimal128. This package is working with a subset of Decimal128 that makes sense for the use cases we have in mind (mainly, though not exclusively, finance). Only a handful of arithmetic operations are implemented. We do not offer, for instance, the various trigonometric functions.
+This package is not literally an implementation of IEEE 754 Decimal128. This package defines a subset of Decimal128 that makes sense for the use cases we have in mind (mainly, though not exclusively, finance). Only a handful of arithmetic operations are implemented. We do not offer, for instance, the various trigonometric functions. Moreover, this package supports the concep of quiet NaNs only. Signalling NaNs are not supported here.
 
 #### Lack of support for specifying context
 
