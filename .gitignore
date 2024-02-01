@@ -4,3 +4,7 @@ dist/
 src/*.d.ts
 src/*.mjs
 src/*.d.mts
+/examples/*.mjs
+/examples/*.d.ts
+/examples/*.d.mts
+/examples/*.js
