@@ -1,13 +1,9 @@
 import { Decimal128 } from "../src/decimal128.mjs";
 
-const one = new Decimal128("1");
-
-function pow(a, b) {
-    let i = one;
+function pow(a: Decimal128, b: number): Decimal128 {
     let result = a;
-    while (-1 === i.cmp(b)) {
+    for (let i = 0; i < b; i++) {
         result = result.multiply(a);
-        i = i.add(one);
     }
     return result;
 }
