@@ -48,6 +48,7 @@
             "url": "https://opensource.org/license/bsd-2-clause/"
         }
     ],
+    "types": "./src/decimal128.d.mjs",
     "exports": {
         ".": "./src/decimal128.mjs"
     }
