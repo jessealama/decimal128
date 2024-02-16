@@ -816,7 +816,7 @@ const nanRegExp = /^-?nan$/i;
 const infRegExp = /^-?inf(inity)?$/i;
 
 interface ConstructorOptions {
-    roundingMode?: RoundingMode
+    roundingMode?: RoundingMode;
 }
 
 interface FullySpecifiedConstructorOptions {
