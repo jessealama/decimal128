@@ -816,8 +816,7 @@ const nanRegExp = /^-?nan$/i;
 const infRegExp = /^-?inf(inity)?$/i;
 
 interface ConstructorOptions {
-    roundingMode?: RoundingMode;
-    normalize?: boolean;
+    roundingMode?: RoundingMode
 }
 
 interface FullySpecifiedConstructorOptions {
@@ -893,10 +892,6 @@ function ensureFullySpecifiedConstructorOptions(
         opts.roundingMode = options.roundingMode;
     }
 
-    if ("boolean" === typeof options.normalize) {
-        opts.normalize = options.normalize;
-    }
-
     return opts;
 }
 
@@ -966,9 +961,9 @@ function ensureFullySpecifiedCmpOptions(
 }
 
 export class Decimal128 {
-    public readonly significand: string;
-    public readonly exponent: number;
-    public readonly isNegative: boolean;
+    private readonly significand: string;
+    private readonly exponent: number;
+    private readonly isNegative: boolean;
     private readonly rat;
 
     constructor(n: string, options?: ConstructorOptions) {
