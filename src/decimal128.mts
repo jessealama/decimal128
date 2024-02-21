@@ -865,15 +865,15 @@ const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
 });
 
 interface CmpOptions {
-    normalize?: boolean;
+    total?: boolean;
 }
 
 interface FullySpecifiedCmpOptions {
-    normalize: boolean;
+    total: boolean;
 }
 
 const DEFAULT_CMP_OPTIONS: FullySpecifiedCmpOptions = Object.freeze({
-    normalize: true,
+    total: false, // compare by numeric value (ignore trailing zeroes, treat NaN as not-a-number, for a change)
 });
 
 function ensureFullySpecifiedConstructorOptions(
@@ -953,8 +953,8 @@ function ensureFullySpecifiedCmpOptions(
         return opts;
     }
 
-    if ("boolean" === typeof options.normalize) {
-        opts.normalize = options.normalize;
+    if ("boolean" === typeof options.total) {
+        opts.total = options.total;
     }
 
     return opts;
@@ -1165,7 +1165,24 @@ export class Decimal128 {
      * @param opts
      */
     cmp(x: Decimal128, opts?: CmpOptions): -1 | 0 | 1 | undefined {
-        if (this.isNaN() || x.isNaN()) {
+        let options = ensureFullySpecifiedCmpOptions(opts);
+
+        if (this.isNaN()) {
+            if (options.total) {
+                if (x.isNaN()) {
+                    return 0;
+                }
+                return 1;
+            }
+
+            return undefined;
+        }
+
+        if (x.isNaN()) {
+            if (options.total) {
+                return -1;
+            }
+
             return undefined;
         }
 
@@ -1189,25 +1206,38 @@ export class Decimal128 {
             return x.isNegative ? 1 : -1;
         }
 
-        let options = ensureFullySpecifiedCmpOptions(opts);
+        let rationalThis = this.rat;
+        let rationalX = x.rat;
 
-        let ratCmp = this.rat.cmp(x.rat);
+        let ratCmp = rationalThis.cmp(rationalX);
 
         if (ratCmp !== 0) {
             return ratCmp;
         }
 
-        if (this.isZero() || options.normalize) {
+        if (!options.total) {
             return 0;
+        }
+
+        if (this.isNegative && !x.isNegative) {
+            return -1;
+        }
+
+        if (!this.isNegative && x.isNegative) {
+            return 1;
         }
 
         let renderedThis = this.toString({
             format: "decimal",
             normalize: false,
         });
-        let renderedThat = x.toString({ format: "decimal", normalize: false });
+        let renderedX = x.toString({ format: "decimal", normalize: false });
 
-        return renderedThis > renderedThat ? -1 : 1;
+        if (renderedThis === renderedX) {
+            return 0;
+        }
+
+        return renderedThis > renderedX ? -1 : 1;
     }
 
     /**

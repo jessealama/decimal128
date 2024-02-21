@@ -73,15 +73,32 @@ describe("many digits", () => {
                 new Decimal128("NaN").cmp(new Decimal128("NaN"))
             ).toStrictEqual(undefined);
         });
+        test("NaN cmp NaN is not NaN, with total comparison", () => {
+            expect(
+                new Decimal128("NaN").cmp(new Decimal128("NaN"), {
+                    total: true,
+                })
+            ).toStrictEqual(0);
+        });
         test("number cmp NaN is NaN", () => {
             expect(
                 new Decimal128("1").cmp(new Decimal128("NaN"))
             ).toStrictEqual(undefined);
         });
+        test("number cmp NaN is not NaN, with total comparison", () => {
+            expect(
+                new Decimal128("1").cmp(new Decimal128("NaN"), { total: true })
+            ).toStrictEqual(-1);
+        });
         test("NaN cmp number is NaN", () => {
             expect(
                 new Decimal128("NaN").cmp(new Decimal128("1"))
             ).toStrictEqual(undefined);
+        });
+        test("NaN cmp number is not NaN, with total comparison", () => {
+            expect(
+                new Decimal128("NaN").cmp(new Decimal128("1"), { total: true })
+            ).toStrictEqual(1);
         });
     });
     describe("minus zero", () => {
@@ -144,7 +161,10 @@ describe("zero", () => {
         expect(negZero.cmp(zero)).toStrictEqual(0);
     });
     test("negative zero vs zero, normalization disabled", () => {
-        expect(negZero.cmp(zero, { normalize: false })).toStrictEqual(0);
+        expect(negZero.cmp(zero, { total: true })).toStrictEqual(-1);
+    });
+    test("zero vs negative zero, normalization disabled", () => {
+        expect(zero.cmp(negZero, { total: true })).toStrictEqual(1);
     });
 });
 
@@ -162,15 +182,152 @@ describe("normalization", () => {
         expect(d1.cmp(d3)).toStrictEqual(0);
     });
     test("compare non-normal (1)", () => {
-        expect(d1.cmp(d2, { normalize: false })).toStrictEqual(1);
+        expect(d1.cmp(d2, { total: true })).toStrictEqual(1);
     });
     test("compare non-normal (2)", () => {
-        expect(d2.cmp(d1, { normalize: false })).toStrictEqual(-1);
+        expect(d2.cmp(d1, { total: true })).toStrictEqual(-1);
     });
     test("compare two non-normal values", () => {
-        expect(d2.cmp(d3, { normalize: false })).toStrictEqual(1);
+        expect(d2.cmp(d3, { total: true })).toStrictEqual(1);
     });
     test("compare two non-normal values", () => {
-        expect(d3.cmp(d2, { normalize: false })).toStrictEqual(-1);
+        expect(d3.cmp(d2, { total: true })).toStrictEqual(-1);
+    });
+});
+
+describe("examples from the General Decimal Arithmetic specification", () => {
+    describe("compare", () => {
+        test("example one", () => {
+            expect(
+                new Decimal128("2.1").cmp(new Decimal128("3"))
+            ).toStrictEqual(-1);
+        });
+        test("example two", () => {
+            expect(
+                new Decimal128("2.1").cmp(new Decimal128("2.1"))
+            ).toStrictEqual(0);
+        });
+        test("example three", () => {
+            expect(
+                new Decimal128("2.1").cmp(new Decimal128("2.10"))
+            ).toStrictEqual(0);
+        });
+        test("example four", () => {
+            expect(
+                new Decimal128("3").cmp(new Decimal128("2.1"))
+            ).toStrictEqual(1);
+        });
+        test("example five", () => {
+            expect(
+                new Decimal128("2.1").cmp(new Decimal128("-3"))
+            ).toStrictEqual(1);
+        });
+        test("example five", () => {
+            expect(
+                new Decimal128("-3").cmp(new Decimal128("2.1"))
+            ).toStrictEqual(-1);
+        });
+    });
+    describe("compare-total", () => {
+        test("example one", () => {
+            expect(
+                new Decimal128("12.73").cmp(new Decimal128("127.9"), {
+                    total: true,
+                })
+            ).toStrictEqual(-1);
+        });
+        test("example two", () => {
+            expect(
+                new Decimal128("-127").cmp(new Decimal128("12"), {
+                    total: true,
+                })
+            ).toStrictEqual(-1);
+        });
+        test("example three", () => {
+            expect(
+                new Decimal128("12.30").cmp(new Decimal128("12.3"), {
+                    total: true,
+                })
+            ).toStrictEqual(-1);
+        });
+        test("example four", () => {
+            expect(
+                new Decimal128("12.30").cmp(new Decimal128("12.30"), {
+                    total: true,
+                })
+            ).toStrictEqual(0);
+        });
+        test("example five", () => {
+            expect(
+                new Decimal128("12.3").cmp(new Decimal128("12.300"), {
+                    total: true,
+                })
+            ).toStrictEqual(1);
+        });
+        test("example six", () => {
+            expect(
+                new Decimal128("12.3").cmp(new Decimal128("NaN"), {
+                    total: true,
+                })
+            ).toStrictEqual(-1);
+        });
+        describe("inline examples", () => {
+            test("example one", () => {
+                expect(
+                    new Decimal128("-Infinity").cmp(new Decimal128("-127"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example two", () => {
+                expect(
+                    new Decimal128("-1.00").cmp(new Decimal128("-1"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example three", () => {
+                expect(
+                    new Decimal128("-0.000").cmp(new Decimal128("-0"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example four", () => {
+                expect(
+                    new Decimal128("-0").cmp(new Decimal128("0"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example five", () => {
+                expect(
+                    new Decimal128("1.2300").cmp(new Decimal128("1.23"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example six", () => {
+                expect(
+                    new Decimal128("1.23").cmp(new Decimal128("1E+9"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example seven", () => {
+                expect(
+                    new Decimal128("1E+9").cmp(new Decimal128("Infinity"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+            test("example eight", () => {
+                expect(
+                    new Decimal128("Infinity").cmp(new Decimal128("NaN"), {
+                        total: true,
+                    })
+                ).toStrictEqual(-1);
+            });
+        });
     });
 });
