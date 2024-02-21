@@ -654,7 +654,21 @@ function handleDecimalNotation(
     s: string,
     options: FullySpecifiedConstructorOptions
 ): Decimal128Constructor {
-    let withoutUnderscores = s.replace(/_/g, "");
+    let withoutLeadingPlus = s.replace(/^\+/, "");
+    let withoutUnderscores = withoutLeadingPlus.replace(/_/g, "");
+
+    if ("" === withoutUnderscores) {
+        throw new SyntaxError("Empty string not permitted");
+    }
+
+    if ("." === withoutUnderscores) {
+        throw new SyntaxError("Lone decimal point not permitted");
+    }
+
+    if ("-" === withoutUnderscores) {
+        throw new SyntaxError("Lone minus sign not permitted");
+    }
+
     let isNegative = !!withoutUnderscores.match(/^-/);
     let sg = significand(withoutUnderscores);
     let exp = exponent(withoutUnderscores);
@@ -810,9 +824,10 @@ const ROUNDING_MODES: RoundingMode[] = [
     "halfTrunc",
 ];
 
-const digitStrRegExp = /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
-const exponentRegExp = /^-?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
-const nanRegExp = /^-?nan$/i;
+const digitStrRegExp =
+    /^[+-]?([0-9]+(?:_?[0-9]+)*)?(?:[.]([0-9](_?[0-9]+)*)*)?$/;
+const exponentRegExp = /^[+-]?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
+const nanRegExp = /^-?nan[0-9]*$/i;
 const infRegExp = /^-?inf(inity)?$/i;
 
 interface ConstructorOptions {
