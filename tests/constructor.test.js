@@ -504,3 +504,89 @@ describe("rounding options", () => {
         }
     });
 });
+
+describe("General Decimal Arithmetic specification", () => {
+    describe("decimal syntax", () => {
+        test("0", () => {
+            expect(new Decimal128("0").toString()).toStrictEqual("0");
+        });
+        test("12", () => {
+            expect(new Decimal128("12").toString()).toStrictEqual("12");
+        });
+        test("-76", () => {
+            expect(new Decimal128("-76").toString()).toStrictEqual("-76");
+        });
+        test("12.70", () => {
+            expect(new Decimal128("12.70").toString()).toStrictEqual("12.7");
+        });
+        test("+0.003", () => {
+            expect(new Decimal128("+0.003").toString()).toStrictEqual("0.003");
+        });
+        test("017.", () => {
+            expect(new Decimal128("017.").toString()).toStrictEqual("17");
+        });
+        test(".5", () => {
+            expect(new Decimal128(".5").toString()).toStrictEqual("0.5");
+        });
+        test("4E+9", () => {
+            expect(new Decimal128("4E+9").toString()).toStrictEqual(
+                "4000000000"
+            );
+        });
+        test("Inf", () => {
+            expect(new Decimal128("Inf").toString()).toStrictEqual("Infinity");
+        });
+        test("-infinity", () => {
+            expect(new Decimal128("-infinity").toString()).toStrictEqual(
+                "-Infinity"
+            );
+        });
+        test("NaN", () => {
+            expect(new Decimal128("NaN").toString()).toStrictEqual("NaN");
+        });
+        test("NaN8275 (diagnostic information discarded)", () => {
+            expect(new Decimal128("NaN8275").toString()).toStrictEqual("NaN");
+        });
+        test("period", () => {
+            expect(() => new Decimal128(".")).toThrow(SyntaxError);
+        });
+        test("plus period", () => {
+            expect(() => new Decimal128("+.")).toThrow(SyntaxError);
+        });
+        test("minus period", () => {
+            expect(() => new Decimal128("-.")).toThrow(SyntaxError);
+        });
+        test("plus", () => {
+            expect(() => new Decimal128("+")).toThrow(SyntaxError);
+        });
+        test("minus", () => {
+            expect(() => new Decimal128("-")).toThrow(SyntaxError);
+        });
+    });
+    describe("scientific string syntax", () => {
+        test("1.23E+3", () => {
+            expect(new Decimal128("1.23E+3").toString()).toStrictEqual("1230");
+        });
+        test("1.23E+5", () => {
+            expect(new Decimal128("1.23E+5").toString()).toStrictEqual(
+                "123000"
+            );
+        });
+        test("1.23E-8", () => {
+            expect(new Decimal128("1.23E-8").toString()).toStrictEqual(
+                "0.0000000123"
+            );
+        });
+        test("-1.23E-10", () => {
+            expect(new Decimal128("-1.23E-10").toString()).toStrictEqual(
+                "-0.000000000123"
+            );
+        });
+        test("0E+2", () => {
+            expect(
+                new Decimal128("0E+2").toString({ format: "exponential" })
+            ).toStrictEqual("0E+2");
+        });
+    });
+    describe("engineering string", () => {});
+});

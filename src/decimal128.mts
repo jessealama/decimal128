@@ -654,7 +654,21 @@ function handleDecimalNotation(
     s: string,
     options: FullySpecifiedConstructorOptions
 ): Decimal128Constructor {
-    let withoutUnderscores = s.replace(/_/g, "");
+    let withoutLeadingPlus = s.replace(/^\+/, "");
+    let withoutUnderscores = withoutLeadingPlus.replace(/_/g, "");
+
+    if ("" === withoutUnderscores) {
+        throw new SyntaxError("Empty string not permitted");
+    }
+
+    if ("." === withoutUnderscores) {
+        throw new SyntaxError("Lone decimal point not permitted");
+    }
+
+    if ("-" === withoutUnderscores) {
+        throw new SyntaxError("Lone minus sign not permitted");
+    }
+
     let isNegative = !!withoutUnderscores.match(/^-/);
     let sg = significand(withoutUnderscores);
     let exp = exponent(withoutUnderscores);
@@ -810,9 +824,10 @@ const ROUNDING_MODES: RoundingMode[] = [
     "halfTrunc",
 ];
 
-const digitStrRegExp = /^-?[0-9]+(?:_?[0-9]+)*(?:[.][0-9](_?[0-9]+)*)?$/;
-const exponentRegExp = /^-?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
-const nanRegExp = /^-?nan$/i;
+const digitStrRegExp =
+    /^[+-]?([0-9]+(?:_?[0-9]+)*)?(?:[.]([0-9](_?[0-9]+)*)*)?$/;
+const exponentRegExp = /^[+-]?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
+const nanRegExp = /^-?nan[0-9]*$/i;
 const infRegExp = /^-?inf(inity)?$/i;
 
 interface ConstructorOptions {
@@ -853,7 +868,7 @@ interface ToStringOptions {
 }
 
 interface FullySpecifiedToStringOptions {
-    format: string;
+    format: ToStringFormat;
     numDecimalDigits: number | undefined;
     normalize: boolean;
 }
@@ -865,15 +880,15 @@ const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
 });
 
 interface CmpOptions {
-    normalize?: boolean;
+    total?: boolean;
 }
 
 interface FullySpecifiedCmpOptions {
-    normalize: boolean;
+    total: boolean;
 }
 
 const DEFAULT_CMP_OPTIONS: FullySpecifiedCmpOptions = Object.freeze({
-    normalize: true,
+    total: false, // compare by numeric value (ignore trailing zeroes, treat NaN as not-a-number, for a change)
 });
 
 function ensureFullySpecifiedConstructorOptions(
@@ -953,11 +968,51 @@ function ensureFullySpecifiedCmpOptions(
         return opts;
     }
 
-    if ("boolean" === typeof options.normalize) {
-        opts.normalize = options.normalize;
+    if ("boolean" === typeof options.total) {
+        opts.total = options.total;
     }
 
     return opts;
+}
+
+function toRational(isNegative: boolean, sg: string, exp: number): Rational {
+    if (sg === NAN || sg === POSITIVE_INFINITY) {
+        return new Rational(0n, 1n);
+    }
+
+    if ("1" === sg) {
+        // power of ten
+        if (exp < 0) {
+            return new Rational(
+                bigOne,
+                BigInt((isNegative ? "-" : "") + "1" + "0".repeat(0 - exp))
+            );
+        }
+
+        if (exp === 0) {
+            return new Rational(BigInt(isNegative ? -1 : 1), bigOne);
+        }
+
+        return new Rational(
+            BigInt((isNegative ? "-" : "") + "1" + "0".repeat(exp)),
+            bigOne
+        );
+    }
+
+    if (exp < 0) {
+        return new Rational(
+            BigInt((isNegative ? "-" : "") + sg),
+            bigTen ** BigInt(0 - exp)
+        );
+    }
+
+    if (exp === 1) {
+        return new Rational(BigInt((isNegative ? "-" : "") + sg + "0"), bigOne);
+    }
+    return new Rational(
+        BigInt((isNegative ? "-" : "") + sg) * 10n ** BigInt(exp),
+        bigOne
+    );
 }
 
 export class Decimal128 {
@@ -990,57 +1045,7 @@ export class Decimal128 {
         this.exponent = data.exponent;
         this.significand = data.significand;
 
-        if (
-            this.significand === NAN ||
-            this.significand === POSITIVE_INFINITY
-        ) {
-            this.rat = new Rational(0n, 1n);
-        } else {
-            if ("1" === this.significand) {
-                // power of ten
-                if (this.exponent < 0) {
-                    this.rat = new Rational(
-                        bigOne,
-                        BigInt(
-                            (this.isNegative ? "-" : "") +
-                                "1" +
-                                "0".repeat(0 - this.exponent)
-                        )
-                    );
-                } else if (this.exponent === 0) {
-                    this.rat = new Rational(
-                        BigInt(this.isNegative ? -1 : 1),
-                        bigOne
-                    );
-                } else {
-                    this.rat = new Rational(
-                        BigInt(
-                            (this.isNegative ? "-" : "") +
-                                "1" +
-                                "0".repeat(this.exponent)
-                        ),
-                        bigOne
-                    );
-                }
-            } else if (this.exponent < 0) {
-                this.rat = new Rational(
-                    BigInt((this.isNegative ? "-" : "") + this.significand),
-                    bigTen ** BigInt(0 - this.exponent)
-                );
-            } else if (this.exponent === 1) {
-                this.rat = new Rational(
-                    BigInt(
-                        (this.isNegative ? "-" : "") + this.significand + "0"
-                    ),
-                    bigOne
-                );
-            } else {
-                this.rat = new Rational(
-                    BigInt((this.isNegative ? "-" : "") + this.significand),
-                    bigTen ** BigInt(this.exponent)
-                );
-            }
-        }
+        this.rat = toRational(this.isNegative, this.significand, this.exponent);
     }
 
     isNaN(): boolean {
@@ -1165,7 +1170,24 @@ export class Decimal128 {
      * @param opts
      */
     cmp(x: Decimal128, opts?: CmpOptions): -1 | 0 | 1 | undefined {
-        if (this.isNaN() || x.isNaN()) {
+        let options = ensureFullySpecifiedCmpOptions(opts);
+
+        if (this.isNaN()) {
+            if (options.total) {
+                if (x.isNaN()) {
+                    return 0;
+                }
+                return 1;
+            }
+
+            return undefined;
+        }
+
+        if (x.isNaN()) {
+            if (options.total) {
+                return -1;
+            }
+
             return undefined;
         }
 
@@ -1189,25 +1211,38 @@ export class Decimal128 {
             return x.isNegative ? 1 : -1;
         }
 
-        let options = ensureFullySpecifiedCmpOptions(opts);
+        let rationalThis = this.rat;
+        let rationalX = x.rat;
 
-        let ratCmp = this.rat.cmp(x.rat);
+        let ratCmp = rationalThis.cmp(rationalX);
 
         if (ratCmp !== 0) {
             return ratCmp;
         }
 
-        if (this.isZero() || options.normalize) {
+        if (!options.total) {
             return 0;
+        }
+
+        if (this.isNegative && !x.isNegative) {
+            return -1;
+        }
+
+        if (!this.isNegative && x.isNegative) {
+            return 1;
         }
 
         let renderedThis = this.toString({
             format: "decimal",
             normalize: false,
         });
-        let renderedThat = x.toString({ format: "decimal", normalize: false });
+        let renderedX = x.toString({ format: "decimal", normalize: false });
 
-        return renderedThis > renderedThat ? -1 : 1;
+        if (renderedThis === renderedX) {
+            return 0;
+        }
+
+        return renderedThis > renderedX ? -1 : 1;
     }
 
     /**
