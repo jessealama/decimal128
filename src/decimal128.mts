@@ -975,6 +975,46 @@ function ensureFullySpecifiedCmpOptions(
     return opts;
 }
 
+function toRational(isNegative: boolean, sg: string, exp: number): Rational {
+    if (sg === NAN || sg === POSITIVE_INFINITY) {
+        return new Rational(0n, 1n);
+    }
+
+    if ("1" === sg) {
+        // power of ten
+        if (exp < 0) {
+            return new Rational(
+                bigOne,
+                BigInt((isNegative ? "-" : "") + "1" + "0".repeat(0 - exp))
+            );
+        }
+
+        if (exp === 0) {
+            return new Rational(BigInt(isNegative ? -1 : 1), bigOne);
+        }
+
+        return new Rational(
+            BigInt((isNegative ? "-" : "") + "1" + "0".repeat(exp)),
+            bigOne
+        );
+    }
+
+    if (exp < 0) {
+        return new Rational(
+            BigInt((isNegative ? "-" : "") + sg),
+            bigTen ** BigInt(0 - exp)
+        );
+    }
+
+    if (exp === 1) {
+        return new Rational(BigInt((isNegative ? "-" : "") + sg + "0"), bigOne);
+    }
+    return new Rational(
+        BigInt((isNegative ? "-" : "") + sg) * 10n ** BigInt(exp),
+        bigOne
+    );
+}
+
 export class Decimal128 {
     private readonly significand: string;
     private readonly exponent: number;
@@ -1005,57 +1045,7 @@ export class Decimal128 {
         this.exponent = data.exponent;
         this.significand = data.significand;
 
-        if (
-            this.significand === NAN ||
-            this.significand === POSITIVE_INFINITY
-        ) {
-            this.rat = new Rational(0n, 1n);
-        } else {
-            if ("1" === this.significand) {
-                // power of ten
-                if (this.exponent < 0) {
-                    this.rat = new Rational(
-                        bigOne,
-                        BigInt(
-                            (this.isNegative ? "-" : "") +
-                                "1" +
-                                "0".repeat(0 - this.exponent)
-                        )
-                    );
-                } else if (this.exponent === 0) {
-                    this.rat = new Rational(
-                        BigInt(this.isNegative ? -1 : 1),
-                        bigOne
-                    );
-                } else {
-                    this.rat = new Rational(
-                        BigInt(
-                            (this.isNegative ? "-" : "") +
-                                "1" +
-                                "0".repeat(this.exponent)
-                        ),
-                        bigOne
-                    );
-                }
-            } else if (this.exponent < 0) {
-                this.rat = new Rational(
-                    BigInt((this.isNegative ? "-" : "") + this.significand),
-                    bigTen ** BigInt(0 - this.exponent)
-                );
-            } else if (this.exponent === 1) {
-                this.rat = new Rational(
-                    BigInt(
-                        (this.isNegative ? "-" : "") + this.significand + "0"
-                    ),
-                    bigOne
-                );
-            } else {
-                this.rat = new Rational(
-                    BigInt((this.isNegative ? "-" : "") + this.significand),
-                    bigTen ** BigInt(this.exponent)
-                );
-            }
-        }
+        this.rat = toRational(this.isNegative, this.significand, this.exponent);
     }
 
     isNaN(): boolean {
