@@ -868,7 +868,7 @@ interface ToStringOptions {
 }
 
 interface FullySpecifiedToStringOptions {
-    format: ToStringFormat
+    format: ToStringFormat;
     numDecimalDigits: number | undefined;
     normalize: boolean;
 }

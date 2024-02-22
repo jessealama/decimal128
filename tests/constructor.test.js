@@ -565,19 +565,27 @@ describe("General Decimal Arithmetic specification", () => {
     });
     describe("scientific string syntax", () => {
         test("1.23E+3", () => {
-           expect(new Decimal128("1.23E+3").toString()).toStrictEqual("1230");
+            expect(new Decimal128("1.23E+3").toString()).toStrictEqual("1230");
         });
         test("1.23E+5", () => {
-            expect(new Decimal128("1.23E+5").toString()).toStrictEqual("123000");
+            expect(new Decimal128("1.23E+5").toString()).toStrictEqual(
+                "123000"
+            );
         });
         test("1.23E-8", () => {
-           expect(new Decimal128("1.23E-8").toString()).toStrictEqual("0.0000000123");
+            expect(new Decimal128("1.23E-8").toString()).toStrictEqual(
+                "0.0000000123"
+            );
         });
         test("-1.23E-10", () => {
-            expect(new Decimal128("-1.23E-10").toString()).toStrictEqual("-0.000000000123");
+            expect(new Decimal128("-1.23E-10").toString()).toStrictEqual(
+                "-0.000000000123"
+            );
         });
         test("0E+2", () => {
-            expect(new Decimal128("0E+2").toString({ format: "exponential" })).toStrictEqual("0E+2");
+            expect(
+                new Decimal128("0E+2").toString({ format: "exponential" })
+            ).toStrictEqual("0E+2");
         });
     });
     describe("engineering string", () => {});
