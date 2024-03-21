@@ -1245,6 +1245,26 @@ export class Decimal128 {
         return renderedThis > renderedX ? -1 : 1;
     }
 
+    abs(): Decimal128 {
+        if (this.isNaN()) {
+            return new Decimal128(NAN);
+        }
+
+        if (!this.isFinite()) {
+            if (this.isNegative) {
+                return this.negate();
+            }
+
+            return this.clone();
+        }
+
+        if (this.isNegative) {
+            return this.negate();
+        }
+
+        return this.clone();
+    }
+
     /**
      * Add this Decimal128 value to one or more Decimal128 values.
      *
