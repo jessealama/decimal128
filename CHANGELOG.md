@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.2.1] - 2024-03-22
+
+No code changes. A few more examples of `cmp` in action were added to the test suite.
+
 ## [10.2.0] - 2024-03-21
 
 ### Added
