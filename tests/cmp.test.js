@@ -50,6 +50,27 @@ describe("cmp", () => {
             new Decimal128("0.037").cmp(new Decimal128("0.037037037037"))
         ).toStrictEqual(-1);
     });
+    describe("examples from a presentation", () => {
+        let a = new Decimal128("1.00");
+        let b = new Decimal128("1.0000");
+        let c = new Decimal128("1.0001");
+        let d = new Decimal128("0.9999");
+        test("use mathematical equality by default", () => {
+            expect(a.cmp(b)).toStrictEqual(0);
+        });
+        test("take trailing zeroes into account", () => {
+            expect(a.cmp(b, { total: true })).toStrictEqual(1);
+        });
+        test("mathematically distinct", () => {
+            expect(a.cmp(c)).toStrictEqual(-1);
+        });
+        test("mathematically distinct, again", () => {
+            expect(b.cmp(d)).toStrictEqual(1);
+        });
+        test("mathematically distinct, once more", () => {
+            expect(a.cmp(d)).toStrictEqual(1);
+        });
+    });
 });
 
 describe("many digits", () => {
