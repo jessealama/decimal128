@@ -4,6 +4,7 @@ This library is a prototype for the [decimal proposal](https://github.com/tc39/p
 
 ## Operations
 
+-   absolute value (`abs`)
 -   addition (`add`)
 -   subtraction (`subtract`)
 -   multiplication (`multiply`)
