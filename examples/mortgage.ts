@@ -11,7 +11,7 @@ function calculateMonthlyPayment(p: string, r: string, y: string): Decimal128 {
     const monthlyInterestRate = annualInterestRate.divide(paymentsPerYear);
     const paymentCount = paymentsPerYear.multiply(years);
     const onePlusInterestRate = monthlyInterestRate.add(one);
-    const ratePower = pow(onePlusInterestRate, Number(paymentCount));
+    const ratePower = pow(onePlusInterestRate, Number(paymentCount.toString()));
 
     const x = principal.multiply(monthlyInterestRate);
 
