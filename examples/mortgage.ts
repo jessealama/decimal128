@@ -18,4 +18,6 @@ function calculateMonthlyPayment(p: string, r: string, y: string): Decimal128 {
     return x.multiply(ratePower).divide(ratePower.subtract(one));
 }
 
-console.log(calculateMonthlyPayment("5000000", "0.05", "30").toString());
+const amount = calculateMonthlyPayment("5000000", "0.05", "30");
+
+console.log(amount.round(2).toString({ normalize: false }));
