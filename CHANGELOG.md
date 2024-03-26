@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.0] - 2024-03-26
+
+### Added
+
+-   `valueOf` throws unconditioanlly to prevents any kind of mixing of Decimal128 objects with other JS values
+-   `lessThan` to determine whether a Decimal128 is strictly less than another Decimal128
+-   `equals` to determine whether a Decimal128 value is mathematically equal to another one
+
+### Removed
+
+-   `cmp` has been removed in favor of `lessThan` and `equals` for a nicer API
+
 ## [10.2.1] - 2024-03-22
 
 No code changes. A few more examples of `cmp` in action were added to the test suite.
