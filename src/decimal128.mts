@@ -1246,10 +1246,22 @@ export class Decimal128 {
     }
 
     lessThan(x: Decimal128, opts?: CmpOptions): boolean {
-        return this.cmp(x, opts) === -1;
+        let resolvedOpts = { ...opts };
+
+        if (this.isNaN() || x.isNaN() || !this.isFinite() || !x.isFinite()) {
+            resolvedOpts.total = true;
+        }
+
+        return this.cmp(x, resolvedOpts) === -1;
     }
 
     equals(x: Decimal128, opts?: CmpOptions): boolean {
+        let resolvedOpts = { ...opts };
+
+        if (this.isNaN() || x.isNaN() || !this.isFinite() || !x.isFinite()) {
+            resolvedOpts.total = true;
+        }
+
         return this.cmp(x, opts) === 0;
     }
 

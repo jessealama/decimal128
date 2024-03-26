@@ -91,8 +91,8 @@ describe("many digits", () => {
         test("NaN lessThan NaN is not NaN, with total comparison", () => {
             expect(nan.lessThan(nan, { total: true })).toStrictEqual(false);
         });
-        test("number lessThan NaN is false", () => {
-            expect(one.lessThan(nan)).toStrictEqual(false);
+        test("number lessThan NaN is true", () => {
+            expect(one.lessThan(nan)).toStrictEqual(true);
         });
         test("number lessThan NaN is not NaN, with total comparison", () => {
             expect(one.lessThan(nan, { total: true })).toStrictEqual(true);
