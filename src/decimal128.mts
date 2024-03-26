@@ -1169,7 +1169,7 @@ export class Decimal128 {
      * @param x
      * @param opts
      */
-    cmp(x: Decimal128, opts?: CmpOptions): -1 | 0 | 1 | undefined {
+    private cmp(x: Decimal128, opts?: CmpOptions): -1 | 0 | 1 | undefined {
         let options = ensureFullySpecifiedCmpOptions(opts);
 
         if (this.isNaN()) {
@@ -1243,6 +1243,26 @@ export class Decimal128 {
         }
 
         return renderedThis > renderedX ? -1 : 1;
+    }
+
+    lessThan(x: Decimal128, opts?: CmpOptions): boolean {
+        let resolvedOpts = { ...opts };
+
+        if (this.isNaN() || x.isNaN() || !this.isFinite() || !x.isFinite()) {
+            resolvedOpts.total = true;
+        }
+
+        return this.cmp(x, resolvedOpts) === -1;
+    }
+
+    equals(x: Decimal128, opts?: CmpOptions): boolean {
+        let resolvedOpts = { ...opts };
+
+        if (this.isNaN() || x.isNaN() || !this.isFinite() || !x.isFinite()) {
+            resolvedOpts.total = true;
+        }
+
+        return this.cmp(x, opts) === 0;
     }
 
     abs(): Decimal128 {
@@ -1637,3 +1657,7 @@ export class Decimal128 {
         return result;
     }
 }
+
+Decimal128.prototype.valueOf = function () {
+    throw TypeError("Decimal128.prototype.valueOf throws unconditionally");
+};

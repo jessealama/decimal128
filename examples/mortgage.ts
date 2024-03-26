@@ -11,11 +11,13 @@ function calculateMonthlyPayment(p: string, r: string, y: string): Decimal128 {
     const monthlyInterestRate = annualInterestRate.divide(paymentsPerYear);
     const paymentCount = paymentsPerYear.multiply(years);
     const onePlusInterestRate = monthlyInterestRate.add(one);
-    const ratePower = pow(onePlusInterestRate, Number(paymentCount));
+    const ratePower = pow(onePlusInterestRate, Number(paymentCount.toString()));
 
     const x = principal.multiply(monthlyInterestRate);
 
     return x.multiply(ratePower).divide(ratePower.subtract(one));
 }
 
-console.log(calculateMonthlyPayment("5000000", "0.05", "30").toString());
+const amount = calculateMonthlyPayment("5000000", "0.05", "30");
+
+console.log(amount.round(2).toString({ normalize: false }));
