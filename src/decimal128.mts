@@ -880,7 +880,7 @@ const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
 });
 
 interface CmpOptions {
-    total?: boolean;
+    normalize?: boolean;
 }
 
 interface FullySpecifiedCmpOptions {
@@ -968,8 +968,8 @@ function ensureFullySpecifiedCmpOptions(
         return opts;
     }
 
-    if ("boolean" === typeof options.total) {
-        opts.total = options.total;
+    if ("boolean" === typeof options.normalize) {
+        opts.total = options.normalize;
     }
 
     return opts;
@@ -1246,23 +1246,11 @@ export class Decimal128 {
     }
 
     lessThan(x: Decimal128, opts?: CmpOptions): boolean {
-        let resolvedOpts = { ...opts };
-
-        if (this.isNaN() || x.isNaN() || !this.isFinite() || !x.isFinite()) {
-            resolvedOpts.total = true;
-        }
-
-        return this.cmp(x, resolvedOpts) === -1;
+        return this.cmp(x, opts) === -1;
     }
 
     equals(x: Decimal128, opts?: CmpOptions): boolean {
-        let resolvedOpts = { ...opts };
-
-        if (this.isNaN() || x.isNaN() || !this.isFinite() || !x.isFinite()) {
-            resolvedOpts.total = true;
-        }
-
-        return this.cmp(x, resolvedOpts) === 0;
+        return this.cmp(x, opts) === 0;
     }
 
     abs(): Decimal128 {
