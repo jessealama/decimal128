@@ -87,8 +87,8 @@ describe("many digits", () => {
         ).toStrictEqual(false);
     });
     describe("NaN", () => {
-        test("NaN does not equal NaN, if total is false", () => {
-            expect(nan.equals(nan)).toStrictEqual(false);
+        test("NaN equals NaN, even if total is false", () => {
+            expect(nan.equals(nan)).toStrictEqual(true);
         });
         test("NaN does equal NaN, with total comparison", () => {
             expect(

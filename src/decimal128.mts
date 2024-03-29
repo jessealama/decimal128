@@ -1262,7 +1262,7 @@ export class Decimal128 {
             resolvedOpts.total = true;
         }
 
-        return this.cmp(x, opts) === 0;
+        return this.cmp(x, resolvedOpts) === 0;
     }
 
     abs(): Decimal128 {
