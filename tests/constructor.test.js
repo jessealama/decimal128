@@ -588,5 +588,35 @@ describe("General Decimal Arithmetic specification", () => {
             ).toStrictEqual("0E+2");
         });
     });
-    describe("engineering string", () => {});
+});
+
+describe("number arguments", () => {
+    test("integer", () => {
+        expect(new Decimal128(42).toString()).toStrictEqual("42");
+    });
+    test("non-integer number", () => {
+        expect(() => new Decimal128(42.5)).toThrow(SyntaxError);
+    });
+    test("NaN", () => {
+        expect(() => new Decimal128(NaN)).toThrow(SyntaxError);
+    });
+    test("minus zero", () => {
+        expect(new Decimal128(-0).toString()).toStrictEqual("0");
+    });
+    test("too big", () => {
+        expect(
+            () => new Decimal128(123456789012345678901234567890123456789)
+        ).toThrow(RangeError);
+    });
+});
+
+describe("bigint", () => {
+    test("simple", () => {
+        expect(new Decimal128(42n).toString()).toStrictEqual("42");
+    });
+    test("too big", () => {
+        expect(
+            () => new Decimal128(123456789012345678901234567890123456789n)
+        ).toThrow(RangeError);
+    });
 });

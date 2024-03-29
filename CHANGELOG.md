@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.2.0] - 2024-03-29
+
+### Changed
+
+-   The Decimal128 constructor now accepts BigInt arguments as well as safe integer Numbers
+
 ## [11.1.0] - 2024-03-29
 
 ### Changed
