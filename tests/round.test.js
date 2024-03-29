@@ -460,7 +460,7 @@ describe("floor", function () {
     });
 });
 
-describe ("examples for TC39 plenary slides", () => {
+describe("examples for TC39 plenary slides", () => {
     let a = new Decimal128("1.456");
     test("round to 2 decimal places, rounding mode is ceiling", () => {
         expect(a.round(2, "ceil").toString()).toStrictEqual("1.46");

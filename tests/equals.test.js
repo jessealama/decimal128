@@ -343,6 +343,8 @@ describe("examples from the General Decimal Arithmetic specification", () => {
 
 describe("examples from a presentation at TC39 plenary", () => {
     test("NaN with a payload", () => {
-        expect(new Decimal128("NaN").equals(new Decimal128("NaN123"))).toStrictEqual(true);
+        expect(
+            new Decimal128("NaN").equals(new Decimal128("NaN123"))
+        ).toStrictEqual(true);
     });
 });
