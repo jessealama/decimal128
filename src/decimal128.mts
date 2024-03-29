@@ -1035,20 +1035,38 @@ export class Decimal128 {
     private readonly isNegative: boolean;
     private readonly rat;
 
-    constructor(n: string, options?: ConstructorOptions) {
+    constructor(n: string | number | bigint, options?: ConstructorOptions) {
         let data = undefined;
+        let s = "";
 
         let fullySpecifiedOptions =
             ensureFullySpecifiedConstructorOptions(options);
 
-        if (n.match(nanRegExp)) {
+        if ("number" === typeof n) {
+            if (!Number.isInteger(n)) {
+                throw new SyntaxError("Non-integer number not permitted");
+            }
+            if (!Number.isSafeInteger(n)) {
+                throw new RangeError(
+                    "Integer is too large to be exactly represented"
+                );
+            }
+
+            s = n.toString();
+        } else if ("bigint" === typeof n) {
+            s = n.toString();
+        } else {
+            s = n;
+        }
+
+        if (s.match(nanRegExp)) {
             data = handleNan();
-        } else if (n.match(exponentRegExp)) {
-            data = handleExponentialNotation(n, fullySpecifiedOptions);
-        } else if (n.match(digitStrRegExp)) {
-            data = handleDecimalNotation(n, fullySpecifiedOptions);
-        } else if (n.match(infRegExp)) {
-            data = handleInfinity(n);
+        } else if (s.match(exponentRegExp)) {
+            data = handleExponentialNotation(s, fullySpecifiedOptions);
+        } else if (s.match(digitStrRegExp)) {
+            data = handleDecimalNotation(s, fullySpecifiedOptions);
+        } else if (s.match(infRegExp)) {
+            data = handleInfinity(s);
         } else {
             throw new SyntaxError(`Illegal number format "${n}"`);
         }
