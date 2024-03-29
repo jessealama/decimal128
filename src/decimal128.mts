@@ -605,9 +605,7 @@ function adjustNonInteger(
         case ROUNDING_MODE_HALF_TRUNCATE:
             return roundHalfTrunc(x);
         default:
-            throw new Error(
-                `Unsupported rounding mode "${options.roundingMode}"`
-            );
+            return roundHalfEven(x);
     }
 }
 
@@ -677,7 +675,7 @@ function handleDecimalNotation(
     }
 
     if ("-." === withoutUnderscores) {
-        throw new SyntaxError("Lone minus sign and period not permitted");
+        throw new SyntaxError("Lone minus sign and period anot permitted");
     }
 
     let isNegative = !!withoutUnderscores.match(/^-/);
@@ -993,12 +991,8 @@ function ensureFullySpecifiedCmpOptions(
     return opts;
 }
 
-function toRational(isNegative: boolean, sg: string, exp: number): Rational {
-    if (sg === NAN || sg === POSITIVE_INFINITY) {
-        return new Rational(0n, 1n);
-    }
-
-    if ("1" === sg) {
+function toRational(isNegative: boolean, sg: bigint, exp: number): Rational {
+    if (1n === sg) {
         // power of ten
         if (exp < 0) {
             return new Rational(
@@ -1069,24 +1063,13 @@ export class Decimal128 {
 
         this.rat =
             this.isFinite && !this.isNaN
-                ? toRational(
-                      this.isNegative,
-                      this.significand.toString(),
-                      this.exponent
-                  )
+                ? toRational(this.isNegative, this.significand, this.exponent)
                 : new Rational(0n, 1n);
     }
 
     private emitExponential(): string {
         let prefix = this.isNegative ? "-" : "";
-        let originalSg = this.significand;
-
-        if (typeof originalSg == "undefined") {
-            throw new Error("Significand is undefined");
-        }
-
-        let sg = originalSg.toString();
-
+        let sg = this.significand.toString();
         let exp = this.exponent;
 
         let adjustedExponent = exp + sg.length - 1;
@@ -1108,13 +1091,7 @@ export class Decimal128 {
 
     private emitDecimal(options: FullySpecifiedToStringOptions): string {
         let prefix = this.isNegative ? "-" : "";
-        let originalSg = this.significand;
-
-        if (typeof originalSg == "undefined") {
-            throw new Error("Significand is undefined");
-        }
-
-        let sg = originalSg.toString();
+        let sg = this.significand.toString();
         let exp = this.exponent;
         let isZ = this.isZero();
 
@@ -1128,13 +1105,6 @@ export class Decimal128 {
             }
 
             let numFractionalDigits = options.numDecimalDigits;
-
-            if (
-                "number" === typeof numFractionalDigits &&
-                numFractionalDigits < 0
-            ) {
-                numFractionalDigits = undefined;
-            }
 
             let renderedRat = this.rat.toDecimalPlaces(
                 numFractionalDigits ?? MAX_SIGNIFICANT_DIGITS
