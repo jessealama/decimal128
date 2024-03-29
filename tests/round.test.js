@@ -459,3 +459,17 @@ describe("floor", function () {
         ).toStrictEqual("-Infinity");
     });
 });
+
+describe ("examples for TC39 plenary slides", () => {
+    let a = new Decimal128("1.456");
+    test("round to 2 decimal places, rounding mode is ceiling", () => {
+        expect(a.round(2, "ceil").toString()).toStrictEqual("1.46");
+    });
+    test("round to 1 decimal place, rounding mode unspecified", () => {
+        expect(a.round(1).toString()).toStrictEqual("1.4");
+        expect(a.round(1, "halfEven").toString()).toStrictEqual("1.4");
+    });
+    test("round to 0 decimal places, rounding mode is floor", () => {
+        expect(a.round(0, "floor").toString()).toStrictEqual("1");
+    });
+});

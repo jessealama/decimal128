@@ -53,16 +53,16 @@ describe("lessThan", () => {
             new Decimal128("0.037").lessThan(new Decimal128("0.037037037037"))
         ).toStrictEqual(true);
     });
-    describe("examples from a presentation", () => {
+    describe("examples from a presenation", () => {
         let a = new Decimal128("1.00");
         let b = new Decimal128("1.0000");
         let c = new Decimal128("1.0001");
         let d = new Decimal128("0.9999");
         test("use mathematical equality by default", () => {
-            expect(a.lessThan(b)).toStrictEqual(false);
+            expect(b.lessThan(a)).toStrictEqual(false);
         });
         test("take trailing zeroes into account", () => {
-            expect(a.lessThan(b, { total: true })).toStrictEqual(false);
+            expect(b.lessThan(a, { total: true })).toStrictEqual(true);
         });
         test("mathematically distinct", () => {
             expect(a.lessThan(c)).toStrictEqual(true);
