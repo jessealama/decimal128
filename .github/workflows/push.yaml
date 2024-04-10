@@ -22,7 +22,7 @@ jobs:
             - name: lint
               run: npm run lint
             - name: compile typescript
-              run: npx tsc
+              run: npm run build && npx tsc
             - name: test
               run: npm run test
             - name: generate coverage

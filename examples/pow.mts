@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../dist/esm/decimal128.mjs";
 
 function pow(a: Decimal128, b: number): Decimal128 {
     let result = a;

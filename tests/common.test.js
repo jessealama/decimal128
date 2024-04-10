@@ -1,4 +1,4 @@
-import { countSignificantDigits } from "../src/common.mjs";
+import { countSignificantDigits } from "../dist/esm/common.mjs";
 
 describe("significant digits", () => {
     test("basic example", () => {

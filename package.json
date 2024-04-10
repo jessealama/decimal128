@@ -1,14 +1,14 @@
 {
     "name": "decimal128",
     "version": "12.2.0",
-    "main": "dist/decimal128.cjs",
-    "module": "dist/decimal128.mjs",
-    "typings": "dist/decimal128.d.ts",
+    "main": "dist/cjs/decimal128.cjs",
+    "module": "dist/esm/decimal128.mjs",
+    "typings": "dist/esm/decimal128.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/decimal128.mjs",
-            "require": "./dist/decimal128.cjs",
-            "types": "./dist/decimal128.d.ts"
+            "import": "./dist/esm/decimal128.mjs",
+            "require": "./dist/cjs/decimal128.cjs",
+            "types": "./dist/esm/decimal128.d.ts"
         }
     },
     "type": "module",

@@ -2,37 +2,36 @@
 import typescript from "@rollup/plugin-typescript";
 
 /**
- * @type { import("rollup").OutputOptions }
+ * @param {'esm' | 'cjs'} format
+ * @returns { import("rollup").RollupOptions }
  */
-const commonOutput = {
-    sourcemap: true,
-    interop: "esModule",
+const createConfig = (format) => {
+    const extension = format === "esm" ? "mjs" : "cjs";
+    return {
+        input: "src/decimal128.mts",
+        output: [
+            {
+                sourcemap: true,
+                interop: "esModule",
+                preserveModules: true,
+                dir: `./dist/${format}`,
+                format: format,
+                entryFileNames: `[name].${extension}`,
+            },
+        ],
+        plugins: [
+            typescript({
+                tsconfig: "tsconfig.build.json",
+                outDir: `dist/${format}`,
+                sourceMap: false,
+            }),
+        ],
+    };
 };
 
 /**
- * @type { import("rollup").RollupOptions }
+ * @type { import("rollup").RollupOptions[] }
  */
-const config = {
-    input: "src/decimal128.mts",
-    output: [
-        {
-            ...commonOutput,
-            file: "./dist/decimal128.mjs",
-            format: "esm",
-        },
-        {
-            ...commonOutput,
-            file: "./dist/decimal128.cjs",
-            format: "cjs",
-        },
-    ],
-    plugins: [
-        typescript({
-            tsconfig: "tsconfig.build.json",
-            outDir: "dist",
-            sourceMap: false,
-        }),
-    ],
-};
+const config = [createConfig("esm"), createConfig("cjs")];
 
 export default config;
