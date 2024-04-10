@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../src/decimal128.mts";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
 const nan = new Decimal128("NaN");
