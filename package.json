@@ -50,8 +50,5 @@
     ],
     "exports": {
         ".": "./src/decimal128.mjs"
-    },
-    "dependencies": {
-        "yarn": "^1.22.21"
     }
 }
