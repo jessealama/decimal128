@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- The `normalize` option for `lessThan` and `equals` has been removed. The comparison is now always done on the mathematical value.
+-   The `normalize` option for `lessThan` and `equals` has been removed. The comparison is now always done on the mathematical value.
 
 ## [11.2.0] - 2024-03-29
 
