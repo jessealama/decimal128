@@ -975,22 +975,6 @@ function ensureFullySpecifiedToStringOptions(
     return opts;
 }
 
-function ensureFullySpecifiedCmpOptions(
-    options?: CmpOptions
-): FullySpecifiedCmpOptions {
-    let opts = { ...DEFAULT_CMP_OPTIONS };
-
-    if (undefined === options) {
-        return opts;
-    }
-
-    if ("boolean" === typeof options.normalize) {
-        opts.total = options.normalize;
-    }
-
-    return opts;
-}
-
 function toRational(isNegative: boolean, sg: bigint, exp: number): Rational {
     if (1n === sg) {
         // power of ten
