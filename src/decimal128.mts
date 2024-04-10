@@ -675,7 +675,7 @@ function handleDecimalNotation(
     }
 
     if ("-." === withoutUnderscores) {
-        throw new SyntaxError("Lone minus sign and period anot permitted");
+        throw new SyntaxError("Lone minus sign and period not permitted");
     }
 
     let isNegative = !!withoutUnderscores.match(/^-/);
@@ -893,18 +893,6 @@ const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
     format: "decimal",
     numDecimalDigits: undefined,
     normalize: true,
-});
-
-interface CmpOptions {
-    normalize?: boolean;
-}
-
-interface FullySpecifiedCmpOptions {
-    total: boolean;
-}
-
-const DEFAULT_CMP_OPTIONS: FullySpecifiedCmpOptions = Object.freeze({
-    total: false, // compare by numeric value (ignore trailing zeroes, treat NaN as not-a-number, for a change)
 });
 
 function ensureFullySpecifiedConstructorOptions(
