@@ -46,6 +46,9 @@
     ],
     "author": "Jesse Alama <jesse@igalia.com>",
     "license": "ISC",
+    "dependencies": {
+        "jsbi": "^4.3.0"
+    },
     "devDependencies": {
         "@rollup/plugin-typescript": "^11.1.6",
         "@types/jest": "^29.5.12",

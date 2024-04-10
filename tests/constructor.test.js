@@ -1,3 +1,4 @@
+import JSBI from "jsbi";
 import { Decimal128 } from "../dist/esm/decimal128.mjs";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
@@ -12,17 +13,17 @@ describe("constructor", () => {
         });
         test("no normalization (exponential notation) (positive exponent)", () => {
             let d = new Decimal128("1.20E1");
-            expect(d.significand).toStrictEqual(120n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(120));
             expect(d.exponent).toStrictEqual(-1);
         });
         test("no normalization (exponential notation) (negative exponent)", () => {
             let d = new Decimal128("1.20E-5");
-            expect(d.significand).toStrictEqual(120n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(120));
             expect(d.exponent).toStrictEqual(-7);
         });
         test("no normalization (exponential notation) (negative)", () => {
             let d = new Decimal128("-42.79E42");
-            expect(d.significand).toStrictEqual(4279n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(4279));
             expect(d.exponent).toStrictEqual(40);
             expect(d.isNegative).toStrictEqual(true);
         });
@@ -125,13 +126,13 @@ describe("constructor", () => {
         test("decimal with very fine precision, small significand", () => {
             let s = "0.00000000000000000000000000000000000001";
             let val = new Decimal128(s);
-            expect(val.significand).toStrictEqual(1n);
+            expect(val.significand).toStrictEqual(JSBI.BigInt(1));
             expect(val.exponent).toStrictEqual(-38);
             expect(val.toString()).toStrictEqual(s);
         });
         test("decimal number with trailing zero", () => {
             let val = new Decimal128("0.67890");
-            expect(val.significand).toStrictEqual(67890n);
+            expect(val.significand).toStrictEqual(JSBI.BigInt(67890));
             expect(val.exponent).toStrictEqual(-5);
         });
         test("too many significant digits", () => {
@@ -228,68 +229,68 @@ describe("constructor", () => {
     describe("exponential string syntax", () => {
         test("sane string works (big E)", () => {
             let d = new Decimal128("123E456");
-            expect(d.significand).toStrictEqual(123n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(123));
             expect(d.exponent).toStrictEqual(456);
             expect(d.isNegative).toStrictEqual(false);
         });
         test("sane string works (little E)", () => {
             let d = new Decimal128("123e456");
-            expect(d.significand).toStrictEqual(123n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(123));
             expect(d.exponent).toStrictEqual(456);
             expect(d.isNegative).toStrictEqual(false);
         });
         test("negative works", () => {
             let d = new Decimal128("-123E456");
-            expect(d.significand).toStrictEqual(123n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(123));
             expect(d.exponent).toStrictEqual(456);
             expect(d.isNegative).toStrictEqual(true);
         });
         test("negative exponent works", () => {
             let d = new Decimal128("123E-456");
-            expect(d.significand).toStrictEqual(123n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(123));
             expect(d.exponent).toStrictEqual(-456);
             expect(d.isNegative).toStrictEqual(false);
         });
         test("positive exponent works", () => {
             let d = new Decimal128("123E+456");
-            expect(d.significand).toStrictEqual(123n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(123));
             expect(d.exponent).toStrictEqual(456);
             expect(d.isNegative).toStrictEqual(false);
         });
         test("negative significant and negative exponent works", () => {
             let d = new Decimal128("-123E-456");
-            expect(d.significand).toStrictEqual(123n);
+            expect(d.significand).toStrictEqual(JSBI.BigInt(123));
             expect(d.exponent).toStrictEqual(-456);
             expect(d.isNegative).toStrictEqual(true);
         });
         describe("powers of ten", () => {
             test("two", () => {
                 let d = new Decimal128("1E2");
-                expect(d.significand).toStrictEqual(1n);
+                expect(d.significand).toStrictEqual(JSBI.BigInt(1));
                 expect(d.exponent).toStrictEqual(2);
                 expect(d.isNegative).toStrictEqual(false);
             });
             test("four", () => {
                 let d = new Decimal128("1E4");
-                expect(d.significand).toStrictEqual(1n);
+                expect(d.significand).toStrictEqual(JSBI.BigInt(1));
                 expect(d.exponent).toStrictEqual(4);
                 expect(d.isNegative).toStrictEqual(false);
             });
             test("one minus one", () => {
                 let d = new Decimal128("1E-1");
-                expect(d.significand).toStrictEqual(1n);
+                expect(d.significand).toStrictEqual(JSBI.BigInt(1));
                 expect(d.exponent).toStrictEqual(-1);
                 expect(d.isNegative).toStrictEqual(false);
             });
             test("minus one minus one", () => {
                 let d = new Decimal128("-1E-1");
-                expect(d.significand).toStrictEqual(1n);
+                expect(d.significand).toStrictEqual(JSBI.BigInt(1));
                 expect(d.exponent).toStrictEqual(-1);
                 expect(d.isNegative).toStrictEqual(true);
             });
             test("minus one one", () => {
                 let d = new Decimal128("-1E1");
-                expect(d.significand).toStrictEqual(1n);
+                expect(d.significand).toStrictEqual(JSBI.BigInt(1));
                 expect(d.exponent).toStrictEqual(1);
                 expect(d.isNegative).toStrictEqual(true);
             });
@@ -303,7 +304,7 @@ describe("constructor", () => {
         test("many significant digits", () => {
             let d = new Decimal128("3666666666666666666666666666666667E10");
             expect(d.significand).toStrictEqual(
-                3666666666666666666666666666666667n
+                JSBI.BigInt("3666666666666666666666666666666667")
             );
             expect(d.exponent).toStrictEqual(10);
             expect(d.isNegative).toStrictEqual(false);
@@ -340,23 +341,23 @@ describe("constructor", () => {
 
 describe("exponent and significand", () => {
     let data = [
-        ["123.456", 123456n, -3],
-        ["0", 0n, 0],
-        ["-0", 0n, 0],
-        ["0.0", 0n, -1],
-        ["5", 5n, 0],
-        ["1.20", 120n, -2],
-        ["-123.456", 123456n, -3],
-        ["0.0042", 42n, -4],
-        ["0.00000000000000000000000000000000000001", 1n, -38],
-        ["1000", 1n, 3],
-        ["-1000", 1n, 3],
-        ["-0.00001", 1n, -5],
-        ["0.5", 5n, -1],
-        ["-10", 1n, 1],
-        ["10", 1n, 1],
-        ["0.000001", 1n, -6],
-        ["0.0000012", 12n, -7],
+        ["123.456", JSBI.BigInt(123456), -3],
+        ["0", JSBI.BigInt(0), 0],
+        ["-0", JSBI.BigInt(0), 0],
+        ["0.0", JSBI.BigInt(0), -1],
+        ["5", JSBI.BigInt(5), 0],
+        ["1.20", JSBI.BigInt(120), -2],
+        ["-123.456", JSBI.BigInt(123456), -3],
+        ["0.0042", JSBI.BigInt(42), -4],
+        ["0.00000000000000000000000000000000000001", JSBI.BigInt(1), -38],
+        ["1000", JSBI.BigInt(1), 3],
+        ["-1000", JSBI.BigInt(1), 3],
+        ["-0.00001", JSBI.BigInt(1), -5],
+        ["0.5", JSBI.BigInt(5), -1],
+        ["-10", JSBI.BigInt(1), 1],
+        ["10", JSBI.BigInt(1), 1],
+        ["0.000001", JSBI.BigInt(1), -6],
+        ["0.0000012", JSBI.BigInt(12), -7],
     ];
     for (const [n, sigDigits, exponent] of data) {
         test(`simple example (${n})`, () => {
@@ -612,11 +613,14 @@ describe("number arguments", () => {
 
 describe("bigint", () => {
     test("simple", () => {
-        expect(new Decimal128(42n).toString()).toStrictEqual("42");
+        expect(new Decimal128(JSBI.BigInt(42)).toString()).toStrictEqual("42");
     });
     test("too big", () => {
         expect(
-            () => new Decimal128(123456789012345678901234567890123456789n)
+            () =>
+                new Decimal128(
+                    JSBI.BigInt("123456789012345678901234567890123456789")
+                )
         ).toThrow(RangeError);
     });
 });

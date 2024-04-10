@@ -12,7 +12,7 @@ const createConfig = (format) => {
         output: [
             {
                 sourcemap: true,
-                interop: "esModule",
+                interop: "default",
                 preserveModules: true,
                 dir: `./dist/${format}`,
                 format: format,

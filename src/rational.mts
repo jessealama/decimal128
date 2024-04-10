@@ -1,24 +1,21 @@
+import JSBI from "jsbi";
 import { countSignificantDigits, Digit } from "./common.mjs";
 
-const zero = BigInt(0);
-const one = BigInt(1);
-const minusOne = BigInt(-1);
-const ten = BigInt(10);
+const zero = JSBI.BigInt(0);
+const one = JSBI.BigInt(1);
+const minusOne = JSBI.BigInt(-1);
+const ten = JSBI.BigInt(10);
 
-function gcd(a: bigint, b: bigint): bigint {
-    while (b !== zero) {
+function gcd(a: JSBI, b: JSBI): JSBI {
+    while (JSBI.notEqual(b, zero)) {
         let t = b;
-        b = a % b;
+        b = JSBI.remainder(a, b);
         a = t;
     }
     return a;
 }
 
-function* nextDigitForDivision(
-    x: bigint,
-    y: bigint,
-    n: number
-): Generator<Digit> {
+function* nextDigitForDivision(x: JSBI, y: JSBI, n: number): Generator<Digit> {
     let result = "";
     let emittedDecimalPoint = false;
     let done = false;
@@ -29,12 +26,12 @@ function* nextDigitForDivision(
             result.match(/[.]$/) ? result.replace(".", "") : result
         ) < n
     ) {
-        if (x === zero) {
+        if (JSBI.equal(x, zero)) {
             done = true;
-        } else if (x < y) {
+        } else if (JSBI.lessThan(x, y)) {
             if (emittedDecimalPoint) {
-                x = x * ten;
-                if (x < y) {
+                x = JSBI.multiply(x, ten);
+                if (JSBI.lessThan(x, y)) {
                     // look ahead: are we still a power of 10 behind?
                     result = result + "0";
                     yield 0;
@@ -42,17 +39,17 @@ function* nextDigitForDivision(
             } else {
                 emittedDecimalPoint = true;
                 result = (result === "" ? "0" : result) + ".";
-                x = x * ten;
+                x = JSBI.multiply(x, ten);
                 yield -1;
-                if (x < y) {
+                if (JSBI.lessThan(x, y)) {
                     // look ahead: are we still a power of 10 behind?
                     result = result + "0";
                     yield 0;
                 }
             }
         } else {
-            let q = x / y;
-            x = x % y;
+            let q = JSBI.divide(x, y);
+            x = JSBI.remainder(x, y);
             let qString = q.toString();
             result = result + qString;
             for (let i = 0; i < qString.length; i++) {
@@ -65,12 +62,12 @@ function* nextDigitForDivision(
 }
 
 export class Rational {
-    readonly numerator: bigint;
-    readonly denominator: bigint;
+    readonly numerator: JSBI;
+    readonly denominator: JSBI;
     readonly isNegative: boolean;
 
-    constructor(p: bigint, q: bigint) {
-        if (q === zero) {
+    constructor(p: JSBI, q: JSBI) {
+        if (JSBI.equal(q, zero)) {
             throw new RangeError(
                 "Cannot construct rational whose denominator is zero"
             );
@@ -80,22 +77,22 @@ export class Rational {
         let den = q;
         let neg = false;
 
-        if (p < zero) {
-            if (q < zero) {
-                num = -p;
-                den = -q;
+        if (JSBI.lessThan(p, zero)) {
+            if (JSBI.lessThan(q, zero)) {
+                num = JSBI.unaryMinus(p);
+                den = JSBI.unaryMinus(q);
             } else {
-                num = -p;
+                num = JSBI.unaryMinus(p);
                 neg = true;
             }
-        } else if (q < zero) {
-            den = -q;
+        } else if (JSBI.lessThan(q, zero)) {
+            den = JSBI.unaryMinus(q);
             neg = true;
         }
 
         let g = gcd(num, den);
-        this.numerator = num / g;
-        this.denominator = den / g;
+        this.numerator = JSBI.divide(num, g);
+        this.denominator = JSBI.divide(den, g);
         this.isNegative = neg;
     }
 
@@ -110,7 +107,10 @@ export class Rational {
             return new Rational(this.numerator, this.denominator);
         }
 
-        return new Rational(this.numerator * minusOne, this.denominator);
+        return new Rational(
+            JSBI.multiply(this.numerator, minusOne),
+            this.denominator
+        );
     }
 
     private static _add(x: Rational, y: Rational): Rational {
@@ -123,8 +123,11 @@ export class Rational {
         }
 
         return new Rational(
-            x.numerator * y.denominator + y.numerator * x.denominator,
-            x.denominator * y.denominator
+            JSBI.add(
+                JSBI.multiply(x.numerator, y.denominator),
+                JSBI.multiply(y.numerator, x.denominator)
+            ),
+            JSBI.multiply(x.denominator, y.denominator)
         );
     }
 
@@ -134,15 +137,18 @@ export class Rational {
         }
 
         return new Rational(
-            x.numerator * y.denominator - y.numerator * x.denominator,
-            x.denominator * y.denominator
+            JSBI.subtract(
+                JSBI.multiply(x.numerator, y.denominator),
+                JSBI.multiply(y.numerator, x.denominator)
+            ),
+            JSBI.multiply(x.denominator, y.denominator)
         );
     }
 
     private static _multiply(x: Rational, y: Rational): Rational {
         return new Rational(
-            x.numerator * y.numerator,
-            x.denominator * y.denominator
+            JSBI.multiply(x.numerator, y.numerator),
+            JSBI.multiply(x.denominator, y.denominator)
         );
     }
 
@@ -177,7 +183,7 @@ export class Rational {
             );
         }
 
-        if (this.numerator === zero) {
+        if (JSBI.equal(this.numerator, zero)) {
             return "0";
         }
 
@@ -205,16 +211,20 @@ export class Rational {
     }
 
     cmp(x: Rational): -1 | 0 | 1 {
-        let a =
-            (this.isNegative ? minusOne : one) * this.numerator * x.denominator;
-        let b =
-            (x.isNegative ? minusOne : one) * x.numerator * this.denominator;
+        let a = JSBI.multiply(
+            JSBI.multiply(this.isNegative ? minusOne : one, this.numerator),
+            x.denominator
+        );
+        let b = JSBI.multiply(
+            JSBI.multiply(x.isNegative ? minusOne : one, x.numerator),
+            this.denominator
+        );
 
-        if (a < b) {
+        if (JSBI.lessThan(a, b)) {
             return -1;
         }
 
-        if (b < a) {
+        if (JSBI.lessThan(b, a)) {
             return 1;
         }
 
