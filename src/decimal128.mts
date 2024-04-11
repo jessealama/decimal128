@@ -1209,14 +1209,14 @@ export class Decimal128 {
 
         if (!this.isFinite) {
             if (this.isNegative) {
-                return this.negate();
+                return this.neg();
             }
 
             return this.clone();
         }
 
         if (this.isNegative) {
-            return this.negate();
+            return this.neg();
         }
 
         return this.clone();
@@ -1250,7 +1250,7 @@ export class Decimal128 {
         }
 
         if (this.isNegative && x.isNegative) {
-            return this.negate().add(x.negate(), opts).negate();
+            return this.neg().add(x.neg(), opts).neg();
         }
 
         let resultRat = Rational.add(this.rat, x.rat);
@@ -1290,11 +1290,11 @@ export class Decimal128 {
         }
 
         if (!x.isFinite) {
-            return x.negate();
+            return x.neg();
         }
 
         if (x.isNegative) {
-            return this.add(x.negate());
+            return this.add(x.neg());
         }
 
         let rendered = Rational.subtract(this.rat, x.rat).toDecimalPlaces(
@@ -1348,11 +1348,11 @@ export class Decimal128 {
         }
 
         if (this.isNegative) {
-            return this.negate().multiply(x).negate();
+            return this.neg().multiply(x).neg();
         }
 
         if (x.isNegative) {
-            return this.multiply(x.negate()).negate();
+            return this.multiply(x.neg()).neg();
         }
 
         let resultRat = Rational.multiply(this.rat, x.rat);
@@ -1413,11 +1413,11 @@ export class Decimal128 {
         }
 
         if (this.isNegative) {
-            return this.negate().divide(x).negate();
+            return this.neg().divide(x).neg();
         }
 
         if (x.isNegative) {
-            return this.divide(x.negate()).negate();
+            return this.divide(x.neg()).neg();
         }
 
         let adjust = 0;
@@ -1520,7 +1520,7 @@ export class Decimal128 {
         );
     }
 
-    private negate(): Decimal128 {
+    neg(): Decimal128 {
         let s = this.toString({ normalize: false });
 
         if (s.match(/^-/)) {
@@ -1543,11 +1543,11 @@ export class Decimal128 {
         }
 
         if (this.isNegative) {
-            return this.negate().remainder(d).negate();
+            return this.neg().remainder(d).neg();
         }
 
         if (d.isNegative) {
-            return this.remainder(d.negate());
+            return this.remainder(d.neg());
         }
 
         if (!this.isFinite) {
