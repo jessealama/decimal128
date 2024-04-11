@@ -675,7 +675,7 @@ function handleDecimalNotation(
     }
 
     if ("-." === withoutUnderscores) {
-        throw new SyntaxError("Lone minus sign and period anot permitted");
+        throw new SyntaxError("Lone minus sign and period not permitted");
     }
 
     let isNegative = !!withoutUnderscores.match(/^-/);
@@ -895,18 +895,6 @@ const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
     normalize: true,
 });
 
-interface CmpOptions {
-    normalize?: boolean;
-}
-
-interface FullySpecifiedCmpOptions {
-    total: boolean;
-}
-
-const DEFAULT_CMP_OPTIONS: FullySpecifiedCmpOptions = Object.freeze({
-    total: false, // compare by numeric value (ignore trailing zeroes, treat NaN as not-a-number, for a change)
-});
-
 function ensureFullySpecifiedConstructorOptions(
     options?: ConstructorOptions
 ): FullySpecifiedConstructorOptions {
@@ -970,22 +958,6 @@ function ensureFullySpecifiedToStringOptions(
 
     if ("boolean" === typeof options.normalize) {
         opts.normalize = options.normalize;
-    }
-
-    return opts;
-}
-
-function ensureFullySpecifiedCmpOptions(
-    options?: CmpOptions
-): FullySpecifiedCmpOptions {
-    let opts = { ...DEFAULT_CMP_OPTIONS };
-
-    if (undefined === options) {
-        return opts;
-    }
-
-    if ("boolean" === typeof options.normalize) {
-        opts.total = options.normalize;
     }
 
     return opts;
@@ -1190,28 +1162,10 @@ export class Decimal128 {
      * + 1 otherwise.
      *
      * @param x
-     * @param opts
      */
-    private cmp(x: Decimal128, opts?: CmpOptions): -1 | 0 | 1 | undefined {
-        let options = ensureFullySpecifiedCmpOptions(opts);
-
-        if (this.isNaN) {
-            if (options.total) {
-                if (x.isNaN) {
-                    return 0;
-                }
-                return 1;
-            }
-
-            return undefined;
-        }
-
-        if (x.isNaN) {
-            if (options.total) {
-                return -1;
-            }
-
-            return undefined;
+    private cmp(x: Decimal128): -1 | 0 | 1 {
+        if (this.isNaN || x.isNaN) {
+            throw new RangeError("NaN comparison not permitted");
         }
 
         if (!this.isFinite) {
@@ -1237,43 +1191,15 @@ export class Decimal128 {
         let rationalThis = this.rat;
         let rationalX = x.rat;
 
-        let ratCmp = rationalThis.cmp(rationalX);
-
-        if (ratCmp !== 0) {
-            return ratCmp;
-        }
-
-        if (!options.total) {
-            return 0;
-        }
-
-        if (this.isNegative && !x.isNegative) {
-            return -1;
-        }
-
-        if (!this.isNegative && x.isNegative) {
-            return 1;
-        }
-
-        let renderedThis = this.toString({
-            format: "decimal",
-            normalize: false,
-        });
-        let renderedX = x.toString({ format: "decimal", normalize: false });
-
-        if (renderedThis === renderedX) {
-            return 0;
-        }
-
-        return renderedThis > renderedX ? -1 : 1;
+        return rationalThis.cmp(rationalX);
     }
 
-    lessThan(x: Decimal128, opts?: CmpOptions): boolean {
-        return this.cmp(x, opts) === -1;
+    lessThan(x: Decimal128): boolean {
+        return this.cmp(x) === -1;
     }
 
-    equals(x: Decimal128, opts?: CmpOptions): boolean {
-        return this.cmp(x, opts) === 0;
+    equals(x: Decimal128): boolean {
+        return this.cmp(x) === 0;
     }
 
     abs(): Decimal128 {

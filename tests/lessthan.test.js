@@ -61,9 +61,6 @@ describe("lessThan", () => {
         test("use mathematical equality by default", () => {
             expect(b.lessThan(a)).toStrictEqual(false);
         });
-        test("take trailing zeroes into account", () => {
-            expect(b.lessThan(a, { normalize: true })).toStrictEqual(true);
-        });
         test("mathematically distinct", () => {
             expect(a.lessThan(c)).toStrictEqual(true);
         });
@@ -85,33 +82,19 @@ describe("many digits", () => {
         ).toStrictEqual(true);
     });
     describe("NaN", () => {
-        test("NaN lessThan NaN is false", () => {
-            expect(nan.lessThan(nan)).toStrictEqual(false);
+        test("NaN lessThan NaN throws", () => {
+            expect(() => nan.lessThan(nan)).toThrow(RangeError);
         });
-        test("NaN lessThan NaN is not NaN, with total comparison", () => {
-            expect(nan.lessThan(nan, { normalize: true })).toStrictEqual(false);
+        test("number lessThan NaN throws", () => {
+            expect(() => one.lessThan(nan)).toThrow(RangeError);
         });
-        test("number lessThan NaN is true", () => {
-            expect(one.lessThan(nan)).toStrictEqual(false);
-        });
-        test("number lessThan NaN is not NaN, with total comparison", () => {
-            expect(one.lessThan(nan, { normalize: true })).toStrictEqual(true);
-        });
-        test("NaN lessThan number is false", () => {
-            expect(nan.lessThan(one)).toStrictEqual(false);
-        });
-        test("NaN lessThan number is false, with total comparison", () => {
-            expect(nan.lessThan(one, { normalize: true })).toStrictEqual(false);
+        test("NaN lessThan number throws ", () => {
+            expect(() => nan.lessThan(one)).toThrow(RangeError);
         });
     });
     describe("minus zero", () => {
         test("left hand", () => {
             expect(negZero.lessThan(zero)).toStrictEqual(false);
-        });
-        test("left hand, with total comparison", () => {
-            expect(negZero.lessThan(zero, { normalize: true })).toStrictEqual(
-                true
-            );
         });
         test("right hand", () => {
             expect(zero.lessThan(negZero)).toStrictEqual(false);
@@ -158,9 +141,6 @@ describe("zero", () => {
     test("negative zero vs zero", () => {
         expect(negZero.lessThan(zero)).toStrictEqual(false);
     });
-    test("negative zero vs zero, normalization disabled", () => {
-        expect(negZero.lessThan(zero, { normalize: true })).toStrictEqual(true);
-    });
     test("zero vs negative zero, normalization disabled", () => {
         expect(zero.lessThan(negZero, { normalize: true })).toStrictEqual(
             false
@@ -182,16 +162,13 @@ describe("normalization", () => {
         expect(d1.lessThan(d3)).toStrictEqual(false);
     });
     test("compare non-normal (1)", () => {
-        expect(d1.lessThan(d2, { normalize: true })).toStrictEqual(false);
-    });
-    test("compare non-normal (2)", () => {
-        expect(d2.lessThan(d1, { normalize: true })).toStrictEqual(true);
+        expect(d1.lessThan(d2)).toStrictEqual(false);
     });
     test("compare two non-normal values", () => {
-        expect(d2.lessThan(d3, { normalize: true })).toStrictEqual(false);
+        expect(d2.lessThan(d3)).toStrictEqual(false);
     });
     test("compare two non-normal values", () => {
-        expect(d3.lessThan(d2, { normalize: true })).toStrictEqual(true);
+        expect(d3.lessThan(d2)).toStrictEqual(false);
     });
 });
 
@@ -245,10 +222,8 @@ describe("examples from the General Decimal Arithmetic specification", () => {
         });
         test("example three", () => {
             expect(
-                new Decimal128("12.30").lessThan(new Decimal128("12.3"), {
-                    normalize: true,
-                })
-            ).toStrictEqual(true);
+                new Decimal128("12.30").lessThan(new Decimal128("12.3"))
+            ).toStrictEqual(false); // would be true if we were to respect trailing zeroes
         });
         test("example four", () => {
             expect(
@@ -265,75 +240,9 @@ describe("examples from the General Decimal Arithmetic specification", () => {
             ).toStrictEqual(false);
         });
         test("example six", () => {
-            expect(
-                new Decimal128("12.3").lessThan(new Decimal128("NaN"), {
-                    normalize: true,
-                })
-            ).toStrictEqual(true);
-        });
-        describe("inline examples", () => {
-            test("example one", () => {
-                expect(
-                    new Decimal128("-Infinity").lessThan(
-                        new Decimal128("-127"),
-                        {
-                            normalize: true,
-                        }
-                    )
-                ).toStrictEqual(true);
-            });
-            test("example two", () => {
-                expect(
-                    new Decimal128("-1.00").lessThan(new Decimal128("-1"), {
-                        normalize: true,
-                    })
-                ).toStrictEqual(true);
-            });
-            test("example three", () => {
-                expect(
-                    new Decimal128("-0.000").lessThan(new Decimal128("-0"), {
-                        normalize: true,
-                    })
-                ).toStrictEqual(true);
-            });
-            test("example four", () => {
-                expect(
-                    new Decimal128("-0").lessThan(new Decimal128("0"), {
-                        normalize: true,
-                    })
-                ).toStrictEqual(true);
-            });
-            test("example five", () => {
-                expect(
-                    new Decimal128("1.2300").lessThan(new Decimal128("1.23"), {
-                        normalize: true,
-                    })
-                ).toStrictEqual(true);
-            });
-            test("example six", () => {
-                expect(
-                    new Decimal128("1.23").lessThan(new Decimal128("1E+9"), {
-                        normalize: true,
-                    })
-                ).toStrictEqual(true);
-            });
-            test("example seven", () => {
-                expect(
-                    new Decimal128("1E+9").lessThan(
-                        new Decimal128("Infinity"),
-                        {
-                            normalize: true,
-                        }
-                    )
-                ).toStrictEqual(true);
-            });
-            test("example eight", () => {
-                expect(
-                    new Decimal128("Infinity").lessThan(new Decimal128("NaN"), {
-                        normalize: true,
-                    })
-                ).toStrictEqual(true);
-            });
+            expect(() =>
+                new Decimal128("12.3").lessThan(new Decimal128("NaN"))
+            ).toThrow(RangeError); // wouldn't throw if we were to use total ordering
         });
     });
 });
