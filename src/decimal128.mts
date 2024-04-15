@@ -1534,10 +1534,9 @@ export class Decimal128 {
      * Return the remainder of this Decimal128 value divided by another Decimal128 value.
      *
      * @param d
-     * @param opts
      * @throws RangeError If argument is zero
      */
-    remainder(d: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
+    remainder(d: Decimal128): Decimal128 {
         if (this.isNaN || d.isNaN) {
             return new Decimal128(NAN);
         }
@@ -1563,7 +1562,7 @@ export class Decimal128 {
         }
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
-        return this.subtract(d.multiply(q), opts);
+        return this.subtract(d.multiply(q));
     }
 
     private decrementExponent(): Decimal128 {
