@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.2.0] - 2024-04-15
+
+### Changed
+
+-   The remainder operation no longer takes an optional argument for specifying the rounding mode. It is unnecessary.
+
 ## [12.1.0] - 2024-04-11
 
 ### Added
