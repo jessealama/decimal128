@@ -13,6 +13,7 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
+import JSBI from "jsbi";
 import { countSignificantDigits, Digit, DigitOrTen } from "./common.mjs";
 import { Rational } from "./rational.mjs";
 
@@ -20,8 +21,8 @@ const EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
 
-const bigTen = BigInt(10);
-const bigOne = BigInt(1);
+const bigTen = JSBI.BigInt(10);
+const bigOne = JSBI.BigInt(1);
 
 /**
  * Return the significand of a digit string, assumed to be normalized.
@@ -156,7 +157,7 @@ function exponent(s: string): number {
 }
 
 interface Decimal128Constructor {
-    significand: bigint;
+    significand: JSBI;
     exponent: number;
     isNegative: boolean;
     isFinite: boolean;
@@ -210,7 +211,7 @@ function convertExponentialNotationToDecimalNotation(
 
 function handleNan(): Decimal128Constructor {
     return {
-        significand: 0n,
+        significand: JSBI.BigInt(0),
         exponent: 0,
         isNegative: false,
         isFinite: true,
@@ -219,7 +220,7 @@ function handleNan(): Decimal128Constructor {
 }
 
 type SignedSignificandExponent = {
-    significand: bigint;
+    significand: JSBI;
     exponent: number;
     isNegative: boolean;
 };
@@ -238,7 +239,9 @@ function adjustInteger(
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(sig.substring(0, sig.length - numTrailingZeros)),
+        significand: JSBI.BigInt(
+            sig.substring(0, sig.length - numTrailingZeros)
+        ),
         exponent: numTrailingZeros,
     };
 }
@@ -265,7 +268,7 @@ function roundHalfEven(
             );
             return {
                 isNegative: x.isNegative,
-                significand: BigInt(rounded),
+                significand: JSBI.BigInt(rounded),
                 exponent: exp,
             };
         }
@@ -279,7 +282,7 @@ function roundHalfEven(
                 ) + "0";
             return {
                 isNegative: x.isNegative,
-                significand: BigInt(rounded),
+                significand: JSBI.BigInt(rounded),
                 exponent: exp,
             };
         }
@@ -289,7 +292,7 @@ function roundHalfEven(
             `${penultimateDigit + 1}`;
         return {
             isNegative: x.isNegative,
-            significand: BigInt(rounded),
+            significand: JSBI.BigInt(rounded),
             exponent: exp,
         };
     }
@@ -308,7 +311,7 @@ function roundHalfEven(
             }
             return {
                 isNegative: x.isNegative,
-                significand: BigInt(rounded),
+                significand: JSBI.BigInt(rounded),
                 exponent: exp,
             };
         }
@@ -320,7 +323,7 @@ function roundHalfEven(
         let rounded = propagateCarryFromRight(nextCutoff);
         return {
             isNegative: x.isNegative,
-            significand: BigInt(rounded),
+            significand: JSBI.BigInt(rounded),
             exponent: exp,
         };
     }
@@ -328,7 +331,7 @@ function roundHalfEven(
     let rounded = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS);
     return {
         isNegative: x.isNegative,
-        significand: BigInt(rounded),
+        significand: JSBI.BigInt(rounded),
         exponent: exp,
     };
 }
@@ -353,7 +356,7 @@ function roundCeiling(x: SignedSignificandExponent): SignedSignificandExponent {
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
+        significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
         exponent: exp,
     };
 }
@@ -379,7 +382,7 @@ function roundFloor(x: SignedSignificandExponent): SignedSignificandExponent {
     if (finalDigit < 10) {
         return {
             isNegative: x.isNegative,
-            significand: BigInt(`${cutoff}${finalDigit}`),
+            significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
             exponent: exp,
         };
     }
@@ -388,7 +391,7 @@ function roundFloor(x: SignedSignificandExponent): SignedSignificandExponent {
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${rounded}0`),
+        significand: JSBI.BigInt(`${rounded}0`),
         exponent: exp,
     };
 }
@@ -414,7 +417,7 @@ function roundExpand(x: SignedSignificandExponent): SignedSignificandExponent {
     if (finalDigit < 10) {
         return {
             isNegative: x.isNegative,
-            significand: BigInt(`${cutoff}${finalDigit}`),
+            significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
             exponent: exp,
         };
     }
@@ -423,7 +426,7 @@ function roundExpand(x: SignedSignificandExponent): SignedSignificandExponent {
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${rounded}0`),
+        significand: JSBI.BigInt(`${rounded}0`),
         exponent: exp,
     };
 }
@@ -448,7 +451,7 @@ function roundTrunc(x: SignedSignificandExponent): SignedSignificandExponent {
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
+        significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
         exponent: exp,
     };
 }
@@ -476,7 +479,7 @@ function roundHalfExpand(
     if (finalDigit < 10) {
         return {
             isNegative: x.isNegative,
-            significand: BigInt(`${cutoff}${finalDigit}`),
+            significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
             exponent: exp,
         };
     }
@@ -485,7 +488,7 @@ function roundHalfExpand(
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${rounded}0`),
+        significand: JSBI.BigInt(`${rounded}0`),
         exponent: exp,
     };
 }
@@ -512,7 +515,7 @@ function roundHalfCeil(
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
+        significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
         exponent: exp,
     };
 }
@@ -540,7 +543,7 @@ function roundHalfFloor(
     if (finalDigit < 10) {
         return {
             isNegative: x.isNegative,
-            significand: BigInt(`${cutoff}${finalDigit}`),
+            significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
             exponent: exp,
         };
     }
@@ -549,7 +552,7 @@ function roundHalfFloor(
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${rounded}0`),
+        significand: JSBI.BigInt(`${rounded}0`),
         exponent: exp,
     };
 }
@@ -576,7 +579,7 @@ function roundHalfTrunc(
 
     return {
         isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
+        significand: JSBI.BigInt(`${cutoff}${finalDigit}`),
         exponent: exp,
     };
 }
@@ -635,7 +638,7 @@ function handleExponentialNotation(
 
     let data = {
         isNegative: isNegative,
-        significand: BigInt(sg),
+        significand: JSBI.BigInt(sg),
         exponent: exp,
         isNaN: false,
         isFinite: true,
@@ -685,7 +688,7 @@ function handleDecimalNotation(
     let isInteger = exp >= 0;
 
     let data = {
-        significand: BigInt(sg),
+        significand: JSBI.BigInt(sg),
         exponent: exp,
         isNegative: isNegative,
         isFinite: true,
@@ -708,7 +711,7 @@ function handleDecimalNotation(
 
 function handleInfinity(s: string): Decimal128Constructor {
     return {
-        significand: 0n,
+        significand: JSBI.BigInt(0),
         exponent: 0,
         isNegative: !!s.match(/^-/),
         isNaN: false,
@@ -963,51 +966,57 @@ function ensureFullySpecifiedToStringOptions(
     return opts;
 }
 
-function toRational(isNegative: boolean, sg: bigint, exp: number): Rational {
-    if (1n === sg) {
+function toRational(isNegative: boolean, sg: JSBI, exp: number): Rational {
+    if (JSBI.equal(JSBI.BigInt(1), sg)) {
         // power of ten
         if (exp < 0) {
             return new Rational(
                 bigOne,
-                BigInt((isNegative ? "-" : "") + "1" + "0".repeat(0 - exp))
+                JSBI.BigInt((isNegative ? "-" : "") + "1" + "0".repeat(0 - exp))
             );
         }
 
         if (exp === 0) {
-            return new Rational(BigInt(isNegative ? -1 : 1), bigOne);
+            return new Rational(JSBI.BigInt(isNegative ? -1 : 1), bigOne);
         }
 
         return new Rational(
-            BigInt((isNegative ? "-" : "") + "1" + "0".repeat(exp)),
+            JSBI.BigInt((isNegative ? "-" : "") + "1" + "0".repeat(exp)),
             bigOne
         );
     }
 
     if (exp < 0) {
         return new Rational(
-            BigInt((isNegative ? "-" : "") + sg),
-            bigTen ** BigInt(0 - exp)
+            JSBI.BigInt((isNegative ? "-" : "").toString() + sg.toString()),
+            JSBI.exponentiate(bigTen, JSBI.BigInt(0 - exp))
         );
     }
 
     if (exp === 1) {
-        return new Rational(BigInt((isNegative ? "-" : "") + sg + "0"), bigOne);
+        return new Rational(
+            JSBI.BigInt((isNegative ? "-" : "") + sg.toString() + "0"),
+            bigOne
+        );
     }
     return new Rational(
-        BigInt((isNegative ? "-" : "") + sg) * 10n ** BigInt(exp),
+        JSBI.multiply(
+            JSBI.BigInt((isNegative ? "-" : "") + sg.toString()),
+            JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(exp))
+        ),
         bigOne
     );
 }
 
 export class Decimal128 {
-    public readonly significand: bigint;
+    public readonly significand: JSBI;
     public readonly exponent: number;
     public readonly isFinite: boolean;
     public readonly isNaN: boolean;
     private readonly isNegative: boolean;
     private readonly rat;
 
-    constructor(n: string | number | bigint, options?: ConstructorOptions) {
+    constructor(n: string | number | JSBI, options?: ConstructorOptions) {
         let data = undefined;
         let s = "";
 
@@ -1025,7 +1034,7 @@ export class Decimal128 {
             }
 
             s = n.toString();
-        } else if ("bigint" === typeof n) {
+        } else if (n instanceof JSBI) {
             s = n.toString();
         } else {
             s = n;
@@ -1054,7 +1063,7 @@ export class Decimal128 {
         this.rat =
             this.isFinite && !this.isNaN
                 ? toRational(this.isNegative, this.significand, this.exponent)
-                : new Rational(0n, 1n);
+                : new Rational(JSBI.BigInt(0), JSBI.BigInt(1));
     }
 
     private emitExponential(): string {
@@ -1366,7 +1375,11 @@ export class Decimal128 {
     }
 
     private isZero(): boolean {
-        return this.isFinite && !this.isNaN && this.significand === 0n;
+        return (
+            this.isFinite &&
+            !this.isNaN &&
+            JSBI.equal(this.significand, JSBI.BigInt(0))
+        );
     }
 
     private clone(): Decimal128 {
@@ -1424,38 +1437,65 @@ export class Decimal128 {
         let dividendCoefficient = this.significand;
         let divisorCoefficient = x.significand;
 
-        if (dividendCoefficient !== 0n) {
-            while (BigInt(dividendCoefficient) < BigInt(divisorCoefficient)) {
-                dividendCoefficient = dividendCoefficient * 10n;
+        if (JSBI.notEqual(dividendCoefficient, JSBI.BigInt(0))) {
+            while (
+                JSBI.lessThan(
+                    JSBI.BigInt(dividendCoefficient),
+                    JSBI.BigInt(divisorCoefficient)
+                )
+            ) {
+                dividendCoefficient = JSBI.multiply(
+                    dividendCoefficient,
+                    JSBI.BigInt(10)
+                );
                 adjust++;
             }
         }
 
         while (
-            BigInt(dividendCoefficient) >=
-            BigInt(divisorCoefficient) * 10n
+            JSBI.greaterThanOrEqual(
+                JSBI.BigInt(dividendCoefficient),
+                JSBI.multiply(JSBI.BigInt(divisorCoefficient), JSBI.BigInt(10))
+            )
         ) {
-            divisorCoefficient *= 10n;
+            divisorCoefficient = JSBI.multiply(
+                divisorCoefficient,
+                JSBI.BigInt(10)
+            );
             adjust--;
         }
 
-        let resultCoefficient = 0n;
+        let resultCoefficient = JSBI.BigInt(0);
         let done = false;
 
         while (!done) {
-            while (BigInt(divisorCoefficient) <= BigInt(dividendCoefficient)) {
-                dividendCoefficient =
-                    BigInt(dividendCoefficient) - BigInt(divisorCoefficient);
-                resultCoefficient++;
+            while (
+                JSBI.lessThanOrEqual(
+                    JSBI.BigInt(divisorCoefficient),
+                    JSBI.BigInt(dividendCoefficient)
+                )
+            ) {
+                dividendCoefficient = JSBI.subtract(
+                    JSBI.BigInt(dividendCoefficient),
+                    JSBI.BigInt(divisorCoefficient)
+                );
+                resultCoefficient = JSBI.add(resultCoefficient, JSBI.BigInt(1));
             }
             if (
-                (BigInt(dividendCoefficient) === 0n && adjust >= 0) ||
+                (JSBI.equal(JSBI.BigInt(dividendCoefficient), JSBI.BigInt(0)) &&
+                    adjust >= 0) ||
                 resultCoefficient.toString().length > MAX_SIGNIFICANT_DIGITS
             ) {
                 done = true;
             } else {
-                resultCoefficient = resultCoefficient * 10n;
-                dividendCoefficient = dividendCoefficient * 10n;
+                resultCoefficient = JSBI.multiply(
+                    resultCoefficient,
+                    JSBI.BigInt(10)
+                );
+                dividendCoefficient = JSBI.multiply(
+                    dividendCoefficient,
+                    JSBI.BigInt(10)
+                );
                 adjust++;
             }
         }
@@ -1571,7 +1611,7 @@ export class Decimal128 {
 
         let prefix = this.isNegative ? "-" : "";
         let newExp = exp - 1;
-        let newSig = sig + "0";
+        let newSig = sig.toString() + "0";
 
         return new Decimal128(`${prefix}${newSig}E${newExp}`);
     }
