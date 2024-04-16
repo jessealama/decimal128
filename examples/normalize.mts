@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../dist/esm/decimal128.mjs";
 
 function normalize(d: Decimal128): string {
     // Decimal128 object
