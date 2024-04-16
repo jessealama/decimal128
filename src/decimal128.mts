@@ -1194,6 +1194,74 @@ export class Decimal128 {
         return rationalThis.cmp(rationalX);
     }
 
+    /**
+     * Compare two values. Return
+     *
+     * + -1 if this value is strictly less than the other,
+     * + 0 if they are equal, and
+     * + 1 otherwise.
+     *
+     * @param x
+     */
+    compare(x: Decimal128): -1 | 0 | 1 {
+        if (this.isNaN) {
+            if (x.isNaN) {
+                return 0;
+            }
+            return 1;
+        }
+
+        if (x.isNaN) {
+            return -1;
+        }
+
+        if (!this.isFinite) {
+            if (!x.isFinite) {
+                if (this.isNegative === x.isNegative) {
+                    return 0;
+                }
+
+                return this.isNegative ? -1 : 1;
+            }
+
+            if (this.isNegative) {
+                return -1;
+            }
+
+            return 1;
+        }
+
+        if (!x.isFinite) {
+            return x.isNegative ? 1 : -1;
+        }
+
+        if (this.isNegative && !x.isNegative) {
+            return -1;
+        }
+
+        if (x.isNegative && !this.isNegative) {
+            return 1;
+        }
+
+        if (this.lessThan(x)) {
+            return -1;
+        }
+
+        if (x.lessThan(this)) {
+            return 1;
+        }
+
+        if (this.exponent < x.exponent) {
+            return -1;
+        }
+
+        if (this.exponent > x.exponent) {
+            return 1;
+        }
+
+        return 0;
+    }
+
     lessThan(x: Decimal128): boolean {
         return this.cmp(x) === -1;
     }
