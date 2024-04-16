@@ -12,13 +12,12 @@ This library is a prototype for the [decimal proposal](https://github.com/tc39/p
 -   remainder (`remainder`)
 -   rounding (`round`)
 -   `toString` emitting both decimal and exponential syntax (default is decimal)
--   less-than (`lessThan`) and equals (`equals`) to compare by mathematical value
--   `compare` for comparing Decimals as digit strings (e.g. `1.2` < `1.20`)
 
 ## Comparisons
 
--   equality (`equals`)
--   less than (`lessThan`)
+-   equality (`equals`) to compare for mathematical equality
+-   less than (`lessThan`) to compare mathematical order
+-   `compare` for comparing Decimals as digit strings (not mathematical order; e.g. `1.2` < `1.20`)
 
 ## Implementation
 
