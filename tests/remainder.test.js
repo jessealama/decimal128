@@ -127,3 +127,16 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
         ).toStrictEqual("1.0");
     });
 });
+
+describe("not the same as IEEE 754 remainder", () => {
+    test("42 % 10", () => {
+        expect(
+            new Decimal128("42").remainder(new Decimal128("10")).toString()
+        ).toStrictEqual("2");
+    });
+    test("46 % 10", () => {
+        expect(
+            new Decimal128("46").remainder(new Decimal128("10")).toString()
+        ).toStrictEqual("6");
+    });
+});
