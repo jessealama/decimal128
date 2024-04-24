@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [13.0.0] - 2024-04-24
+
+### Removed
+
+-   Rounding options for arithmetic operations. The rounding mode is now always, implicitly, `halfEven`. Rounding is still supported in the constructor.
+
 ## [12.3.0] - 2024-04-16
 
 ### Added
