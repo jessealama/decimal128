@@ -861,10 +861,6 @@ const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions =
         normalize: CONSTRUCTOR_SHOULD_NORMALIZE,
     });
 
-interface ArithmeticOperationOptions {
-    roundingMode?: RoundingMode;
-}
-
 interface FullySpecifiedArithmeticOperationOptions {
     roundingMode: RoundingMode;
 }
@@ -899,25 +895,6 @@ function ensureFullySpecifiedConstructorOptions(
     options?: ConstructorOptions
 ): FullySpecifiedConstructorOptions {
     let opts = { ...DEFAULT_CONSTRUCTOR_OPTIONS };
-
-    if (undefined === options) {
-        return opts;
-    }
-
-    if (
-        "string" === typeof options.roundingMode &&
-        ROUNDING_MODES.includes(options.roundingMode)
-    ) {
-        opts.roundingMode = options.roundingMode;
-    }
-
-    return opts;
-}
-
-function ensureFullySpecifiedArithmeticOperationOptions(
-    options?: ArithmeticOperationOptions
-): FullySpecifiedArithmeticOperationOptions {
-    let opts = { ...DEFAULT_ARITHMETIC_OPERATION_OPTIONS };
 
     if (undefined === options) {
         return opts;
@@ -1294,9 +1271,8 @@ export class Decimal128 {
      * Add this Decimal128 value to one or more Decimal128 values.
      *
      * @param x
-     * @param opts
      */
-    add(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
+    add(x: Decimal128): Decimal128 {
         if (this.isNaN || x.isNaN) {
             return new Decimal128(NAN);
         }
@@ -1318,14 +1294,13 @@ export class Decimal128 {
         }
 
         if (this.isNegative && x.isNegative) {
-            return this.neg().add(x.neg(), opts).neg();
+            return this.neg().add(x.neg()).neg();
         }
 
         let resultRat = Rational.add(this.rat, x.rat);
-        let options = ensureFullySpecifiedArithmeticOperationOptions(opts);
         let initialResult = new Decimal128(
             resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            { roundingMode: options.roundingMode }
+            { roundingMode: ROUNDING_MODE_DEFAULT }
         );
         let adjusted = initialResult.setExponent(
             Math.min(this.exponent, x.exponent)
@@ -1338,9 +1313,8 @@ export class Decimal128 {
      * Subtract another Decimal128 value from one or more Decimal128 values.
      *
      * @param x
-     * @param opts
      */
-    subtract(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
+    subtract(x: Decimal128): Decimal128 {
         if (this.isNaN || x.isNaN) {
             return new Decimal128(NAN);
         }
@@ -1369,9 +1343,7 @@ export class Decimal128 {
             MAX_SIGNIFICANT_DIGITS + 1
         );
 
-        let options = ensureFullySpecifiedArithmeticOperationOptions(opts);
-
-        let initialResult = new Decimal128(rendered, options);
+        let initialResult = new Decimal128(rendered);
         let adjusted = initialResult.setExponent(
             Math.min(this.exponent, x.exponent)
         );
@@ -1384,9 +1356,8 @@ export class Decimal128 {
      * If no arguments are given, return this value.
      *
      * @param x
-     * @param opts
      */
-    multiply(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
+    multiply(x: Decimal128): Decimal128 {
         if (this.isNaN || x.isNaN) {
             return new Decimal128(NAN);
         }
@@ -1425,8 +1396,7 @@ export class Decimal128 {
 
         let resultRat = Rational.multiply(this.rat, x.rat);
         let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            ensureFullySpecifiedArithmeticOperationOptions(opts)
+            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
         );
         let adjusted = initialResult.setExponent(this.exponent + x.exponent);
 
@@ -1445,9 +1415,8 @@ export class Decimal128 {
      * Divide this Decimal128 value by another Decimal128 value.
      *
      * @param x
-     * @param opts
      */
-    divide(x: Decimal128, opts?: ArithmeticOperationOptions): Decimal128 {
+    divide(x: Decimal128): Decimal128 {
         if (this.isNaN || x.isNaN) {
             return new Decimal128(NAN);
         }
@@ -1529,10 +1498,7 @@ export class Decimal128 {
         }
 
         let resultExponent = this.exponent - (x.exponent + adjust);
-        return new Decimal128(
-            `${resultCoefficient}E${resultExponent}`,
-            ensureFullySpecifiedArithmeticOperationOptions(opts)
-        );
+        return new Decimal128(`${resultCoefficient}E${resultExponent}`);
     }
 
     /**
