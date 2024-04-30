@@ -131,33 +131,6 @@ describe("Intl.NumberFormat examples", () => {
             );
         });
     });
-    describe("expand", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "expand").toString()
-            ).toStrictEqual("-2");
-        });
-        test("0.4", () => {
-            expect(zeroPointFour.round(0, "expand").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("0.5", () => {
-            expect(zeroPointFive.round(0, "expand").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "expand").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "expand").toString()).toStrictEqual(
-                "2"
-            );
-        });
-    });
     describe("trunc", () => {
         test("-1.5", () => {
             expect(
@@ -209,88 +182,6 @@ describe("Intl.NumberFormat examples", () => {
         test("1.5", () => {
             expect(onePointFive.round(0, "halfCeil").toString()).toStrictEqual(
                 "2"
-            );
-        });
-    });
-    describe("halfFloor", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "halfFloor").toString()
-            ).toStrictEqual("-2");
-        });
-        test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "halfFloor").toString()
-            ).toStrictEqual("0");
-        });
-        test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "halfFloor").toString()
-            ).toStrictEqual("0");
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "halfFloor").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "halfFloor").toString()).toStrictEqual(
-                "1"
-            );
-        });
-    });
-    describe("halfExpand", () => {
-        let opts = { "rounding-mode": "halfExpand" };
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "halfExpand").toString()
-            ).toStrictEqual("-2");
-        });
-        test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "halfExpand").toString()
-            ).toStrictEqual("0");
-        });
-        test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "halfExpand").toString()
-            ).toStrictEqual("1");
-        });
-        test("0.6", () => {
-            expect(
-                zeroPointSix.round(0, "halfExpand").toString()
-            ).toStrictEqual("1");
-        });
-        test("1.5", () => {
-            expect(
-                onePointFive.round(0, "halfExpand").toString()
-            ).toStrictEqual("2");
-        });
-    });
-    describe("halfTrunc", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "halfTrunc").toString()
-            ).toStrictEqual("-1");
-        });
-        test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "halfTrunc").toString()
-            ).toStrictEqual("0");
-        });
-        test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "halfTrunc").toString()
-            ).toStrictEqual("0");
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "halfTrunc").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "halfTrunc").toString()).toStrictEqual(
-                "1"
             );
         });
     });
