@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [14.0.0] - 2024-04-30
+
+### Removed
+
+-   Unsupported/inofficial rounding modes. We support the official IEEE Decimal128 ones: trunc, ceil, floor, halfEven, halfUp.
+
 ## [13.0.0] - 2024-04-24
 
 ### Removed
