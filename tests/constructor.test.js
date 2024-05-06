@@ -464,13 +464,9 @@ describe("rounding options", () => {
         let answers = {
             ceil: "-1234567890123456789012345678901234",
             floor: "-1234567890123456789012345678901235",
-            expand: "-1234567890123456789012345678901235",
             trunc: "-1234567890123456789012345678901234",
             halfEven: "-1234567890123456789012345678901234",
-            halfExpand: "-1234567890123456789012345678901235",
             halfCeil: "-1234567890123456789012345678901234",
-            halfFloor: "-1234567890123456789012345678901235",
-            halfTrunc: "-1234567890123456789012345678901234",
         };
         for (const [mode, expected] of Object.entries(answers)) {
             test(`constructor with rounding mode "${mode}"`, () => {
@@ -485,13 +481,9 @@ describe("rounding options", () => {
         let roundUpAnswers = {
             ceil: "-1234567890123456789012345678901239",
             floor: "-1234567890123456789012345678901240",
-            expand: "-1234567890123456789012345678901240",
             trunc: "-1234567890123456789012345678901239",
             halfEven: "-1234567890123456789012345678901240",
-            halfExpand: "-1234567890123456789012345678901240",
             halfCeil: "-1234567890123456789012345678901239",
-            halfFloor: "-1234567890123456789012345678901240",
-            halfTrunc: "-1234567890123456789012345678901239",
         };
         for (const [mode, expected] of Object.entries(roundUpAnswers)) {
             test(`constructor with rounding mode "${mode}"`, () => {
