@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [14.1.0] - 2024-05-06
+
+### Added
+
+-   Support for converting decimals to BigInts and Numbers.
+
 ## [14.0.0] - 2024-04-30
 
 ### Removed

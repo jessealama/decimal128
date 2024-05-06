@@ -668,15 +668,6 @@ const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions =
         normalize: CONSTRUCTOR_SHOULD_NORMALIZE,
     });
 
-interface FullySpecifiedArithmeticOperationOptions {
-    roundingMode: RoundingMode;
-}
-
-const DEFAULT_ARITHMETIC_OPERATION_OPTIONS: FullySpecifiedArithmeticOperationOptions =
-    Object.freeze({
-        roundingMode: ROUNDING_MODE_DEFAULT,
-    });
-
 type ToStringFormat = "decimal" | "exponential";
 const TOSTRING_FORMATS: string[] = ["decimal", "exponential"];
 
@@ -936,6 +927,52 @@ export class Decimal128 {
         }
 
         return this.emitDecimal(options);
+    }
+
+    private isInteger(): boolean {
+        let s = this.toString();
+
+        let [_, rhs] = s.split(/[.]/);
+
+        if (rhs === undefined) {
+            return true;
+        }
+
+        return !!rhs.match(/^0+$/);
+    }
+
+    toBigInt(): bigint {
+        if (this.isNaN) {
+            throw new RangeError("NaN cannot be converted to a BigInt");
+        }
+
+        if (!this.isFinite) {
+            throw new RangeError("Infinity cannot be converted to a BigInt");
+        }
+
+        if (!this.isInteger()) {
+            throw new RangeError(
+                "Non-integer decimal cannot be converted to a BigInt"
+            );
+        }
+
+        return BigInt(this.toString());
+    }
+
+    toNumber(): number {
+        if (this.isNaN) {
+            return NaN;
+        }
+
+        if (!this.isFinite) {
+            if (this.isNegative) {
+                return -Infinity;
+            }
+
+            return Infinity;
+        }
+
+        return Number(this.toString());
     }
 
     /**
