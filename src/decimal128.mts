@@ -460,8 +460,6 @@ function adjustNonInteger(
     options: FullySpecifiedConstructorOptions
 ): SignedSignificandExponent {
     switch (options.roundingMode) {
-        case ROUNDING_MODE_HALF_EVEN:
-            return roundHalfEven(x);
         case ROUNDING_MODE_CEILING:
             return roundCeiling(x);
         case ROUNDING_MODE_FLOOR:

@@ -166,6 +166,33 @@ describe("Intl.NumberFormat examples", () => {
             ).toStrictEqual("1");
         });
     });
+    describe("halfExpand", () => {
+        test("-1.5", () => {
+            expect(
+                minusOnePointFive.round(0, "roundTiesToAway").toString()
+            ).toStrictEqual("-2");
+        });
+        test("0.4", () => {
+            expect(
+                zeroPointFour.round(0, "roundTiesToAway").toString()
+            ).toStrictEqual("0");
+        });
+        test("0.5", () => {
+            expect(
+                zeroPointFive.round(0, "roundTiesToAway").toString()
+            ).toStrictEqual("1");
+        });
+        test("0.6", () => {
+            expect(
+                zeroPointSix.round(0, "roundTiesToAway").toString()
+            ).toStrictEqual("1");
+        });
+        test("1.5", () => {
+            expect(
+                onePointFive.round(0, "roundTiesToAway").toString()
+            ).toStrictEqual("2");
+        });
+    });
     describe("halfEven", () => {
         test("-1.5", () => {
             expect(

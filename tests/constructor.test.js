@@ -466,7 +466,7 @@ describe("rounding options", () => {
             roundTowardNegative: "-1234567890123456789012345678901235",
             roundTowardZero: "-1234567890123456789012345678901234",
             roundTiesToEven: "-1234567890123456789012345678901234",
-            roundTiesAway: "-1234567890123456789012345678901234",
+            roundTiesToAway: "-1234567890123456789012345678901235",
         };
         for (const [mode, expected] of Object.entries(answers)) {
             test(`constructor with rounding mode "${mode}"`, () => {
@@ -483,7 +483,7 @@ describe("rounding options", () => {
             roundTowardNegative: "-1234567890123456789012345678901240",
             roundTowardZero: "-1234567890123456789012345678901239",
             roundTiesToEven: "-1234567890123456789012345678901240",
-            roundTiesAway: "-1234567890123456789012345678901240",
+            roundTiesToAway: "-1234567890123456789012345678901240",
         };
         for (const [mode, expected] of Object.entries(roundUpAnswers)) {
             test(`constructor with rounding mode "${mode}"`, () => {
