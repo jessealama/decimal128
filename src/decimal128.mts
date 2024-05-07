@@ -790,16 +790,7 @@ export class Decimal128 {
             ensureFullySpecifiedConstructorOptions(options);
 
         if ("number" === typeof n) {
-            if (!Number.isInteger(n)) {
-                throw new SyntaxError("Non-integer number not permitted");
-            }
-            if (!Number.isSafeInteger(n)) {
-                throw new RangeError(
-                    "Integer is too large to be exactly represented"
-                );
-            }
-
-            s = n.toString();
+            s = Object.is(n, -0) ? "-0" : n.toString();
         } else if ("bigint" === typeof n) {
             s = n.toString();
         } else {
