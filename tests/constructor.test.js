@@ -462,11 +462,11 @@ describe("rounding options", () => {
     describe("negative value, final decimal digit is five, penultimate digit is less than nine", () => {
         let val = "-1234567890123456789012345678901234.5";
         let answers = {
-            ceil: "-1234567890123456789012345678901234",
-            floor: "-1234567890123456789012345678901235",
-            trunc: "-1234567890123456789012345678901234",
-            halfEven: "-1234567890123456789012345678901234",
-            halfCeil: "-1234567890123456789012345678901234",
+            roundTowardPositive: "-1234567890123456789012345678901234",
+            roundTowardNegative: "-1234567890123456789012345678901235",
+            roundTowardZero: "-1234567890123456789012345678901234",
+            roundTiesToEven: "-1234567890123456789012345678901234",
+            roundTiesAway: "-1234567890123456789012345678901234",
         };
         for (const [mode, expected] of Object.entries(answers)) {
             test(`constructor with rounding mode "${mode}"`, () => {
@@ -479,11 +479,11 @@ describe("rounding options", () => {
     describe("negative value, final decimal digit is five, penultimate digit is nine", () => {
         let roundNineVal = "-1234567890123456789012345678901239.5";
         let roundUpAnswers = {
-            ceil: "-1234567890123456789012345678901239",
-            floor: "-1234567890123456789012345678901240",
-            trunc: "-1234567890123456789012345678901239",
-            halfEven: "-1234567890123456789012345678901240",
-            halfCeil: "-1234567890123456789012345678901239",
+            roundTowardPositive: "-1234567890123456789012345678901239",
+            roundTowardNegative: "-1234567890123456789012345678901240",
+            roundTowardZero: "-1234567890123456789012345678901239",
+            roundTiesToEven: "-1234567890123456789012345678901240",
+            roundTiesAway: "-1234567890123456789012345678901240",
         };
         for (const [mode, expected] of Object.entries(roundUpAnswers)) {
             test(`constructor with rounding mode "${mode}"`, () => {

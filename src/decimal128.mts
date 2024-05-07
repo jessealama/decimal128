@@ -333,6 +333,43 @@ function roundHalfEven(
     };
 }
 
+function roundHalfExpand(
+    x: SignedSignificandExponent
+): SignedSignificandExponent {
+    let sig = x.significand.toString();
+    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
+    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
+    let penultimateDigit = parseInt(
+        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
+    ) as Digit;
+    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
+    let numExcessDigits = excessDigits.length;
+    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
+
+    let finalDigit = roundIt(
+        x.isNegative,
+        penultimateDigit,
+        lastDigit,
+        ROUNDING_MODE_HALF_EXPAND
+    );
+
+    if (finalDigit < 10) {
+        return {
+            isNegative: x.isNegative,
+            significand: BigInt(`${cutoff}${finalDigit}`),
+            exponent: exp,
+        };
+    }
+
+    let rounded = propagateCarryFromRight(cutoff);
+
+    return {
+        isNegative: x.isNegative,
+        significand: BigInt(`${rounded}0`),
+        exponent: exp,
+    };
+}
+
 function roundCeiling(x: SignedSignificandExponent): SignedSignificandExponent {
     let sig = x.significand.toString();
     let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
@@ -418,33 +455,6 @@ function roundTrunc(x: SignedSignificandExponent): SignedSignificandExponent {
     };
 }
 
-function roundHalfCeil(
-    x: SignedSignificandExponent
-): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
-    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
-    let penultimateDigit = parseInt(
-        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    ) as Digit;
-    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
-    let numExcessDigits = excessDigits.length;
-    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
-
-    let finalDigit = roundIt(
-        x.isNegative,
-        penultimateDigit,
-        lastDigit,
-        ROUNDING_MODE_HALF_CEILING
-    );
-
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
-        exponent: exp,
-    };
-}
-
 function adjustNonInteger(
     x: SignedSignificandExponent,
     options: FullySpecifiedConstructorOptions
@@ -458,8 +468,8 @@ function adjustNonInteger(
             return roundFloor(x);
         case ROUNDING_MODE_TRUNCATE:
             return roundTrunc(x);
-        case ROUNDING_MODE_HALF_CEILING:
-            return roundHalfCeil(x);
+        case ROUNDING_MODE_HALF_EXPAND:
+            return roundHalfExpand(x);
         default:
             return roundHalfEven(x);
     }
@@ -572,14 +582,13 @@ function handleInfinity(s: string): Decimal128Constructor {
     };
 }
 
-export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
-export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
-export const ROUNDING_MODE_TRUNCATE: RoundingMode = "trunc";
-export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "halfEven";
-export const ROUNDING_MODE_HALF_CEILING: RoundingMode = "halfCeil";
+export const ROUNDING_MODE_CEILING: RoundingMode = "roundTowardPositive";
+export const ROUNDING_MODE_FLOOR: RoundingMode = "roundTowardNegative";
+export const ROUNDING_MODE_TRUNCATE: RoundingMode = "roundTowardZero";
+export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "roundTiesToEven";
+export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "roundTiesToAway";
 
-const ROUNDING_MODE_DEFAULT = ROUNDING_MODE_HALF_EVEN;
-const CONSTRUCTOR_SHOULD_NORMALIZE = false;
+const ROUNDING_MODE_DEFAULT: RoundingMode = ROUNDING_MODE_HALF_EVEN;
 
 function roundIt(
     isNegative: boolean,
@@ -610,12 +619,8 @@ function roundIt(
             return digitToRound;
         case ROUNDING_MODE_TRUNCATE:
             return digitToRound;
-        case ROUNDING_MODE_HALF_CEILING:
+        case ROUNDING_MODE_HALF_EXPAND:
             if (decidingDigit >= 5) {
-                if (isNegative) {
-                    return digitToRound;
-                }
-
                 return (digitToRound + 1) as DigitOrTen;
             }
 
@@ -637,14 +642,19 @@ function roundIt(
     }
 }
 
-type RoundingMode = "ceil" | "floor" | "trunc" | "halfEven" | "halfCeil";
+type RoundingMode =
+    | "roundTowardPositive"
+    | "roundTowardNegative"
+    | "roundTowardZero"
+    | "roundTiesToEven"
+    | "roundTiesToAway";
 
 const ROUNDING_MODES: RoundingMode[] = [
-    "ceil",
-    "floor",
-    "trunc",
-    "halfEven",
-    "halfCeil",
+    "roundTowardPositive",
+    "roundTowardNegative",
+    "roundTowardZero",
+    "roundTiesToEven",
+    "roundTiesToAway",
 ];
 
 const digitStrRegExp =
@@ -659,14 +669,11 @@ interface ConstructorOptions {
 
 interface FullySpecifiedConstructorOptions {
     roundingMode: RoundingMode;
-    normalize: boolean;
 }
 
-const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions =
-    Object.freeze({
-        roundingMode: ROUNDING_MODE_DEFAULT,
-        normalize: CONSTRUCTOR_SHOULD_NORMALIZE,
-    });
+const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions = {
+    roundingMode: ROUNDING_MODE_DEFAULT,
+};
 
 type ToStringFormat = "decimal" | "exponential";
 const TOSTRING_FORMATS: string[] = ["decimal", "exponential"];
@@ -1347,6 +1354,10 @@ export class Decimal128 {
     ): Decimal128 {
         if (this.isNaN || !this.isFinite) {
             return this.clone();
+        }
+
+        if (!ROUNDING_MODES.includes(mode)) {
+            throw new RangeError(`Invalid rounding mode "${mode}"`);
         }
 
         if (numDecimalDigits < 0) {
