@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--   Support for converting decimals to BigInts and Numbers.
+-   Support for converting decimals to BigInts (`toBigInt`) and Numbers (`toNumber`).
+-   Relax the constructor to allow all Number arguments (in addition to BigInts and strings).
 
 ## [14.0.0] - 2024-04-30
 
