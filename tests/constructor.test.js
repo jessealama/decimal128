@@ -587,18 +587,18 @@ describe("number arguments", () => {
         expect(new Decimal128(42).toString()).toStrictEqual("42");
     });
     test("non-integer number", () => {
-        expect(() => new Decimal128(42.5)).toThrow(SyntaxError);
+        expect(new Decimal128(42.5).toString()).toStrictEqual("42.5");
     });
     test("NaN", () => {
-        expect(() => new Decimal128(NaN)).toThrow(SyntaxError);
+        expect(new Decimal128(NaN).toString()).toStrictEqual("NaN");
     });
     test("minus zero", () => {
-        expect(new Decimal128(-0).toString()).toStrictEqual("0");
+        expect(new Decimal128(-0).toString()).toStrictEqual("-0");
     });
-    test("too big", () => {
+    test("very large value gets approximated", () => {
         expect(
-            () => new Decimal128(123456789012345678901234567890123456789)
-        ).toThrow(RangeError);
+            new Decimal128(123456789012345678901234567890123456789).toString()
+        ).toStrictEqual("123456789012345680000000000000000000000");
     });
 });
 
