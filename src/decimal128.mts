@@ -925,6 +925,40 @@ export class Decimal128 {
         return this.emitDecimal(options);
     }
 
+    toFixed(n?: number): string
+    {
+        if (this.isNaN) {
+            return NAN;
+        }
+
+        if (!this.isFinite) {
+            return this.isNegative ? "-" + POSITIVE_INFINITY : POSITIVE_INFINITY;
+        }
+
+        if (typeof n === "number" && n < 0) {
+            throw new RangeError("Argument must be greater than or equal to 0");
+        }
+
+        let numDecimalDigits = n === undefined ? 0 : n;
+
+        if (!Number.isInteger(numDecimalDigits)) {
+            numDecimalDigits = Math.floor(numDecimalDigits);
+        }
+
+        let opts = ensureFullySpecifiedToStringOptions({ numDecimalDigits });
+        return this.emitDecimal(opts);
+    }
+
+    toPrecision(n?: number): string
+    {
+        return "6";
+    }
+
+    toExponential(): string
+    {
+        return "7";
+    }
+
     private isInteger(): boolean {
         let s = this.toString();
 
