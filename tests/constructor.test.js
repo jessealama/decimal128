@@ -577,7 +577,7 @@ describe("General Decimal Arithmetic specification", () => {
         test("0E+2", () => {
             expect(
                 new Decimal128("0E+2").toString({ format: "exponential" })
-            ).toStrictEqual("0E+2");
+            ).toStrictEqual("0e+2");
         });
     });
 });

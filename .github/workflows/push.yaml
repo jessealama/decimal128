@@ -30,4 +30,4 @@ jobs:
             - name: check coverage
               run: npx c8 check-coverage --lines 99 --functions 99 --branches 99 --statements 99
             - name: examples do not crash
-              run: for f in examples/*.js; do node $f || (echo "'$f' crashed"; exit 1); done
+              run: for f in examples/*.ts; do npx tsx "$f" || (echo "'$f' crashed"; exit 1); done

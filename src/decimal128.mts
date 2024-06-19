@@ -836,7 +836,7 @@ export class Decimal128 {
         let adjustedExponent = exp + sg.length - 1;
 
         if (sg.length === 1) {
-            return prefix + sg + "E" + (exp < 0 ? "" : "+") + exp;
+            return prefix + sg + "e" + (exp < 0 ? "" : "+") + exp;
         }
 
         return (
@@ -844,7 +844,7 @@ export class Decimal128 {
             sg.substring(0, 1) +
             "." +
             sg.substring(1) +
-            "E" +
+            "e" +
             (adjustedExponent < 0 ? "" : "+") +
             adjustedExponent
         );
@@ -923,6 +923,147 @@ export class Decimal128 {
         }
 
         return this.emitDecimal(options);
+    }
+
+    toFixed(n?: number): string {
+        if (this.isNaN) {
+            return NAN;
+        }
+
+        if (!this.isFinite) {
+            return this.isNegative
+                ? "-" + POSITIVE_INFINITY
+                : POSITIVE_INFINITY;
+        }
+
+        if (typeof n === "number" && n < 0) {
+            throw new RangeError("Argument must be greater than or equal to 0");
+        }
+
+        let numDecimalDigits = n === undefined ? 0 : n;
+
+        if (!Number.isInteger(numDecimalDigits)) {
+            numDecimalDigits = Math.floor(numDecimalDigits);
+        }
+
+        let opts = ensureFullySpecifiedToStringOptions({ numDecimalDigits });
+        return this.round(n).emitDecimal(opts);
+    }
+
+    toPrecision(opts?: { digits?: number }): string {
+        if (undefined === opts) {
+            return this.toString();
+        }
+
+        if ("object" !== typeof opts) {
+            throw new TypeError("Argument must be an object");
+        }
+
+        if (undefined === opts.digits) {
+            return this.toString();
+        }
+
+        let n = opts.digits;
+
+        if (n <= 0) {
+            throw new RangeError("Argument must be positive");
+        }
+
+        if (!Number.isInteger(n)) {
+            throw new RangeError("Argument must be an integer");
+        }
+
+        if (this.isNaN) {
+            return "NaN";
+        }
+
+        if (!this.isFinite) {
+            return (this.isNegative ? "-" : "") + "Infinity";
+        }
+
+        let s = this.abs().emitDecimal({
+            normalize: false,
+            numDecimalDigits: undefined,
+            format: "decimal",
+        });
+
+        let [lhs, rhs] = s.split(/[.]/);
+        let p = this.isNegative ? "-" : "";
+
+        if (n <= lhs.length) {
+            if (lhs.match(/[.]$/)) {
+                lhs = lhs.substring(0, n);
+            }
+
+            if (lhs.length === n) {
+                return p + lhs;
+            }
+
+            if (1 === n) {
+                return p + s.substring(0, 1) + "e+" + `${lhs.length - n}`;
+            }
+
+            return (
+                p +
+                s.substring(0, 1) +
+                "." +
+                s.substring(1, n) +
+                "e+" +
+                `${lhs.length - n + 1}`
+            );
+        }
+
+        if (n <= lhs.length + rhs.length) {
+            return p + s.substring(0, n + 1); // plus one because of the decimal point
+        }
+
+        return p + lhs + "." + rhs + "0".repeat(n - lhs.length - rhs.length);
+    }
+
+    toExponential(opts?: { digits?: number }): string {
+        if (this.isNaN) {
+            return "NaN";
+        }
+
+        if (!this.isFinite) {
+            return (this.isNegative ? "-" : "") + "Infinity";
+        }
+
+        if (undefined === opts) {
+            return this.emitExponential();
+        }
+
+        if ("object" !== typeof opts) {
+            throw new TypeError("Argument must be an object");
+        }
+
+        if (undefined === opts.digits) {
+            return this.emitExponential();
+        }
+
+        let n = opts.digits;
+
+        if (n <= 0) {
+            throw new RangeError("Argument must be positive");
+        }
+
+        if (!Number.isInteger(n)) {
+            throw new RangeError("Argument must be an integer");
+        }
+
+        let s = this.abs().emitExponential();
+
+        let [lhs, rhsWithEsign] = s.split(/[.]/);
+
+        let [rhs, exp] = rhsWithEsign.split(/[eE]/);
+
+        let p = this.isNegative ? "-" : "";
+
+        if (rhs.length <= n) {
+            return p + lhs + "." + rhs + "0".repeat(n - rhs.length) + "e" + exp;
+        }
+
+        return p + lhs + "." + rhs.substring(0, n) + "e" + exp;
     }
 
     private isInteger(): boolean {

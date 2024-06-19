@@ -192,6 +192,6 @@ describe("examples from the General Decimal Arithmetic specification", () => {
             new Decimal128("654321")
                 .multiply(new Decimal128("654321"))
                 .toString({ format: "exponential" })
-        ).toStrictEqual("4.28135971041E+11");
+        ).toStrictEqual("4.28135971041e+11");
     });
 });
