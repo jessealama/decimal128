@@ -29,35 +29,57 @@ describe("infinity", () => {
     });
 });
 
-describe("to decimal places", function () {
+describe("toprecision", function () {
     const d = "123.456";
     const decimalD = new Decimal128(d);
-    test("more digits than available means digits get added", () => {
-        expectDecimal128(
-            decimalD.toString({ numDecimalDigits: 4 }),
-            "123.4560"
-        );
+    test("no argument", () => {
+        expect(decimalD.toPrecision()).toStrictEqual("123.456");
+    });
+    test("wrong argument type", () => {
+        expect(decimalD.toPrecision("foo")).toStrictEqual("123.456");
+    });
+    test("empty options", () => {
+        expect(decimalD.toPrecision({})).toStrictEqual("123.456");
+    });
+    test("expected property missing", () => {
+        expect(decimalD.toPrecision({ foo: "bar" })).toStrictEqual("123.456");
+    });
+    test("more digits requested than integer digits available", () => {
+        expectDecimal128(decimalD.toPrecision({ digits: 7 }), "123.4560");
+    });
+    test("exact number of digits requested as digits available", () => {
+        expectDecimal128(decimalD.toPrecision({ digits: 6 }), "123.456");
+    });
+    test("possibly round non-integer part (1)", () => {
+        expectDecimal128(decimalD.toPrecision({ digits: 5 }), "123.45");
+    });
+    test("possibly round non-integer part (2)", () => {
+        expectDecimal128(decimalD.toPrecision({ digits: 4 }), "123.4");
     });
     test("same number of digits as available means no change", () => {
-        expectDecimal128(decimalD.toString({ numDecimalDigits: 3 }), "123.456");
+        expectDecimal128(decimalD.toPrecision({ digits: 3 }), "123");
     });
     test("cutoff if number has more digits than requested (1)", () => {
-        expectDecimal128(decimalD.toString({ numDecimalDigits: 2 }), "123.45");
+        expectDecimal128(decimalD.toPrecision({ digits: 2 }), "1.2e+2");
     });
     test("cutoff if number has more digits than requested (2)", () => {
-        expectDecimal128(decimalD.toString({ numDecimalDigits: 1 }), "123.4");
+        expectDecimal128(decimalD.toPrecision({ digits: 1 }), "1e+2");
     });
-    test("zero decimal places", () => {
-        expectDecimal128(decimalD.toString({ numDecimalDigits: 0 }), "123");
+    test("zero decimal places throws", () => {
+        expect(() => decimalD.toPrecision({ digits: 0 })).toThrow(RangeError);
     });
     test("negative number of decimal places", () => {
-        expect(decimalD.toString({ numDecimalDigits: -1 })).toStrictEqual(
-            "123.456"
-        );
+        expect(() => decimalD.toPrecision({ digits: -1 })).toThrow(RangeError);
     });
-    test("non-integer number of decimal places reverts to default", () => {
-        expect(decimalD.toString({ numDecimalDigits: 1.5 })).toStrictEqual(
-            "123.456"
-        );
+    test("non-integer number throws", () => {
+        expect(() => decimalD.toPrecision({ digits: 1.5 })).toThrow(RangeError);
+    });
+    describe("negative", () => {
+        let negD = decimalD.neg();
+        test("integer part", () => {
+            expect(negD.toPrecision({ digits: 3 }).toString()).toStrictEqual(
+                "-123"
+            );
+        });
     });
 });

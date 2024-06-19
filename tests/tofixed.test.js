@@ -36,10 +36,10 @@ describe("to decimal places", function () {
     test("same number of digits as available means no change", () => {
         expectDecimal128(decimalD.toFixed(3), "123.456");
     });
-    test("cutoff if number has more digits than requested (1)", () => {
-        expectDecimal128(decimalD.toFixed(2), "123.45");
+    test("cutoff with rounding if number has more digits than requested (1)", () => {
+        expectDecimal128(decimalD.toFixed(2), "123.46");
     });
-    test("cutoff if number has more digits than requested (2)", () => {
+    test("cutoff if number has more digits than requested (no rounding)", () => {
         expectDecimal128(decimalD.toFixed(1), "123.4");
     });
     test("zero decimal places", () => {

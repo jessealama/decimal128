@@ -950,8 +950,66 @@ export class Decimal128 {
         return this.round(n).emitDecimal(opts);
     }
 
-    toPrecision(n?: number): string {
-        return "6";
+    toPrecision(opts?: { digits?: number }): string {
+        if (undefined === opts || undefined === opts.digits) {
+            return this.toString();
+        }
+
+        let n = opts.digits;
+
+        if (n <= 0) {
+            throw new RangeError("Argument must be positive");
+        }
+
+        if (!Number.isInteger(n)) {
+            throw new RangeError("Argument must be an integer");
+        }
+
+        if (this.isNaN) {
+            return "NaN";
+        }
+
+        if (!this.isFinite) {
+            return (this.isNegative ? "-" : "") + "Infinity";
+        }
+
+        let s = this.abs().emitDecimal({
+            normalize: false,
+            numDecimalDigits: undefined,
+            format: "decimal",
+        });
+
+        let [lhs, rhs] = s.split(/[.]/);
+        let p = this.isNegative ? "-" : "";
+
+        if (n <= lhs.length) {
+            if (lhs.match(/[.]$/)) {
+                lhs = lhs.substring(0, n);
+            }
+
+            if (lhs.length === n) {
+                return p + lhs;
+            }
+
+            if (1 === n) {
+                return p + s.substring(0, 1) + "e+" + `${lhs.length - n}`;
+            }
+
+            return (
+                p +
+                s.substring(0, 1) +
+                "." +
+                s.substring(1, n) +
+                "e+" +
+                `${lhs.length - n + 1}`
+            );
+        }
+
+        if (n <= lhs.length + rhs.length) {
+            return p + s.substring(0, n + 1); // plus one because of the decimal point
+        }
+
+        return p + lhs + "." + rhs + "0".repeat(n - lhs.length - rhs.length);
     }
 
     toExponential(): string {
