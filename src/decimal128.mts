@@ -946,7 +946,7 @@ export class Decimal128 {
         }
 
         let opts = ensureFullySpecifiedToStringOptions({ numDecimalDigits });
-        return this.emitDecimal(opts);
+        return this.round(n).emitDecimal(opts);
     }
 
     toPrecision(n?: number): string
