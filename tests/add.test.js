@@ -138,6 +138,6 @@ describe("examples from the General Decimal Arithmetic specification", () => {
             new Decimal128("1E+2")
                 .add(new Decimal128("1E+4"))
                 .toString({ format: "exponential" })
-        ).toStrictEqual("1.01E+4");
+        ).toStrictEqual("1.01e+4");
     });
 });

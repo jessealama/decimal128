@@ -36,7 +36,7 @@ describe("toprecision", function () {
         expect(decimalD.toPrecision()).toStrictEqual("123.456");
     });
     test("wrong argument type", () => {
-        expect(decimalD.toPrecision("foo")).toStrictEqual("123.456");
+        expect(() => decimalD.toPrecision("foo")).toThrow(TypeError);
     });
     test("empty options", () => {
         expect(decimalD.toPrecision({})).toStrictEqual("123.456");

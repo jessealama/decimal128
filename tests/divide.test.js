@@ -189,6 +189,6 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
             new Decimal128("2.40E+6")
                 .divide(new Decimal128("2"))
                 .toString({ format: "exponential" })
-        ).toStrictEqual("1.20E+6");
+        ).toStrictEqual("1.20e+6");
     });
 });

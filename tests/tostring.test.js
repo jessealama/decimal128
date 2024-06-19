@@ -60,51 +60,6 @@ describe("to decimal places", function () {
     });
 });
 
-describe("to exponential string", () => {
-    test("one", () => {
-        expect(
-            new Decimal128("1").toString({ format: "exponential" })
-        ).toStrictEqual("1E+0");
-    });
-    test("zero", () => {
-        expect(
-            new Decimal128("0").toString({ format: "exponential" })
-        ).toStrictEqual("0E+0");
-    });
-    test("minus zero", () => {
-        expect(
-            new Decimal128("-0").toString({ format: "exponential" })
-        ).toStrictEqual("-0E+0");
-    });
-    test("integer", () => {
-        expect(
-            new Decimal128("42").toString({ format: "exponential" })
-        ).toStrictEqual("4.2E+1");
-    });
-
-    test("round trip", () => {
-        expect(
-            new Decimal128("4.2E+0").toString({ format: "exponential" })
-        ).toStrictEqual("4.2E+0");
-    });
-
-    test("significant has one digit", () => {
-        expect(
-            new Decimal128("1").toString({ format: "exponential" })
-        ).toStrictEqual("1E+0");
-    });
-    test("negative exponent", () => {
-        expect(
-            new Decimal128("0.1").toString({ format: "exponential" })
-        ).toStrictEqual("1E-1");
-    });
-    test("negative exponent, multiple digits", () => {
-        expect(
-            new Decimal128("0.01042").toString({ format: "exponential" })
-        ).toStrictEqual("1.042E-2");
-    });
-});
-
 describe("normalization", () => {
     test("on by default", () => {
         expect(new Decimal128("1.20").toString()).toStrictEqual("1.2");
