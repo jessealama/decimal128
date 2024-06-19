@@ -18,7 +18,9 @@ describe("zero", () => {
 
 describe("infinity", () => {
     test("positive infinity", () => {
-        expect(new Decimal128("Infinity").toPrecision()).toStrictEqual("Infinity");
+        expect(new Decimal128("Infinity").toPrecision()).toStrictEqual(
+            "Infinity"
+        );
     });
     test("negative infinity", () => {
         expect(new Decimal128("-Infinity").toPrecision()).toStrictEqual(

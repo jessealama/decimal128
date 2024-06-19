@@ -925,14 +925,15 @@ export class Decimal128 {
         return this.emitDecimal(options);
     }
 
-    toFixed(n?: number): string
-    {
+    toFixed(n?: number): string {
         if (this.isNaN) {
             return NAN;
         }
 
         if (!this.isFinite) {
-            return this.isNegative ? "-" + POSITIVE_INFINITY : POSITIVE_INFINITY;
+            return this.isNegative
+                ? "-" + POSITIVE_INFINITY
+                : POSITIVE_INFINITY;
         }
 
         if (typeof n === "number" && n < 0) {
@@ -949,13 +950,11 @@ export class Decimal128 {
         return this.round(n).emitDecimal(opts);
     }
 
-    toPrecision(n?: number): string
-    {
+    toPrecision(n?: number): string {
         return "6";
     }
 
-    toExponential(): string
-    {
+    toExponential(): string {
         return "7";
     }
 

@@ -31,10 +31,7 @@ describe("to decimal places", function () {
     const d = "123.456";
     const decimalD = new Decimal128(d);
     test("more digits than available means digits get added", () => {
-        expectDecimal128(
-            decimalD.toFixed(4),
-            "123.4560"
-        );
+        expectDecimal128(decimalD.toFixed(4), "123.4560");
     });
     test("same number of digits as available means no change", () => {
         expectDecimal128(decimalD.toFixed(3), "123.456");
@@ -52,8 +49,6 @@ describe("to decimal places", function () {
         expect(() => decimalD.toFixed(-1)).toThrow(RangeError);
     });
     test("non-integer takes floor", () => {
-        expect(decimalD.toFixed(1.5)).toStrictEqual(
-            "123.4"
-        );
+        expect(decimalD.toFixed(1.5)).toStrictEqual("123.4");
     });
 });

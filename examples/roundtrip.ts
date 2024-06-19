@@ -4,8 +4,7 @@ function getRandomInt(max: number): number {
     return Math.floor(Math.random() * max);
 }
 
-function getRandomDigits(n: number): number[]
-{
+function getRandomDigits(n: number): number[] {
     let digits = [];
     for (let i = 0; i < n; i++) {
         digits.push(getRandomInt(10));
@@ -13,8 +12,7 @@ function getRandomDigits(n: number): number[]
     return digits;
 }
 
-function getRandomDigitsAsString(n: number): string
-{
+function getRandomDigitsAsString(n: number): string {
     let digits = getRandomDigits(n + 2);
     let result = digits.slice(0, n).join("") + "." + digits.slice(n).join("");
     let noInitialZeroes = result.replace(/^0+/, "");
