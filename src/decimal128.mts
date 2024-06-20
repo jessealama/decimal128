@@ -68,18 +68,16 @@ type Decimal128Value = NaNValue | InfiniteValue | FiniteValue;
 const NAN = "NaN";
 const POSITIVE_INFINITY = "Infinity";
 const NEGATIVE_INFINITY = "-Infinity";
-const TEN_MAX_EXPONENT = new Rational(bigTen, bigOne).scale10(EXPONENT_MAX);
+const TEN_MAX_EXPONENT = new Rational(bigTen, bigOne).scale10(
+    MAX_SIGNIFICANT_DIGITS
+);
 
 function pickQuantum(d: Rational, preferredQuantum: number): number {
     return preferredQuantum;
 }
 
 function validateConstructorData(x: Decimal128Value): void {
-    if ((x as NaNValue) !== undefined) {
-        return; // no further validation needed
-    }
-
-    if ((x as InfiniteValue) !== undefined) {
+    if (x === "NaN" || x === "Infinity" || x === "-Infinity") {
         return; // no further validation needed
     }
 
