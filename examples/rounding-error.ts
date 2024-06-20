@@ -29,7 +29,7 @@ function compareNumbers(
     let decimalResult = d1.multiply(d2).add(d3);
     let numberResult = Number(digits1) * Number(digits2) + Number(digits3);
     let numberResultString = numberResult.toFixed(4);
-    let decimalResultString = decimalResult.toFixed(4);
+    let decimalResultString = decimalResult.toFixed({ digits: 4 });
 
     return [numberResultString, decimalResultString];
 }

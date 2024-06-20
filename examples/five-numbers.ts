@@ -38,7 +38,7 @@ function compareNumbers(
             Number(digits4)) *
         Number(digits5);
     let numberResultString = numberResult.toFixed(4);
-    let decimalResultString = decimalResult.toFixed(4);
+    let decimalResultString = decimalResult.toFixed({ digits: 4 });
 
     return [numberResultString, decimalResultString];
 }

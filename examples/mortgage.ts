@@ -20,4 +20,4 @@ function calculateMonthlyPayment(p: string, r: string, y: string): Decimal128 {
 
 const amount = calculateMonthlyPayment("5000000", "0.05", "30");
 
-console.log(amount.round(2).toString({ normalize: false }));
+console.log(amount.toFixed({ digits: 2 }));

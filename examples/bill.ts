@@ -20,4 +20,4 @@ const items = [
     { price: "5.00", count: "1" },
 ];
 const tax = "0.0735";
-console.log(calculateBill(items, tax).toString({ numDecimalDigits: 2 }));
+console.log(calculateBill(items, tax).toFixed({ digits: 2 }));

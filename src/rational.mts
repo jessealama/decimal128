@@ -105,7 +105,101 @@ export class Rational {
         }`;
     }
 
-    private negate(): Rational {
+    public toExponential(): string {
+        let p = this.isNegative ? "-" : "";
+        return `${p}${this.numerator}e${this.denominator}`;
+    }
+
+    public static fromString(s: string): Rational {
+        if (s.match(/^-/)) {
+            return Rational.fromString(s.substring(1)).negate();
+        }
+
+        if (s.match(/^[0-9]+$/)) {
+            return new Rational(BigInt(s), 1n);
+        }
+
+        if (s.match(/^[0-9]+[eE][+-]?[0-9]+$/)) {
+            let [num, exp] = s.split(/[eE]/);
+            if (exp.match(/-/)) {
+                let [whole, fractional] = exp.split("-");
+                let originalRat = new Rational(BigInt(num), 1n);
+                return Rational.divide(
+                    originalRat,
+                    new Rational(1n, BigInt(10) ** BigInt(fractional))
+                );
+            }
+
+            return new Rational(BigInt(num), ten ** BigInt(exp));
+        }
+
+        if (s.match(/[.]/)) {
+            let [whole, decimal] = s.split(".");
+
+            if (decimal.match(/[eE]/)) {
+                let [dec, exp] = decimal.split(/[eE]/);
+                let originalRat = Rational.fromString(`${whole}.${dec}`);
+                if (exp.match(/-/)) {
+                    let [whole, fractional] = exp.split("-");
+                    return Rational.divide(
+                        originalRat,
+                        new Rational(1n, ten ** BigInt(fractional))
+                    );
+                }
+
+                return Rational.multiply(
+                    originalRat,
+                    new Rational(1n, ten ** BigInt(exp))
+                );
+            }
+
+            let wholePart = BigInt(whole);
+            let decimalPart = BigInt(decimal);
+            let decimalPlaces = BigInt(decimal.length);
+            let denominator = ten ** decimalPlaces;
+            let numerator = wholePart * denominator + decimalPart;
+            return new Rational(numerator, denominator);
+        }
+
+        throw new SyntaxError(`Invalid rational number string: ${s}`);
+    }
+
+    public scale10(n: number): Rational {
+        if (!Number.isInteger(n)) {
+            throw new TypeError(
+                "Cannot scale by non-integer number of decimal places"
+            );
+        }
+
+        if (n <= 0) {
+            return new Rational(
+                this.numerator,
+                this.denominator * ten ** BigInt(n)
+            );
+        }
+
+        return new Rational(
+            this.numerator * ten ** BigInt(n),
+            this.denominator
+        );
+    }
+
+    public isInteger(): boolean {
+        return this.denominator === 1n;
+    }
+
+    public abs(): Rational {
+        let num = this.numerator;
+        let den = this.denominator;
+
+        if (num < 0n) {
+            return new Rational(-num, den);
+        }
+
+        return new Rational(num, den);
+    }
+
+    public negate(): Rational {
         if (this.isNegative) {
             return new Rational(this.numerator, this.denominator);
         }
@@ -146,6 +240,13 @@ export class Rational {
         );
     }
 
+    private static _divide(x: Rational, y: Rational): Rational {
+        return new Rational(
+            x.numerator * y.denominator,
+            x.denominator * y.numerator
+        );
+    }
+
     public static add(...theArgs: Rational[]): Rational {
         return theArgs.reduce(
             (acc, cur) => Rational._add(acc, cur),
@@ -162,6 +263,10 @@ export class Rational {
             (acc, cur) => Rational._multiply(acc, cur),
             new Rational(one, one)
         );
+    }
+
+    public static divide(x: Rational, ...theArgs: Rational[]): Rational {
+        return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
 
     public toDecimalPlaces(n: number): string {
@@ -219,5 +324,9 @@ export class Rational {
         }
 
         return 0;
+    }
+
+    isZero(): boolean {
+        return this.numerator === zero;
     }
 }

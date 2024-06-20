@@ -13,516 +13,122 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { countSignificantDigits, Digit, DigitOrTen } from "./common.mjs";
+import { Digit, DigitOrTen } from "./common.mjs";
 import { Rational } from "./rational.mjs";
 
-const EXPONENT_MIN = -6143;
-const EXPONENT_MAX = 6144;
+const EXPONENT_MIN = -6176;
+const EXPONENT_MAX = 6111;
 const MAX_SIGNIFICANT_DIGITS = 34;
 
 const bigTen = BigInt(10);
 const bigOne = BigInt(1);
 
-/**
- * Return the significand of a digit string, assumed to be normalized.
- * The returned value is a digit string that has no decimal point, even if the original
- * digit string had one.
- *
- * @param s
- *
- * @example significand("123.456") // => "123456"
- * @example significand("0.000123") // => "123"
- */
-function significand(s: string): string {
+function cohort(s: string): Rational {
+    return Rational.fromString(s);
+}
+
+function quantum(s: string): number {
     if (s.match(/^-/)) {
-        // negative
-        return significand(s.substring(1));
+        return quantum(s.substring(1));
     }
 
-    if (s.match(/^00+/)) {
-        // leading zeros
-        return significand(s.replace(/^00+/, ""));
-    }
-
-    if (s.match(/^0+[.]/)) {
-        // less than one
-        let [_, rhs] = s.split(/[.]/);
-        let trailingZeros = rhs.match(/0+$/);
-        let withoutTrailingZeros = rhs.replace(/0+$/, "");
-        return (
-            significand(withoutTrailingZeros) +
-            (trailingZeros ? trailingZeros[0] : "")
-        );
-    }
-
-    if (s.match(/[.]/)) {
-        // greater than one
-        return s.replace(/[.]/, "");
-    }
-
-    // we are dealing with integers at this point
-
-    if (s.match(/^0+/)) {
-        // leading zeros
-        return significand(s.replace(/^0+/, ""));
-    }
-
-    if (s.match(/0+$/)) {
-        // trailing zeros
-        return significand(s.replace(/0+$/, ""));
-    }
-
-    if (s === "") {
-        return "0";
-    }
-
-    return s;
-}
-
-function cutoffAfterSignificantDigits(s: string, n: number): string {
-    return s.substring(0, n);
-}
-
-function ensureDecimalDigits(s: string, n?: number): string {
-    if (s.match(/^-/)) {
-        return "-" + ensureDecimalDigits(s.substring(1), n);
-    }
-
-    if (undefined === n) {
-        return s;
-    }
-
-    if (n < 0) {
-        return s;
-    }
-
-    let [lhs, rhs] = s.split(".");
-
-    if (n === 0) {
-        return lhs;
-    }
-
-    if (rhs.length >= n) {
-        return lhs + "." + rhs.substring(0, n);
-    }
-
-    return lhs + "." + rhs + "0".repeat(n - rhs.length);
-}
-
-function propagateCarryFromRight(s: string): string {
-    let [left] = s.split(/[.]/);
-
-    let lastDigit = parseInt(left.charAt(left.length - 1));
-    if (lastDigit === 9) {
-        if (1 === left.length) {
-            return "10";
-        }
-
-        return (
-            propagateCarryFromRight(left.substring(0, left.length - 1)) + "0"
-        );
-    }
-    return left.substring(0, left.length - 1) + `${lastDigit + 1}`;
-}
-
-/**
- * Return the exponent of a digit string, assumed to be normalized. It is the number of digits
- * to the left or right that the significand needs to be shifted to recover the original (normalized)
- * digit string.
- *
- * @param s string of digits (assumed to be normalized)
- */
-function exponent(s: string): number {
-    if (s.match(/^-/)) {
-        return exponent(s.substring(1));
-    }
-
-    if (s.match(/[.]/)) {
-        let rhs = s.split(".")[1];
-        return 0 - rhs.length;
-    }
-
-    if (s.match(/^0+$/) || s.match(/^0+$/)) {
+    if (s.match(/^[0-9]+/)) {
         return 0;
     }
 
-    let trailingZeros = s.match(/0+$/);
-
-    if (trailingZeros) {
-        return trailingZeros[0].length;
+    if (s.match(/^[0-9]+[eE][+-]?[0-9]+/)) {
+        let exp = parseInt(s.split(/[eE]/)[1]);
+        return 0 - exp;
     }
 
-    return 0;
+    if (s.match(/[.]/)) {
+        let [lhs, rhs] = s.split(".");
+        if (s.match(/[eE]/)) {
+            let beforeExp = lhs.split(/[eE]/)[0];
+            return beforeExp.length;
+        }
+
+        return rhs.length;
+    }
+
+    throw new SyntaxError(`Cannot determine quantum for "${s}"`);
 }
 
-interface Decimal128Constructor {
-    significand: bigint;
-    exponent: number;
-    isNegative: boolean;
-    isFinite: boolean;
-    isNaN: boolean;
+type NaNValue = "NaN";
+
+type InfiniteValue = "Infinity" | "-Infinity";
+
+interface FiniteValue {
+    cohort: "0" | "-0" | Rational;
+    quantum: number;
 }
+
+type Decimal128Value = NaNValue | InfiniteValue | FiniteValue;
 
 const NAN = "NaN";
 const POSITIVE_INFINITY = "Infinity";
 const NEGATIVE_INFINITY = "-Infinity";
+const TEN_MAX_EXPONENT = new Rational(bigTen, bigOne).scale10(EXPONENT_MAX);
 
-function validateConstructorData(x: Decimal128Constructor): void {
-    if (x.isNaN || !x.isFinite) {
+function pickQuantum(d: Rational, preferredQuantum: number): number {
+    return preferredQuantum;
+}
+
+function validateConstructorData(x: Decimal128Value): void {
+    if ((x as NaNValue) !== undefined) {
         return; // no further validation needed
     }
 
-    let numSigDigits = countSignificantDigits(x.significand.toString());
-
-    if (numSigDigits > MAX_SIGNIFICANT_DIGITS) {
-        throw new RangeError("Too many significant digits");
+    if ((x as InfiniteValue) !== undefined) {
+        return; // no further validation needed
     }
 
-    if (x.exponent > EXPONENT_MAX) {
-        throw new RangeError(`Exponent too big (${exponent})`);
+    let val = x as FiniteValue;
+    let v = val.cohort;
+    let q = val.quantum;
+
+    if (q > EXPONENT_MAX) {
+        throw new RangeError(`Quantum too big (${q})`);
     }
 
-    if (x.exponent < EXPONENT_MIN) {
-        throw new RangeError(`Exponent too small (${exponent})`);
-    }
-}
-
-function convertExponentialNotationToDecimalNotation(
-    significand: string,
-    exponent: number
-): string {
-    if (exponent >= 0) {
-        return significand + "0".repeat(exponent);
+    if (q < EXPONENT_MIN) {
+        throw new RangeError(`Quantum too small (${q})`);
     }
 
-    if (significand.length + exponent <= 0) {
-        return (
-            "0." + "0".repeat(0 - exponent - significand.length) + significand
+    if (v === "0" || v === "-0") {
+        return; // no further validation needed
+    }
+
+    let scaledV = v.scale10(0 - q);
+
+    if (!scaledV.isInteger()) {
+        throw new RangeError(
+            `Scaled value is not an integer (v = ${v}, q = ${q})`
         );
     }
 
-    return (
-        significand.substring(0, significand.length + exponent) +
-        "." +
-        significand.substring(significand.length + exponent)
-    );
-}
+    let absV = scaledV.abs();
 
-function handleNan(): Decimal128Constructor {
-    return {
-        significand: 0n,
-        exponent: 0,
-        isNegative: false,
-        isFinite: true,
-        isNaN: true,
-    };
-}
-
-type SignedSignificandExponent = {
-    significand: bigint;
-    exponent: number;
-    isNegative: boolean;
-};
-
-function adjustInteger(
-    x: SignedSignificandExponent
-): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let m = sig.match(/(0+)$/);
-
-    if (!m) {
-        return x;
+    if (absV.isZero()) {
+        throw new RangeError(`Absolute value of scaled cohort is zero`);
     }
 
-    let numTrailingZeros = m[0].length;
+    if (absV.cmp(TEN_MAX_EXPONENT) > 0) {
+        throw new RangeError(`Absolute value of scaled cohort is too big`);
+    }
 
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(sig.substring(0, sig.length - numTrailingZeros)),
-        exponent: numTrailingZeros,
-    };
+    return;
 }
 
-function roundHalfEven(
-    x: SignedSignificandExponent
-): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
-    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
-    let penultimateDigit = parseInt(
-        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    ) as Digit;
-    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
-    let numExcessDigits = excessDigits.length;
-    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
-
-    // original
-    if (lastDigit === 5) {
-        if (penultimateDigit % 2 === 0) {
-            let rounded = cutoffAfterSignificantDigits(
-                sig,
-                MAX_SIGNIFICANT_DIGITS
-            );
-            return {
-                isNegative: x.isNegative,
-                significand: BigInt(rounded),
-                exponent: exp,
-            };
-        }
-
-        if (9 === penultimateDigit) {
-            let carried = propagateCarryFromRight(cutoff);
-            let rounded =
-                cutoffAfterSignificantDigits(
-                    carried,
-                    MAX_SIGNIFICANT_DIGITS - 1
-                ) + "0";
-            return {
-                isNegative: x.isNegative,
-                significand: BigInt(rounded),
-                exponent: exp,
-            };
-        }
-
-        let rounded =
-            cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1) +
-            `${penultimateDigit + 1}`;
-        return {
-            isNegative: x.isNegative,
-            significand: BigInt(rounded),
-            exponent: exp,
-        };
+function handleDecimalNotation(s: string): Decimal128Value {
+    if (s === "NaN") {
+        return "NaN";
     }
 
-    if (lastDigit > 5) {
-        if (9 === penultimateDigit) {
-            let carried = propagateCarryFromRight(cutoff);
-            let rounded =
-                cutoffAfterSignificantDigits(
-                    carried,
-                    MAX_SIGNIFICANT_DIGITS - 1
-                ) + "0";
-            let digitWasAdded = carried.length > cutoff.length;
-            if (digitWasAdded && exp < 0) {
-                exp++;
-            }
-            return {
-                isNegative: x.isNegative,
-                significand: BigInt(rounded),
-                exponent: exp,
-            };
-        }
-
-        let nextCutoff = cutoffAfterSignificantDigits(
-            sig,
-            MAX_SIGNIFICANT_DIGITS
-        );
-        let rounded = propagateCarryFromRight(nextCutoff);
-        return {
-            isNegative: x.isNegative,
-            significand: BigInt(rounded),
-            exponent: exp,
-        };
+    if (s.match(/^-?Infinity$/)) {
+        return s.match(/^-/) ? "-Infinity" : "Infinity";
     }
 
-    let rounded = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS);
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(rounded),
-        exponent: exp,
-    };
-}
-
-function roundHalfExpand(
-    x: SignedSignificandExponent
-): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
-    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
-    let penultimateDigit = parseInt(
-        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    ) as Digit;
-    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
-    let numExcessDigits = excessDigits.length;
-    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
-
-    let finalDigit = roundIt(
-        x.isNegative,
-        penultimateDigit,
-        lastDigit,
-        ROUNDING_MODE_HALF_EXPAND
-    );
-
-    if (finalDigit < 10) {
-        return {
-            isNegative: x.isNegative,
-            significand: BigInt(`${cutoff}${finalDigit}`),
-            exponent: exp,
-        };
-    }
-
-    let rounded = propagateCarryFromRight(cutoff);
-
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(`${rounded}0`),
-        exponent: exp,
-    };
-}
-
-function roundCeiling(x: SignedSignificandExponent): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
-    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
-    let penultimateDigit = parseInt(
-        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    ) as Digit;
-    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
-    let numExcessDigits = excessDigits.length;
-    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
-
-    let finalDigit = roundIt(
-        x.isNegative,
-        penultimateDigit,
-        lastDigit,
-        ROUNDING_MODE_CEILING
-    );
-
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
-        exponent: exp,
-    };
-}
-
-function roundFloor(x: SignedSignificandExponent): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
-    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
-    let penultimateDigit = parseInt(
-        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    ) as Digit;
-    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
-    let numExcessDigits = excessDigits.length;
-    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
-
-    let finalDigit = roundIt(
-        x.isNegative,
-        penultimateDigit,
-        lastDigit,
-        ROUNDING_MODE_FLOOR
-    );
-
-    if (finalDigit < 10) {
-        return {
-            isNegative: x.isNegative,
-            significand: BigInt(`${cutoff}${finalDigit}`),
-            exponent: exp,
-        };
-    }
-
-    let rounded = propagateCarryFromRight(cutoff);
-
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(`${rounded}0`),
-        exponent: exp,
-    };
-}
-
-function roundTrunc(x: SignedSignificandExponent): SignedSignificandExponent {
-    let sig = x.significand.toString();
-    let lastDigit = parseInt(sig.charAt(MAX_SIGNIFICANT_DIGITS)) as Digit;
-    let cutoff = cutoffAfterSignificantDigits(sig, MAX_SIGNIFICANT_DIGITS - 1);
-    let penultimateDigit = parseInt(
-        sig.charAt(MAX_SIGNIFICANT_DIGITS - 1)
-    ) as Digit;
-    let excessDigits = sig.substring(MAX_SIGNIFICANT_DIGITS);
-    let numExcessDigits = excessDigits.length;
-    let exp = x.exponent + numExcessDigits; // we will chop off the excess digits
-
-    let finalDigit = roundIt(
-        x.isNegative,
-        penultimateDigit,
-        lastDigit,
-        ROUNDING_MODE_TRUNCATE
-    );
-
-    return {
-        isNegative: x.isNegative,
-        significand: BigInt(`${cutoff}${finalDigit}`),
-        exponent: exp,
-    };
-}
-
-function adjustNonInteger(
-    x: SignedSignificandExponent,
-    options: FullySpecifiedConstructorOptions
-): SignedSignificandExponent {
-    switch (options.roundingMode) {
-        case ROUNDING_MODE_CEILING:
-            return roundCeiling(x);
-        case ROUNDING_MODE_FLOOR:
-            return roundFloor(x);
-        case ROUNDING_MODE_TRUNCATE:
-            return roundTrunc(x);
-        case ROUNDING_MODE_HALF_EXPAND:
-            return roundHalfExpand(x);
-        default:
-            return roundHalfEven(x);
-    }
-}
-
-function handleExponentialNotation(
-    s: string,
-    options: FullySpecifiedConstructorOptions
-): Decimal128Constructor {
-    let [sg, expString] = s.match(/e/) ? s.split("e") : s.split("E");
-    let isNegative = false;
-    let exp = Number(expString);
-
-    if (sg.match(/^-/)) {
-        isNegative = true;
-        sg = sg.substring(1);
-    }
-
-    if (sg.match(/[.]/)) {
-        let [lhs, rhs] = sg.split(".");
-        sg = lhs + rhs;
-        exp = exp - rhs.length;
-    }
-
-    let numSigDigits = sg.length;
-    let digitForm = convertExponentialNotationToDecimalNotation(sg, exp);
-
-    let isInteger = !digitForm.match(/[.]/);
-
-    let data = {
-        isNegative: isNegative,
-        significand: BigInt(sg),
-        exponent: exp,
-        isNaN: false,
-        isFinite: true,
-    };
-
-    if (numSigDigits <= MAX_SIGNIFICANT_DIGITS) {
-        return data;
-    }
-
-    if (isInteger) {
-        let adjusted = adjustInteger(data);
-        return { ...data, ...adjusted };
-    }
-
-    let adjusted = adjustNonInteger(data, options);
-
-    return { ...data, ...adjusted };
-}
-
-function handleDecimalNotation(
-    s: string,
-    options: FullySpecifiedConstructorOptions
-): Decimal128Constructor {
     let withoutLeadingPlus = s.replace(/^\+/, "");
     let withoutUnderscores = withoutLeadingPlus.replace(/_/g, "");
 
@@ -542,49 +148,20 @@ function handleDecimalNotation(
         throw new SyntaxError("Lone minus sign and period not permitted");
     }
 
-    let isNegative = !!withoutUnderscores.match(/^-/);
-    let sg = significand(withoutUnderscores);
-    let exp = exponent(withoutUnderscores);
-    let numSigDigits = countSignificantDigits(withoutUnderscores);
-    let isInteger = exp >= 0;
+    let v = cohort(withoutUnderscores);
+    let q = quantum(withoutUnderscores);
 
-    let data = {
-        significand: BigInt(sg),
-        exponent: exp,
-        isNegative: isNegative,
-        isFinite: true,
-        isNaN: false,
-    };
-
-    if (numSigDigits <= MAX_SIGNIFICANT_DIGITS) {
-        return data;
-    }
-
-    if (isInteger) {
-        let adjusted = adjustInteger(data);
-        return { ...data, ...adjusted };
-    }
-
-    let adjusted = adjustNonInteger(data, options);
-
-    return { ...data, ...adjusted };
-}
-
-function handleInfinity(s: string): Decimal128Constructor {
     return {
-        significand: 0n,
-        exponent: 0,
-        isNegative: !!s.match(/^-/),
-        isNaN: false,
-        isFinite: false,
+        quantum: q,
+        cohort: v,
     };
 }
 
-export const ROUNDING_MODE_CEILING: RoundingMode = "roundTowardPositive";
-export const ROUNDING_MODE_FLOOR: RoundingMode = "roundTowardNegative";
-export const ROUNDING_MODE_TRUNCATE: RoundingMode = "roundTowardZero";
-export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "roundTiesToEven";
-export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "roundTiesToAway";
+export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
+export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
+export const ROUNDING_MODE_TRUNCATE: RoundingMode = "trunc";
+export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "halfEven";
+export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "halfExpand";
 
 const ROUNDING_MODE_DEFAULT: RoundingMode = ROUNDING_MODE_HALF_EVEN;
 
@@ -640,198 +217,174 @@ function roundIt(
     }
 }
 
-type RoundingMode =
-    | "roundTowardPositive"
-    | "roundTowardNegative"
-    | "roundTowardZero"
-    | "roundTiesToEven"
-    | "roundTiesToAway";
+type RoundingMode = "ceil" | "floor" | "trunc" | "halfEven" | "halfExpand";
 
 const ROUNDING_MODES: RoundingMode[] = [
-    "roundTowardPositive",
-    "roundTowardNegative",
-    "roundTowardZero",
-    "roundTiesToEven",
-    "roundTiesToAway",
+    "ceil",
+    "floor",
+    "trunc",
+    "halfEven",
+    "halfExpand",
 ];
 
-const digitStrRegExp =
-    /^[+-]?([0-9]+(?:_?[0-9]+)*)?(?:[.]([0-9](_?[0-9]+)*)*)?$/;
-const exponentRegExp = /^[+-]?[0-9]+([.][0-9]+)*[eE][-+]?[0-9]+$/;
-const nanRegExp = /^-?nan[0-9]*$/i;
-const infRegExp = /^-?inf(inity)?$/i;
-
-interface ConstructorOptions {
-    roundingMode?: RoundingMode;
-}
-
-interface FullySpecifiedConstructorOptions {
-    roundingMode: RoundingMode;
-}
-
-const DEFAULT_CONSTRUCTOR_OPTIONS: FullySpecifiedConstructorOptions = {
-    roundingMode: ROUNDING_MODE_DEFAULT,
-};
-
-type ToStringFormat = "decimal" | "exponential";
-const TOSTRING_FORMATS: string[] = ["decimal", "exponential"];
-
-interface ToStringOptions {
-    format?: ToStringFormat;
-    numDecimalDigits?: number;
-    normalize?: boolean;
-}
-
-interface FullySpecifiedToStringOptions {
-    format: ToStringFormat;
-    numDecimalDigits: number | undefined;
-    normalize: boolean;
-}
-
-const DEFAULT_TOSTRING_OPTIONS: FullySpecifiedToStringOptions = Object.freeze({
-    format: "decimal",
-    numDecimalDigits: undefined,
-    normalize: true,
-});
-
-function ensureFullySpecifiedConstructorOptions(
-    options?: ConstructorOptions
-): FullySpecifiedConstructorOptions {
-    let opts = { ...DEFAULT_CONSTRUCTOR_OPTIONS };
-
-    if (undefined === options) {
-        return opts;
-    }
-
-    if (
-        "string" === typeof options.roundingMode &&
-        ROUNDING_MODES.includes(options.roundingMode)
-    ) {
-        opts.roundingMode = options.roundingMode;
-    }
-
-    return opts;
-}
-
-function ensureFullySpecifiedToStringOptions(
-    options?: ToStringOptions
-): FullySpecifiedToStringOptions {
-    let opts: FullySpecifiedToStringOptions = { ...DEFAULT_TOSTRING_OPTIONS };
-
-    if (undefined === options) {
-        return opts;
-    }
-
-    if (
-        "string" === typeof options.format &&
-        TOSTRING_FORMATS.includes(options.format)
-    ) {
-        opts.format = options.format;
-    }
-
-    if (
-        "number" === typeof options.numDecimalDigits &&
-        Number.isInteger(options.numDecimalDigits)
-    ) {
-        opts.numDecimalDigits = options.numDecimalDigits;
-    }
-
-    if ("boolean" === typeof options.normalize) {
-        opts.normalize = options.normalize;
-    }
-
-    return opts;
-}
-
-function toRational(isNegative: boolean, sg: bigint, exp: number): Rational {
-    if (1n === sg) {
-        // power of ten
-        if (exp < 0) {
-            return new Rational(
-                bigOne,
-                BigInt((isNegative ? "-" : "") + "1" + "0".repeat(0 - exp))
-            );
-        }
-
-        if (exp === 0) {
-            return new Rational(BigInt(isNegative ? -1 : 1), bigOne);
-        }
-
-        return new Rational(
-            BigInt((isNegative ? "-" : "") + "1" + "0".repeat(exp)),
-            bigOne
-        );
-    }
-
-    if (exp < 0) {
-        return new Rational(
-            BigInt((isNegative ? "-" : "") + sg),
-            bigTen ** BigInt(0 - exp)
-        );
-    }
-
-    if (exp === 1) {
-        return new Rational(BigInt((isNegative ? "-" : "") + sg + "0"), bigOne);
-    }
-    return new Rational(
-        BigInt((isNegative ? "-" : "") + sg) * 10n ** BigInt(exp),
-        bigOne
-    );
-}
-
 export class Decimal128 {
-    public readonly significand: bigint;
-    public readonly exponent: number;
-    public readonly isFinite: boolean;
-    public readonly isNaN: boolean;
-    private readonly isNegative: boolean;
-    private readonly rat;
+    private readonly cohort:
+        | "NaN"
+        | "Infinity"
+        | "-Infinity"
+        | "0"
+        | "-0"
+        | Rational;
+    private readonly quantum: undefined | number;
 
-    constructor(n: string | number | bigint, options?: ConstructorOptions) {
-        let data = undefined;
-        let s = "";
-
-        let fullySpecifiedOptions =
-            ensureFullySpecifiedConstructorOptions(options);
-
-        if ("number" === typeof n) {
-            s = Object.is(n, -0) ? "-0" : n.toString();
-        } else if ("bigint" === typeof n) {
-            s = n.toString();
+    constructor(
+        n: string | number | bigint | { cohort: Rational; quantum: number }
+    ) {
+        if ("object" === typeof n) {
+            validateConstructorData(n);
+            this.cohort = n.cohort;
+            this.quantum = n.quantum;
         } else {
-            s = n;
+            let s: string;
+
+            if ("number" === typeof n) {
+                s = Object.is(n, -0) ? "-0" : n.toString();
+            } else if ("bigint" === typeof n) {
+                s = n.toString();
+            } else {
+                s = n;
+            }
+
+            let data = handleDecimalNotation(s);
+
+            validateConstructorData(data);
+
+            if (data === "NaN" || data === "Infinity" || data === "-Infinity") {
+                this.cohort = data;
+                this.quantum = undefined;
+            } else {
+                this.cohort = data.cohort;
+                this.quantum = data.quantum;
+            }
+        }
+    }
+
+    public static fromCohortAndQuantum(v: Rational, q: number): Decimal128 {
+        return new Decimal128({ cohort: v, quantum: q });
+    }
+
+    public static fromRational(r: Rational): Decimal128 {
+        return new Decimal128(r.toString());
+    }
+
+    public isNaN(): boolean {
+        return this.cohort === "NaN";
+    }
+
+    public isFinite(): boolean {
+        let v = this.cohort;
+        return v instanceof Rational || v === "0" || v === "-0";
+    }
+
+    public isNegative(): boolean {
+        let v = this.cohort;
+        if (v instanceof Rational) {
+            return v.isNegative;
         }
 
-        if (s.match(nanRegExp)) {
-            data = handleNan();
-        } else if (s.match(exponentRegExp)) {
-            data = handleExponentialNotation(s, fullySpecifiedOptions);
-        } else if (s.match(digitStrRegExp)) {
-            data = handleDecimalNotation(s, fullySpecifiedOptions);
-        } else if (s.match(infRegExp)) {
-            data = handleInfinity(s);
-        } else {
-            throw new SyntaxError(`Illegal number format "${n}"`);
+        return v === "-0" || v === "-Infinity";
+    }
+
+    private isZero(): boolean {
+        if (this.isNaN()) {
+            return false;
         }
 
-        validateConstructorData(data);
+        if (!this.isFinite()) {
+            return false;
+        }
 
-        this.isNegative = data.isNegative;
-        this.exponent = data.exponent;
-        this.isNaN = data.isNaN;
-        this.significand = data.significand;
-        this.isFinite = data.isFinite;
+        let v = this.cohort;
 
-        this.rat =
-            this.isFinite && !this.isNaN
-                ? toRational(this.isNegative, this.significand, this.exponent)
-                : new Rational(0n, 1n);
+        return v === "0" || v === "-0";
+    }
+
+    private significandAndExponent(): [Rational, number] {
+        if (!this.isFinite()) {
+            throw new RangeError("Infinity does not have a significand");
+        }
+
+        if (this.isZero()) {
+            throw new RangeError("Zero does not have a significand");
+        }
+
+        if (this.isNegative()) {
+            let [s, e] = this.neg().significandAndExponent();
+            return [s.negate(), e];
+        }
+
+        let v = this.cohort as Rational;
+        let q = this.quantum as number;
+        let s = v;
+        let e = q;
+        const ratTen = new Rational(bigTen, bigOne);
+        const ratOne = new Rational(bigOne, bigOne);
+
+        while (s.cmp(ratOne) < 0) {
+            s = s.scale10(1);
+            e++;
+        }
+
+        while (s.cmp(ratTen) >= 0) {
+            s = s.scale10(-1);
+            e--;
+        }
+
+        return [s, e];
+    }
+
+    public exponent(): number {
+        let [_, e] = this.significandAndExponent();
+        return e;
+    }
+
+    public mantissa(): Decimal128 {
+        let [sig, _] = this.significandAndExponent();
+        return new Decimal128(sig.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS));
+    }
+
+    public scale10(n: number): Decimal128 {
+        if (this.isNaN()) {
+            throw new RangeError("NaN cannot be scaled");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError("Infinity cannot be scaled");
+        }
+
+        if (!Number.isInteger(n)) {
+            throw new TypeError("Argument must be an integer");
+        }
+
+        if (n === 0) {
+            return this.clone();
+        }
+
+        let v = this.cohort as Rational;
+        let q = this.quantum as number;
+
+        return Decimal128.fromCohortAndQuantum(v.scale10(n), q - n);
+    }
+
+    private significand(): Rational {
+        let [s, _] = this.significandAndExponent();
+        return s;
     }
 
     private emitExponential(): string {
-        let prefix = this.isNegative ? "-" : "";
-        let sg = this.significand.toString();
-        let exp = this.exponent;
+        let prefix = this.isNegative() ? "-" : "";
+        let sg = this.significand().toString();
+        let exp = this.exponent();
 
         let adjustedExponent = exp + sg.length - 1;
 
@@ -850,104 +403,66 @@ export class Decimal128 {
         );
     }
 
-    private emitDecimal(options: FullySpecifiedToStringOptions): string {
-        let prefix = this.isNegative ? "-" : "";
-        let sg = this.significand.toString();
-        let exp = this.exponent;
-        let isZ = this.isZero();
-
-        if (options.normalize && options.numDecimalDigits === undefined) {
-            if (isZ) {
-                if (this.isNegative) {
-                    return "-0";
-                }
-
-                return "0";
-            }
-
-            let numFractionalDigits = options.numDecimalDigits;
-
-            let renderedRat = this.rat.toDecimalPlaces(
-                numFractionalDigits ?? MAX_SIGNIFICANT_DIGITS
-            );
-
-            return ensureDecimalDigits(renderedRat, options.numDecimalDigits);
-        }
-
-        if (exp >= 0) {
-            return ensureDecimalDigits(
-                prefix + sg + "0".repeat(exp),
-                options.numDecimalDigits
-            );
-        }
-
-        if (sg.length + exp < 0) {
-            return ensureDecimalDigits(
-                prefix + "0." + "0".repeat(0 - exp - sg.length) + sg,
-                options.numDecimalDigits
-            );
-        }
-
-        if (sg.length + exp == 0) {
-            return ensureDecimalDigits(
-                prefix + "0." + sg,
-                options.numDecimalDigits
-            );
-        }
-
-        return ensureDecimalDigits(
-            prefix +
-                sg.substring(0, sg.length + exp) +
-                "." +
-                sg.substring(sg.length + exp),
-            options.numDecimalDigits
-        );
+    private emitDecimal(): string {
+        let v = this.cohort as Rational;
+        return v.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS);
     }
 
     /**
      * Returns a digit string representing this Decimal128.
      */
-    toString(opts?: ToStringOptions): string {
-        let options = ensureFullySpecifiedToStringOptions(opts);
-
-        if (this.isNaN) {
+    toString(): string {
+        if (this.isNaN()) {
             return NAN;
         }
 
-        if (!this.isFinite) {
-            return (this.isNegative ? "-" : "") + POSITIVE_INFINITY;
+        if (!this.isFinite()) {
+            return (this.isNegative() ? "-" : "") + POSITIVE_INFINITY;
         }
 
-        if (options.format === "exponential") {
+        let asDecimalString = this.emitDecimal();
+
+        if (asDecimalString.length > 20) {
             return this.emitExponential();
         }
 
-        return this.emitDecimal(options);
+        return asDecimalString;
     }
 
-    toFixed(n?: number): string {
-        if (this.isNaN) {
+    toFixed(opts?: { digits?: number }): string {
+        if (undefined === opts) {
+            return this.toString();
+        }
+
+        if ("object" !== typeof opts) {
+            throw new TypeError("Argument must be an object");
+        }
+
+        if (undefined === opts.digits) {
+            return this.toString();
+        }
+
+        let n = opts.digits;
+
+        if (n < 0) {
+            throw new RangeError("Argument must be greater than or equal to 0");
+        }
+
+        if (!Number.isInteger(n)) {
+            throw new RangeError("Argument must be an integer");
+        }
+
+        if (this.isNaN()) {
             return NAN;
         }
 
-        if (!this.isFinite) {
-            return this.isNegative
+        if (!this.isFinite()) {
+            return this.isNegative()
                 ? "-" + POSITIVE_INFINITY
                 : POSITIVE_INFINITY;
         }
 
-        if (typeof n === "number" && n < 0) {
-            throw new RangeError("Argument must be greater than or equal to 0");
-        }
-
-        let numDecimalDigits = n === undefined ? 0 : n;
-
-        if (!Number.isInteger(numDecimalDigits)) {
-            numDecimalDigits = Math.floor(numDecimalDigits);
-        }
-
-        let opts = ensureFullySpecifiedToStringOptions({ numDecimalDigits });
-        return this.round(n).emitDecimal(opts);
+        return this.round(n).emitDecimal();
     }
 
     toPrecision(opts?: { digits?: number }): string {
@@ -973,22 +488,18 @@ export class Decimal128 {
             throw new RangeError("Argument must be an integer");
         }
 
-        if (this.isNaN) {
+        if (this.isNaN()) {
             return "NaN";
         }
 
-        if (!this.isFinite) {
-            return (this.isNegative ? "-" : "") + "Infinity";
+        if (!this.isFinite()) {
+            return (this.isNegative() ? "-" : "") + "Infinity";
         }
 
-        let s = this.abs().emitDecimal({
-            normalize: false,
-            numDecimalDigits: undefined,
-            format: "decimal",
-        });
+        let s = this.abs().emitDecimal();
 
         let [lhs, rhs] = s.split(/[.]/);
-        let p = this.isNegative ? "-" : "";
+        let p = this.isNegative() ? "-" : "";
 
         if (n <= lhs.length) {
             if (lhs.match(/[.]$/)) {
@@ -1021,12 +532,12 @@ export class Decimal128 {
     }
 
     toExponential(opts?: { digits?: number }): string {
-        if (this.isNaN) {
+        if (this.isNaN()) {
             return "NaN";
         }
 
-        if (!this.isFinite) {
-            return (this.isNegative ? "-" : "") + "Infinity";
+        if (!this.isFinite()) {
+            return (this.isNegative() ? "-" : "") + "Infinity";
         }
 
         if (undefined === opts) {
@@ -1057,7 +568,7 @@ export class Decimal128 {
 
         let [rhs, exp] = rhsWithEsign.split(/[eE]/);
 
-        let p = this.isNegative ? "-" : "";
+        let p = this.isNegative() ? "-" : "";
 
         if (rhs.length <= n) {
             return p + lhs + "." + rhs + "0".repeat(n - rhs.length) + "e" + exp;
@@ -1079,11 +590,11 @@ export class Decimal128 {
     }
 
     toBigInt(): bigint {
-        if (this.isNaN) {
+        if (this.isNaN()) {
             throw new RangeError("NaN cannot be converted to a BigInt");
         }
 
-        if (!this.isFinite) {
+        if (!this.isFinite()) {
             throw new RangeError("Infinity cannot be converted to a BigInt");
         }
 
@@ -1097,12 +608,12 @@ export class Decimal128 {
     }
 
     toNumber(): number {
-        if (this.isNaN) {
+        if (this.isNaN()) {
             return NaN;
         }
 
-        if (!this.isFinite) {
-            if (this.isNegative) {
+        if (!this.isFinite()) {
+            if (this.isNegative()) {
                 return -Infinity;
             }
 
@@ -1115,109 +626,42 @@ export class Decimal128 {
     /**
      * Compare two values. Return
      *
-     * + -1 if this value is strictly less than the other,
-     * + 0 if they are equal, and
+     * * NaN if either argument is a decimal NaN
+     * + -1 if the mathematical value of this decimal is strictly less than that of the other,
+     * + 0 if the mathematical values are equal, and
      * + 1 otherwise.
      *
      * @param x
      */
-    private cmp(x: Decimal128): -1 | 0 | 1 {
-        if (this.isNaN || x.isNaN) {
-            throw new RangeError("NaN comparison not permitted");
+    private cmp(x: Decimal128): number {
+        if (this.isNaN() || x.isNaN()) {
+            return NaN;
         }
 
-        if (!this.isFinite) {
-            if (!x.isFinite) {
-                if (this.isNegative === x.isNegative) {
+        if (!this.isFinite()) {
+            if (!x.isFinite()) {
+                if (this.isNegative() === x.isNegative()) {
                     return 0;
                 }
 
-                return this.isNegative ? -1 : 1;
+                return this.isNegative() ? -1 : 1;
             }
 
-            if (this.isNegative) {
+            if (this.isNegative()) {
                 return -1;
             }
 
             return 1;
         }
 
-        if (!x.isFinite) {
-            return x.isNegative ? 1 : -1;
+        if (!x.isFinite()) {
+            return x.isNegative() ? 1 : -1;
         }
 
-        let rationalThis = this.rat;
-        let rationalX = x.rat;
+        let ourCohort = this.cohort as Rational;
+        let theirCohort = x.cohort as Rational;
 
-        return rationalThis.cmp(rationalX);
-    }
-
-    /**
-     * Compare two values. Return
-     *
-     * + -1 if this value is strictly less than the other,
-     * + 0 if they are equal, and
-     * + 1 otherwise.
-     *
-     * @param x
-     */
-    compare(x: Decimal128): -1 | 0 | 1 {
-        if (this.isNaN) {
-            if (x.isNaN) {
-                return 0;
-            }
-            return 1;
-        }
-
-        if (x.isNaN) {
-            return -1;
-        }
-
-        if (!this.isFinite) {
-            if (!x.isFinite) {
-                if (this.isNegative === x.isNegative) {
-                    return 0;
-                }
-
-                return this.isNegative ? -1 : 1;
-            }
-
-            if (this.isNegative) {
-                return -1;
-            }
-
-            return 1;
-        }
-
-        if (!x.isFinite) {
-            return x.isNegative ? 1 : -1;
-        }
-
-        if (this.isNegative && !x.isNegative) {
-            return -1;
-        }
-
-        if (x.isNegative && !this.isNegative) {
-            return 1;
-        }
-
-        if (this.lessThan(x)) {
-            return -1;
-        }
-
-        if (x.lessThan(this)) {
-            return 1;
-        }
-
-        if (this.exponent < x.exponent) {
-            return -1;
-        }
-
-        if (this.exponent > x.exponent) {
-            return 1;
-        }
-
-        return 0;
+        return ourCohort.cmp(theirCohort);
     }
 
     lessThan(x: Decimal128): boolean {
@@ -1229,19 +673,19 @@ export class Decimal128 {
     }
 
     abs(): Decimal128 {
-        if (this.isNaN) {
+        if (this.isNaN()) {
             return new Decimal128(NAN);
         }
 
-        if (!this.isFinite) {
-            if (this.isNegative) {
+        if (!this.isFinite()) {
+            if (this.isNegative()) {
                 return this.neg();
             }
 
             return this.clone();
         }
 
-        if (this.isNegative) {
+        if (this.isNegative()) {
             return this.neg();
         }
 
@@ -1254,13 +698,13 @@ export class Decimal128 {
      * @param x
      */
     add(x: Decimal128): Decimal128 {
-        if (this.isNaN || x.isNaN) {
+        if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
 
-        if (!this.isFinite) {
-            if (!x.isFinite) {
-                if (this.isNegative === x.isNegative) {
+        if (!this.isFinite()) {
+            if (!x.isFinite()) {
+                if (this.isNegative() === x.isNegative()) {
                     return x.clone();
                 }
 
@@ -1270,24 +714,25 @@ export class Decimal128 {
             return this.clone();
         }
 
-        if (!x.isFinite) {
+        if (!x.isFinite()) {
             return x.clone();
         }
 
-        if (this.isNegative && x.isNegative) {
+        if (this.isNegative() && x.isNegative()) {
             return this.neg().add(x.neg()).neg();
         }
 
-        let resultRat = Rational.add(this.rat, x.rat);
-        let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1),
-            { roundingMode: ROUNDING_MODE_DEFAULT }
-        );
-        let adjusted = initialResult.setExponent(
-            Math.min(this.exponent, x.exponent)
-        );
+        let ourCohort = this.cohort as Rational;
+        let theirCohort = x.cohort as Rational;
+        let ourQuantum = this.quantum as number;
+        let theirQuantum = x.quantum as number;
+        let sum = Rational.add(ourCohort, theirCohort);
+        let prefferedQuantum = Math.min(ourQuantum, theirQuantum);
 
-        return new Decimal128(adjusted.toString({ normalize: false }));
+        return Decimal128.fromCohortAndQuantum(
+            sum,
+            pickQuantum(sum, prefferedQuantum)
+        );
     }
 
     /**
@@ -1296,13 +741,13 @@ export class Decimal128 {
      * @param x
      */
     subtract(x: Decimal128): Decimal128 {
-        if (this.isNaN || x.isNaN) {
+        if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
 
-        if (!this.isFinite) {
-            if (!x.isFinite) {
-                if (this.isNegative === x.isNegative) {
+        if (!this.isFinite()) {
+            if (!x.isFinite()) {
+                if (this.isNegative() === x.isNegative()) {
                     return new Decimal128(NAN);
                 }
 
@@ -1312,23 +757,33 @@ export class Decimal128 {
             return this.clone();
         }
 
-        if (!x.isFinite) {
+        if (!x.isFinite()) {
             return x.neg();
         }
 
-        if (x.isNegative) {
+        if (x.isNegative()) {
             return this.add(x.neg());
         }
 
-        let rendered = Rational.subtract(this.rat, x.rat).toDecimalPlaces(
-            MAX_SIGNIFICANT_DIGITS + 1
-        );
+        if (this.isZero()) {
+            return x.neg();
+        }
 
-        let initialResult = new Decimal128(rendered);
-        let adjusted = initialResult.setExponent(
-            Math.min(this.exponent, x.exponent)
+        if (x.isZero()) {
+            return this.clone();
+        }
+
+        let ourCohort = this.cohort as Rational;
+        let theirCohort = x.cohort as Rational;
+        let ourExponent = this.quantum as number;
+        let theirExponent = x.quantum as number;
+        let difference = Rational.subtract(ourCohort, theirCohort);
+        let prefferedExponent = Math.min(ourExponent, theirExponent);
+
+        return Decimal128.fromCohortAndQuantum(
+            difference,
+            pickQuantum(difference, prefferedExponent)
         );
-        return new Decimal128(adjusted.toString({ normalize: false }));
     }
 
     /**
@@ -1339,53 +794,57 @@ export class Decimal128 {
      * @param x
      */
     multiply(x: Decimal128): Decimal128 {
-        if (this.isNaN || x.isNaN) {
+        if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
         }
 
-        if (!this.isFinite) {
+        if (!this.isFinite()) {
             if (x.isZero()) {
                 return new Decimal128(NAN);
             }
 
-            if (this.isNegative === x.isNegative) {
+            if (this.isNegative() === x.isNegative()) {
                 return new Decimal128(POSITIVE_INFINITY);
             }
 
             return new Decimal128(NEGATIVE_INFINITY);
         }
 
-        if (!x.isFinite) {
+        if (!x.isFinite()) {
             if (this.isZero()) {
                 return new Decimal128(NAN);
             }
 
-            if (this.isNegative === x.isNegative) {
+            if (this.isNegative() === x.isNegative()) {
                 return new Decimal128(POSITIVE_INFINITY);
             }
 
             return new Decimal128(NEGATIVE_INFINITY);
         }
 
-        if (this.isNegative) {
+        if (this.isNegative()) {
             return this.neg().multiply(x).neg();
         }
 
-        if (x.isNegative) {
+        if (x.isNegative()) {
             return this.multiply(x.neg()).neg();
         }
 
-        let resultRat = Rational.multiply(this.rat, x.rat);
-        let initialResult = new Decimal128(
-            resultRat.toDecimalPlaces(MAX_SIGNIFICANT_DIGITS + 1)
+        if (this.isZero() || x.isZero()) {
+            return this.clone();
+        }
+
+        let ourCohort = this.cohort as Rational;
+        let theirCohort = x.cohort as Rational;
+        let ourExponent = this.quantum as number;
+        let theirExponent = x.quantum as number;
+        let product = Rational.multiply(ourCohort, theirCohort);
+        let prefferedExponent = ourExponent + theirExponent;
+
+        return Decimal128.fromCohortAndQuantum(
+            product,
+            pickQuantum(product, prefferedExponent)
         );
-        let adjusted = initialResult.setExponent(this.exponent + x.exponent);
-
-        return new Decimal128(adjusted.toString({ normalize: false }));
-    }
-
-    private isZero(): boolean {
-        return this.isFinite && !this.isNaN && this.significand === 0n;
     }
 
     private clone(): Decimal128 {
@@ -1398,62 +857,63 @@ export class Decimal128 {
      * @param x
      */
     divide(x: Decimal128): Decimal128 {
-        if (this.isNaN || x.isNaN) {
+        if (this.isNaN() || x.isNaN()) {
             return new Decimal128(NAN);
+        }
+
+        if (this.isZero()) {
+            return this.clone();
         }
 
         if (x.isZero()) {
             return new Decimal128(NAN);
         }
 
-        if (!this.isFinite) {
-            if (!x.isFinite) {
+        if (!this.isFinite()) {
+            if (!x.isFinite()) {
                 return new Decimal128(NAN);
             }
 
-            if (this.isNegative === x.isNegative) {
+            if (this.isNegative() === x.isNegative()) {
                 return new Decimal128(POSITIVE_INFINITY);
             }
 
-            if (this.isNegative) {
+            if (this.isNegative()) {
                 return this.clone();
             }
 
             return new Decimal128(NEGATIVE_INFINITY);
         }
 
-        if (!x.isFinite) {
-            if (this.isNegative === x.isNegative) {
+        if (!x.isFinite()) {
+            if (this.isNegative() === x.isNegative()) {
                 return new Decimal128("0");
             }
 
             return new Decimal128("-0");
         }
 
-        if (this.isNegative) {
+        if (this.isNegative()) {
             return this.neg().divide(x).neg();
         }
 
-        if (x.isNegative) {
+        if (x.isNegative()) {
             return this.divide(x.neg()).neg();
         }
 
         let adjust = 0;
-        let dividendCoefficient = this.significand;
-        let divisorCoefficient = x.significand;
+        let dividendCoefficient = this.significand();
+        let divisorCoefficient = x.significand();
 
-        if (dividendCoefficient !== 0n) {
-            while (BigInt(dividendCoefficient) < BigInt(divisorCoefficient)) {
-                dividendCoefficient = dividendCoefficient * 10n;
+        if (!dividendCoefficient.isZero()) {
+            while (dividendCoefficient.cmp(divisorCoefficient) === -1) {
+                dividendCoefficient = dividendCoefficient.scale10(1);
                 adjust++;
             }
         }
 
-        while (
-            BigInt(dividendCoefficient) >=
-            BigInt(divisorCoefficient) * 10n
-        ) {
-            divisorCoefficient *= 10n;
+        while (dividendCoefficient.cmp(divisorCoefficient.scale10(1))) {
+            divisorCoefficient = divisorCoefficient.scale10(1);
             adjust--;
         }
 
@@ -1461,24 +921,26 @@ export class Decimal128 {
         let done = false;
 
         while (!done) {
-            while (BigInt(divisorCoefficient) <= BigInt(dividendCoefficient)) {
-                dividendCoefficient =
-                    BigInt(dividendCoefficient) - BigInt(divisorCoefficient);
+            while (divisorCoefficient.cmp(dividendCoefficient) <= 0) {
+                dividendCoefficient = Rational.subtract(
+                    dividendCoefficient,
+                    divisorCoefficient
+                );
                 resultCoefficient++;
             }
             if (
-                (BigInt(dividendCoefficient) === 0n && adjust >= 0) ||
+                (dividendCoefficient.isZero() && adjust >= 0) ||
                 resultCoefficient.toString().length > MAX_SIGNIFICANT_DIGITS
             ) {
                 done = true;
             } else {
                 resultCoefficient = resultCoefficient * 10n;
-                dividendCoefficient = dividendCoefficient * 10n;
+                dividendCoefficient = dividendCoefficient.scale10(1);
                 adjust++;
             }
         }
 
-        let resultExponent = this.exponent - (x.exponent + adjust);
+        let resultExponent = this.exponent() - (x.exponent() + adjust);
         return new Decimal128(`${resultCoefficient}E${resultExponent}`);
     }
 
@@ -1491,7 +953,7 @@ export class Decimal128 {
         numDecimalDigits: number = 0,
         mode: RoundingMode = ROUNDING_MODE_DEFAULT
     ): Decimal128 {
-        if (this.isNaN || !this.isFinite) {
+        if (this.isNaN() || !this.isFinite()) {
             return this.clone();
         }
 
@@ -1503,7 +965,7 @@ export class Decimal128 {
             numDecimalDigits = 0;
         }
 
-        let s = this.toString({ normalize: false });
+        let s = this.toString();
         let [lhs, rhs] = s.split(".");
 
         if (undefined === rhs) {
@@ -1524,7 +986,7 @@ export class Decimal128 {
         }
 
         let roundedFinalDigit = roundIt(
-            this.isNegative,
+            this.isNegative(),
             finalIntegerDigit,
             firstDecimalDigit,
             mode
@@ -1540,13 +1002,30 @@ export class Decimal128 {
     }
 
     neg(): Decimal128 {
-        let s = this.toString({ normalize: false });
-
-        if (s.match(/^-/)) {
-            return new Decimal128(s.substring(1));
+        if (this.isNaN()) {
+            return this.clone();
         }
 
-        return new Decimal128("-" + s);
+        if (!this.isFinite()) {
+            return new Decimal128(
+                this.isNegative() ? POSITIVE_INFINITY : NEGATIVE_INFINITY
+            );
+        }
+
+        let v = this.cohort;
+
+        if (v === "0") {
+            return new Decimal128("-0");
+        }
+
+        if (v === "-0") {
+            return new Decimal128("0");
+        }
+
+        return Decimal128.fromCohortAndQuantum(
+            (v as Rational).negate(),
+            this.quantum as number
+        );
     }
 
     /**
@@ -1556,23 +1035,23 @@ export class Decimal128 {
      * @throws RangeError If argument is zero
      */
     remainder(d: Decimal128): Decimal128 {
-        if (this.isNaN || d.isNaN) {
+        if (this.isNaN() || d.isNaN()) {
             return new Decimal128(NAN);
         }
 
-        if (this.isNegative) {
+        if (this.isNegative()) {
             return this.neg().remainder(d).neg();
         }
 
-        if (d.isNegative) {
+        if (d.isNegative()) {
             return this.remainder(d.neg());
         }
 
-        if (!this.isFinite) {
+        if (!this.isFinite()) {
             return new Decimal128(NAN);
         }
 
-        if (!d.isFinite) {
+        if (!d.isFinite()) {
             return this.clone();
         }
 
@@ -1582,29 +1061,6 @@ export class Decimal128 {
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
         return this.subtract(d.multiply(q));
-    }
-
-    private decrementExponent(): Decimal128 {
-        let exp = this.exponent;
-        let sig = this.significand;
-
-        let prefix = this.isNegative ? "-" : "";
-        let newExp = exp - 1;
-        let newSig = sig + "0";
-
-        return new Decimal128(`${prefix}${newSig}E${newExp}`);
-    }
-
-    private setExponent(newExp: number): Decimal128 {
-        let oldExp = this.exponent;
-        let result: Decimal128 = this;
-
-        while (oldExp > newExp) {
-            result = result.decrementExponent();
-            oldExp--;
-        }
-
-        return result;
     }
 }
 
