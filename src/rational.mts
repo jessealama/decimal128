@@ -1,4 +1,10 @@
-import { countSignificantDigits, Digit } from "./common.mjs";
+import {
+    countDigits,
+    countFractionaDigits,
+    countSignificantDigits,
+    Digit,
+    RoundingMode,
+} from "./common.mjs";
 
 const zero = BigInt(0);
 const one = BigInt(1);
@@ -15,6 +21,51 @@ function gcd(a: bigint, b: bigint): bigint {
 }
 
 function* nextDigitForDivision(
+    x: bigint,
+    y: bigint,
+    n: number
+): Generator<Digit> {
+    let result = "";
+    let emittedDecimalPoint = false;
+    let done = false;
+
+    while (!done && countFractionaDigits(result) < n) {
+        if (x === zero) {
+            done = true;
+        } else if (x < y) {
+            if (emittedDecimalPoint) {
+                x = x * ten;
+                if (x < y) {
+                    // look ahead: are we still a power of 10 behind?
+                    result = result + "0";
+                    yield 0;
+                }
+            } else {
+                emittedDecimalPoint = true;
+                result = (result === "" ? "0" : result) + ".";
+                x = x * ten;
+                yield -1;
+                if (x < y) {
+                    // look ahead: are we still a power of 10 behind?
+                    result = result + "0";
+                    yield 0;
+                }
+            }
+        } else {
+            let q = x / y;
+            x = x % y;
+            let qString = q.toString();
+            result = result + qString;
+            for (let i = 0; i < qString.length; i++) {
+                yield parseInt(qString.charAt(i)) as Digit;
+            }
+        }
+    }
+
+    return 0;
+}
+
+function* nextSignificantDigitForDivision(
     x: bigint,
     y: bigint,
     n: number
@@ -122,7 +173,7 @@ export class Rational {
         if (s.match(/^[0-9]+[eE][+-]?[0-9]+$/)) {
             let [num, exp] = s.split(/[eE]/);
             if (exp.match(/-/)) {
-                let [whole, fractional] = exp.split("-");
+                let [_, fractional] = exp.split("-");
                 let originalRat = new Rational(BigInt(num), 1n);
                 return Rational.divide(
                     originalRat,
@@ -140,7 +191,7 @@ export class Rational {
                 let [dec, exp] = decimal.split(/[eE]/);
                 let originalRat = Rational.fromString(`${whole}.${dec}`);
                 if (exp.match(/-/)) {
-                    let [whole, fractional] = exp.split("-");
+                    let [_, fractional] = exp.split("-");
                     return Rational.divide(
                         originalRat,
                         new Rational(1n, ten ** BigInt(fractional))
@@ -171,10 +222,14 @@ export class Rational {
             );
         }
 
-        if (n <= 0) {
+        if (n === 0) {
+            return this;
+        }
+
+        if (n < 0) {
             return new Rational(
                 this.numerator,
-                this.denominator * ten ** BigInt(n)
+                this.denominator * ten ** BigInt(n - 1)
             );
         }
 
@@ -269,17 +324,21 @@ export class Rational {
         return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
 
-    public toDecimalPlaces(n: number): string {
+    public toFixed(n: number): string {
         if (!Number.isInteger(n)) {
             throw new TypeError(
-                "Cannot round to non-integer number of decimal places"
+                "Cannot enumerate a non-integer number of decimal places"
             );
         }
 
         if (n < 0) {
             throw new RangeError(
-                "Cannot round to negative number of decimal places"
+                "Cannot enumerate a negative number of decimal places"
             );
+        }
+
+        if (this.isNegative) {
+            return "-" + this.negate().toFixed(n);
         }
 
         if (this.numerator === zero) {
@@ -306,7 +365,116 @@ export class Rational {
             digit = digitGenerator.next();
         }
 
+        let numFractionalDigits = countFractionaDigits(result);
+
+        if (numFractionalDigits >= n) {
+            return result;
+        }
+
+        let numZeroesNeeded = n - numFractionalDigits;
+
+        if (result.match(/[.]/)) {
+            return result + "0".repeat(numZeroesNeeded);
+        }
+
+        return result + "." + "0".repeat(numZeroesNeeded);
+    }
+
+    public toPrecision(n: number): string {
+        if (!Number.isInteger(n)) {
+            throw new TypeError(
+                "Cannot enumerate a non-integer number of significant digits"
+            );
+        }
+
+        if (n < 0) {
+            throw new RangeError(
+                "Cannot enumerate a negative number of significant places"
+            );
+        }
+
+        if (this.numerator === zero) {
+            return "0" + "." + "0".repeat(n - 1);
+        }
+
+        let digitGenerator = nextSignificantDigitForDivision(
+            this.numerator,
+            this.denominator,
+            n
+        );
+
+        let digit = digitGenerator.next();
+        let result = "";
+
+        while (!digit.done) {
+            let v = digit.value;
+            if (-1 === v) {
+                result = ("" === result ? "0" : result) + ".";
+            } else {
+                result = result + `${v}`;
+            }
+
+            digit = digitGenerator.next();
+        }
+
         return (this.isNegative ? "-" : "") + result;
+    }
+
+    round(numFractionalDigits: number, mode: RoundingMode): Rational {
+        if (!Number.isInteger(numFractionalDigits)) {
+            throw new TypeError(
+                "Cannot round to non-integer number of decimal places"
+            );
+        }
+
+        if (numFractionalDigits < 0) {
+            throw new RangeError(
+                "Cannot round to negative number of decimal places"
+            );
+        }
+
+        if (this.isNegative) {
+            return this.negate().round(numFractionalDigits, mode).negate();
+        }
+
+        if (numFractionalDigits > 1) {
+            return this.scale10(1)
+                .round(numFractionalDigits - 1, mode)
+                .scale10(1);
+        }
+
+        if (mode !== "halfEven") {
+            throw new RangeError("Only half-even rounding mode is supported");
+        }
+
+        let s = this.toFixed(1);
+
+        let [integerPart, fractionalPart] = s.split(".");
+
+        let penultimateDigit = parseInt(
+            integerPart.charAt(integerPart.length - 1)
+        ) as Digit;
+        let finalDigit = parseInt(fractionalPart.charAt(0)) as Digit;
+
+        if (finalDigit < 5) {
+            return Rational.fromString(integerPart);
+        }
+
+        if (finalDigit > 5) {
+            return Rational.add(
+                Rational.fromString(integerPart),
+                Rational.fromString("1")
+            );
+        }
+
+        if (penultimateDigit % 2 === 0) {
+            return Rational.fromString(integerPart);
+        }
+
+        return Rational.add(
+            Rational.fromString(integerPart),
+            Rational.fromString("1")
+        );
     }
 
     cmp(x: Rational): -1 | 0 | 1 {

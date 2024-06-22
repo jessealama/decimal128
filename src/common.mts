@@ -29,5 +29,34 @@ export function countSignificantDigits(s: string): number {
     return s.length;
 }
 
+export function countDigits(s: string): number {
+    return s.replace(/[.]/, "").length;
+}
+
+export function countFractionaDigits(s: string): number {
+    let [, fractional] = s.split(".");
+
+    if (undefined === fractional) {
+        return 0;
+    }
+
+    return fractional.length;
+}
+
 export type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
 export type DigitOrTen = Digit | 10;
+
+export type RoundingMode =
+    | "ceil"
+    | "floor"
+    | "trunc"
+    | "halfEven"
+    | "halfExpand";
+
+export const ROUNDING_MODES: RoundingMode[] = [
+    "ceil",
+    "floor",
+    "trunc",
+    "halfEven",
+    "halfExpand",
+];

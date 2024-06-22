@@ -43,16 +43,16 @@ describe("constructor", () => {
         });
         test("five as last digit past limit: tie to even unchanged", () => {
             expect(
-                new Decimal128(
-                    "1234567890123456789012345678901234.5"
-                ).toString()
+                new Decimal128("1234567890123456789012345678901234.5").toString(
+                    { format: "decimal" }
+                )
             ).toStrictEqual("1234567890123456789012345678901234");
         });
         test("five as last digit past limit: tie to even round up", () => {
             expect(
-                new Decimal128(
-                    "1234567890123456789012345678901235.5"
-                ).toString()
+                new Decimal128("1234567890123456789012345678901235.5").toString(
+                    { format: "decimal" }
+                )
             ).toStrictEqual("1234567890123456789012345678901236");
         });
         test("five as last digit past limit: tie to even round up, penultimate digit is 9", () => {
