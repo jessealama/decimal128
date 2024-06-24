@@ -1,6 +1,5 @@
 import {
-    countDigits,
-    countFractionaDigits,
+    countFractionalDigits,
     countSignificantDigits,
     Digit,
     RoundingMode,
@@ -29,7 +28,7 @@ function* nextDigitForDivision(
     let emittedDecimalPoint = false;
     let done = false;
 
-    while (!done && countFractionaDigits(result) < n) {
+    while (!done && countFractionalDigits(result) < n) {
         if (x === zero) {
             done = true;
         } else if (x < y) {
@@ -206,9 +205,11 @@ export class Rational {
 
             let wholePart = BigInt(whole);
             let decimalPart = BigInt(decimal);
-            let decimalPlaces = BigInt(decimal.length);
-            let denominator = ten ** decimalPlaces;
-            let numerator = wholePart * denominator + decimalPart;
+            let numDigits = BigInt(
+                wholePart.toString().length + decimal.length
+            );
+            let numerator = wholePart * ten ** numDigits + decimalPart;
+            let denominator = ten ** BigInt(decimal.length);
             return new Rational(numerator, denominator);
         }
 
@@ -229,7 +230,7 @@ export class Rational {
         if (n < 0) {
             return new Rational(
                 this.numerator,
-                this.denominator * ten ** BigInt(n - 1)
+                this.denominator * ten ** BigInt(0 - n)
             );
         }
 
@@ -342,7 +343,11 @@ export class Rational {
         }
 
         if (this.numerator === zero) {
-            return "0";
+            if (n === 0) {
+                return "0";
+            }
+
+            return "0" + "." + "0".repeat(n);
         }
 
         let digitGenerator = nextDigitForDivision(
@@ -365,19 +370,20 @@ export class Rational {
             digit = digitGenerator.next();
         }
 
-        let numFractionalDigits = countFractionaDigits(result);
+        let numFractionalDigits = countFractionalDigits(result);
 
         if (numFractionalDigits >= n) {
             return result;
         }
 
         let numZeroesNeeded = n - numFractionalDigits;
+        let zeroesNeeded = "0".repeat(numZeroesNeeded);
 
         if (result.match(/[.]/)) {
-            return result + "0".repeat(numZeroesNeeded);
+            return result + zeroesNeeded;
         }
 
-        return result + "." + "0".repeat(numZeroesNeeded);
+        return result + "." + zeroesNeeded;
     }
 
     public toPrecision(n: number): string {
@@ -440,7 +446,7 @@ export class Rational {
         if (numFractionalDigits > 1) {
             return this.scale10(1)
                 .round(numFractionalDigits - 1, mode)
-                .scale10(1);
+                .scale10(-1);
         }
 
         if (mode !== "halfEven") {

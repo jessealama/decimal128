@@ -1,3 +1,10 @@
+import {
+    ROUNDING_MODE_CEILING,
+    ROUNDING_MODE_FLOOR,
+    ROUNDING_MODE_HALF_EXPAND,
+    ROUNDING_MODE_TRUNCATE,
+} from "./decimal128.mjs";
+
 /**
  * Counts the number of significant digits in a digit string, assumed to be normalized.
  *
@@ -33,7 +40,7 @@ export function countDigits(s: string): number {
     return s.replace(/[.]/, "").length;
 }
 
-export function countFractionaDigits(s: string): number {
+export function countFractionalDigits(s: string): number {
     let [, fractional] = s.split(".");
 
     if (undefined === fractional) {
@@ -60,3 +67,55 @@ export const ROUNDING_MODES: RoundingMode[] = [
     "halfEven",
     "halfExpand",
 ];
+
+function roundIt(
+    isNegative: boolean,
+    digitToRound: Digit,
+    decidingDigit: Digit,
+    roundingMode: RoundingMode
+): DigitOrTen {
+    switch (roundingMode) {
+        case ROUNDING_MODE_CEILING:
+            if (isNegative) {
+                return digitToRound;
+            }
+
+            if (0 === decidingDigit) {
+                return digitToRound;
+            }
+
+            return (digitToRound + 1) as DigitOrTen;
+        case ROUNDING_MODE_FLOOR:
+            if (0 === decidingDigit) {
+                return digitToRound;
+            }
+
+            if (isNegative) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        case ROUNDING_MODE_TRUNCATE:
+            return digitToRound;
+        case ROUNDING_MODE_HALF_EXPAND:
+            if (decidingDigit >= 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+        default: // ROUNDING_MODE_HALF_EVEN:
+            if (decidingDigit === 5) {
+                if (digitToRound % 2 === 0) {
+                    return digitToRound;
+                }
+
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            if (decidingDigit > 5) {
+                return (digitToRound + 1) as DigitOrTen;
+            }
+
+            return digitToRound;
+    }
+}

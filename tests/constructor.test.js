@@ -57,23 +57,23 @@ describe("constructor", () => {
         });
         test("five as last digit past limit: tie to even round up, penultimate digit is 9", () => {
             expect(
-                new Decimal128(
-                    "1234567890123456789012345678901239.5"
-                ).toString()
+                new Decimal128("1234567890123456789012345678901239.5").toString(
+                    { format: "decimal" }
+                )
             ).toStrictEqual("1234567890123456789012345678901240");
         });
         test("five as last digit past limit: tie to even round up, penultimate digit is 9 (negative)", () => {
             expect(
                 new Decimal128(
                     "-1234567890123456789012345678901239.5"
-                ).toString()
+                ).toString({ format: "decimal" })
             ).toStrictEqual("-1234567890123456789012345678901240");
         });
         test("round up decimal digit is not nine", () => {
             expect(
-                new Decimal128(
-                    "1234567890123456789012345678901239.8"
-                ).toString()
+                new Decimal128("1234567890123456789012345678901239.8").toString(
+                    { format: "decimal" }
+                )
             ).toStrictEqual("1234567890123456789012345678901240");
         });
         test("empty string not OK", () => {
@@ -110,7 +110,7 @@ describe("constructor", () => {
             expect(
                 new Decimal128(
                     "0.3666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667"
-                ).toString()
+                ).toString({ format: "decimal" })
             ).toStrictEqual("0.3666666666666666666666666666666667");
         });
         test("close to one, too many digits, gets rounded to 1.000...", () => {
@@ -138,7 +138,7 @@ describe("constructor", () => {
             expect(
                 new Decimal128(
                     "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS) + "9"
-                ).toString()
+                ).toString({ format: "decimal" })
             ).toStrictEqual(
                 "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS - 1) + "2"
             );
@@ -147,20 +147,26 @@ describe("constructor", () => {
             expect(
                 new Decimal128(
                     "0." + "1".repeat(MAX_SIGNIFICANT_DIGITS + 100) + "9"
-                ).toString()
+                ).toString({ format: "decimal" })
             ).toStrictEqual("0." + "1".repeat(MAX_SIGNIFICANT_DIGITS));
         });
         test("minus zero", () => {
             let minusZero = new Decimal128("-0");
-            expect(minusZero.toString()).toStrictEqual("-0");
+            expect(minusZero.toString({ format: "decimal" })).toStrictEqual(
+                "-0"
+            );
             expect(minusZero.isNegative()).toStrictEqual(true);
         });
         describe("zeros", () => {
             test("leading zeros get stripped", () => {
-                expect(new Decimal128("00").toString()).toStrictEqual("0");
+                expect(
+                    new Decimal128("00").toString({ format: "decimal" })
+                ).toStrictEqual("0");
             });
             test("leading zeros get stripped (negative)", () => {
-                expect(new Decimal128("-00").toString()).toStrictEqual("-0");
+                expect(
+                    new Decimal128("-00").toString({ format: "decimal" })
+                ).toStrictEqual("-0");
             });
             test("zero point zero", () => {
                 expect(
@@ -279,44 +285,64 @@ describe("infinity", () => {
 describe("General Decimal Arithmetic specification", () => {
     describe("decimal syntax", () => {
         test("0", () => {
-            expect(new Decimal128("0").toString()).toStrictEqual("0");
+            expect(
+                new Decimal128("0").toString({ format: "decimal" })
+            ).toStrictEqual("0");
         });
         test("12", () => {
-            expect(new Decimal128("12").toString()).toStrictEqual("12");
+            expect(
+                new Decimal128("12").toString({ format: "decimal" })
+            ).toStrictEqual("12");
         });
         test("-76", () => {
-            expect(new Decimal128("-76").toString()).toStrictEqual("-76");
+            expect(
+                new Decimal128("-76").toString({ format: "decimal" })
+            ).toStrictEqual("-76");
         });
         test("12.70", () => {
-            expect(new Decimal128("12.70").toString()).toStrictEqual("12.7");
+            expect(
+                new Decimal128("12.70").toString({ format: "decimal" })
+            ).toStrictEqual("12.7");
         });
         test("+0.003", () => {
-            expect(new Decimal128("+0.003").toString()).toStrictEqual("0.003");
+            expect(
+                new Decimal128("+0.003").toString({ format: "decimal" })
+            ).toStrictEqual("0.003");
         });
         test("017.", () => {
-            expect(new Decimal128("017.").toString()).toStrictEqual("17");
+            expect(
+                new Decimal128("017.").toString({ format: "decimal" })
+            ).toStrictEqual("17");
         });
         test(".5", () => {
-            expect(new Decimal128(".5").toString()).toStrictEqual("0.5");
+            expect(
+                new Decimal128(".5").toString({ format: "decimal" })
+            ).toStrictEqual("0.5");
         });
         test("4E+9", () => {
-            expect(new Decimal128("4E+9").toString()).toStrictEqual(
-                "4000000000"
-            );
+            expect(
+                new Decimal128("4E+9").toString({ format: "decimal" })
+            ).toStrictEqual("4000000000");
         });
         test("Inf", () => {
-            expect(new Decimal128("Inf").toString()).toStrictEqual("Infinity");
+            expect(
+                new Decimal128("Inf").toString({ format: "decimal" })
+            ).toStrictEqual("Infinity");
         });
         test("-infinity", () => {
-            expect(new Decimal128("-infinity").toString()).toStrictEqual(
-                "-Infinity"
-            );
+            expect(
+                new Decimal128("-infinity").toString({ format: "decimal" })
+            ).toStrictEqual("-Infinity");
         });
         test("NaN", () => {
-            expect(new Decimal128("NaN").toString()).toStrictEqual("NaN");
+            expect(
+                new Decimal128("NaN").toString({ format: "decimal" })
+            ).toStrictEqual("NaN");
         });
         test("NaN8275 (diagnostic information discarded)", () => {
-            expect(new Decimal128("NaN8275").toString()).toStrictEqual("NaN");
+            expect(
+                new Decimal128("NaN8275").toString({ format: "decimal" })
+            ).toStrictEqual("NaN");
         });
         test("period", () => {
             expect(() => new Decimal128(".")).toThrow(SyntaxError);
@@ -336,22 +362,24 @@ describe("General Decimal Arithmetic specification", () => {
     });
     describe("scientific string syntax", () => {
         test("1.23E+3", () => {
-            expect(new Decimal128("1.23E+3").toString()).toStrictEqual("1230");
+            expect(
+                new Decimal128("1.23E+3").toString({ format: "decimal" })
+            ).toStrictEqual("1230");
         });
         test("1.23E+5", () => {
-            expect(new Decimal128("1.23E+5").toString()).toStrictEqual(
-                "123000"
-            );
+            expect(
+                new Decimal128("1.23E+5").toString({ format: "decimal" })
+            ).toStrictEqual("123000");
         });
         test("1.23E-8", () => {
-            expect(new Decimal128("1.23E-8").toString()).toStrictEqual(
-                "0.0000000123"
-            );
+            expect(
+                new Decimal128("1.23E-8").toString({ format: "decimal" })
+            ).toStrictEqual("0.0000000123");
         });
         test("-1.23E-10", () => {
-            expect(new Decimal128("-1.23E-10").toString()).toStrictEqual(
-                "-0.000000000123"
-            );
+            expect(
+                new Decimal128("-1.23E-10").toString({ format: "decimal" })
+            ).toStrictEqual("-0.000000000123");
         });
         test("0E+2", () => {
             expect(
@@ -363,27 +391,39 @@ describe("General Decimal Arithmetic specification", () => {
 
 describe("number arguments", () => {
     test("integer", () => {
-        expect(new Decimal128(42).toString()).toStrictEqual("42");
+        expect(
+            new Decimal128(42).toString({ format: "decimal" })
+        ).toStrictEqual("42");
     });
     test("non-integer number", () => {
-        expect(new Decimal128(42.5).toString()).toStrictEqual("42.5");
+        expect(
+            new Decimal128(42.5).toString({ format: "decimal" })
+        ).toStrictEqual("42.5");
     });
     test("NaN", () => {
-        expect(new Decimal128(NaN).toString()).toStrictEqual("NaN");
+        expect(
+            new Decimal128(NaN).toString({ format: "decimal" })
+        ).toStrictEqual("NaN");
     });
     test("minus zero", () => {
-        expect(new Decimal128(-0).toString()).toStrictEqual("-0");
+        expect(
+            new Decimal128(-0).toString({ format: "decimal" })
+        ).toStrictEqual("-0");
     });
     test("very large value gets approximated", () => {
         expect(
-            new Decimal128(123456789012345678901234567890123456789).toString()
+            new Decimal128(123456789012345678901234567890123456789).toString({
+                format: "decimal",
+            })
         ).toStrictEqual("123456789012345680000000000000000000000");
     });
 });
 
 describe("bigint", () => {
     test("simple", () => {
-        expect(new Decimal128(42n).toString()).toStrictEqual("42");
+        expect(
+            new Decimal128(42n).toString({ format: "decimal" })
+        ).toStrictEqual("42");
     });
     test("too big", () => {
         expect(
