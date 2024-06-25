@@ -14,7 +14,7 @@
  */
 
 import { Digit, DigitOrTen, RoundingMode, ROUNDING_MODES } from "./common.mjs";
-import { Rational } from "./rational.mjs";
+import { Rational } from "./Rational.mjs";
 import { Decimal } from "./Decimal.mjs";
 
 const EXPONENT_MIN = -6176;

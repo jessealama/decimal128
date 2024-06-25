@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../../src/Decimal128.mjs";
 
 export function expectDecimal128(a, b) {
     let lhs = a instanceof Decimal128 ? a.toString({ normalize: false }) : a;

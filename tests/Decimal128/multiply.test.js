@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../../src/Decimal128.mjs";
 
 const examples = [
     ["123.456", "789.789", "97504.190784"],

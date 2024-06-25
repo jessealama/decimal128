@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../src/Decimal128.mjs";
 
 function getRandomInt(max: number): number {
     return Math.floor(Math.random() * max);
