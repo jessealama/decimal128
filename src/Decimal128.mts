@@ -13,7 +13,7 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { Digit, DigitOrTen, RoundingMode, ROUNDING_MODES } from "./common.mjs";
+import { RoundingMode, ROUNDING_MODES } from "./common.mjs";
 import { Rational } from "./Rational.mjs";
 import { Decimal } from "./Decimal.mjs";
 
@@ -596,7 +596,7 @@ export class Decimal128 {
      *
      * @param x
      */
-    private cmp(x: Decimal128): number {
+    cmp(x: Decimal128): number {
         if (this.isNaN() || x.isNaN()) {
             return NaN;
         }
@@ -621,18 +621,18 @@ export class Decimal128 {
             return x.isNegative() ? 1 : -1;
         }
 
+        if (this.isZero()) {
+            if (x.isZero()) {
+                return 0;
+            }
+
+            return x.isNegative() ? 1 : -1;
+        }
+
         let ourCohort = this.cohort() as Rational;
         let theirCohort = x.cohort() as Rational;
 
         return ourCohort.cmp(theirCohort);
-    }
-
-    lessThan(x: Decimal128): boolean {
-        return this.cmp(x) === -1;
-    }
-
-    equals(x: Decimal128): boolean {
-        return this.cmp(x) === 0;
     }
 
     abs(): Decimal128 {

@@ -3,12 +3,6 @@ import { Decimal128 } from "../../src/Decimal128.mjs";
 const MAX_SIGNIFICANT_DIGITS = 34;
 const bigDigits = "9".repeat(MAX_SIGNIFICANT_DIGITS);
 
-const zero = new Decimal128("0");
-const minusZero = new Decimal128("-0");
-const one = new Decimal128("1");
-const minusOne = new Decimal128("-1");
-const two = new Decimal128("2");
-
 describe("abs", () => {
     test("minus zero", () => {
         expect(new Decimal128("-0").abs().toString()).toStrictEqual("0");
