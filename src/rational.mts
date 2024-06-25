@@ -171,16 +171,8 @@ export class Rational {
 
         if (s.match(/^[0-9]+[eE][+-]?[0-9]+$/)) {
             let [num, exp] = s.split(/[eE]/);
-            if (exp.match(/-/)) {
-                let [_, fractional] = exp.split("-");
-                let originalRat = new Rational(BigInt(num), 1n);
-                return Rational.divide(
-                    originalRat,
-                    new Rational(1n, BigInt(10) ** BigInt(fractional))
-                );
-            }
-
-            return new Rational(BigInt(num), ten ** BigInt(exp));
+            let originalRat = new Rational(BigInt(num), 1n);
+            return originalRat.scale10(Number(exp));
         }
 
         if (s.match(/[.]/)) {
@@ -189,26 +181,10 @@ export class Rational {
             if (decimal.match(/[eE]/)) {
                 let [dec, exp] = decimal.split(/[eE]/);
                 let originalRat = Rational.fromString(`${whole}.${dec}`);
-                if (exp.match(/-/)) {
-                    let [_, fractional] = exp.split("-");
-                    return Rational.divide(
-                        originalRat,
-                        new Rational(1n, ten ** BigInt(fractional))
-                    );
-                }
-
-                return Rational.multiply(
-                    originalRat,
-                    new Rational(1n, ten ** BigInt(exp))
-                );
+                return originalRat.scale10(Number(exp));
             }
 
-            let wholePart = BigInt(whole);
-            let decimalPart = BigInt(decimal);
-            let numDigits = BigInt(
-                wholePart.toString().length + decimal.length
-            );
-            let numerator = wholePart * ten ** numDigits + decimalPart;
+            let numerator = BigInt(whole + decimal);
             let denominator = ten ** BigInt(decimal.length);
             return new Rational(numerator, denominator);
         }
@@ -221,6 +197,10 @@ export class Rational {
             throw new TypeError(
                 "Cannot scale by non-integer number of decimal places"
             );
+        }
+
+        if (this.isNegative) {
+            return this.negate().scale10(n).negate();
         }
 
         if (n === 0) {
@@ -498,6 +478,14 @@ export class Rational {
         }
 
         return 0;
+    }
+
+    lessThan(x: Rational): boolean {
+        return this.cmp(x) === -1;
+    }
+
+    equals(x: Rational): boolean {
+        return this.cmp(x) === 0;
     }
 
     isZero(): boolean {

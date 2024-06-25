@@ -43,13 +43,19 @@ function pickQuantum(d: Rational, preferredQuantum: number): number {
 }
 
 function adjustDecimal128(v: Rational, q: number): Decimal {
+    if (v.isNegative) {
+        return adjustDecimal128(v.negate(), q).negate();
+    }
+
+    let x = new Decimal({ cohort: v, quantum: q });
+
     if (
         v
             .abs()
             .scale10(0 - q)
             .cmp(TEN_MAX_EXPONENT) <= 0
     ) {
-        return new Decimal({ cohort: v, quantum: q });
+        return x;
     }
 
     if (v.isInteger()) {
@@ -61,19 +67,14 @@ function adjustDecimal128(v: Rational, q: number): Decimal {
         throw new RangeError("Integer too large");
     }
 
-    let s = v.toPrecision(MAX_SIGNIFICANT_DIGITS + 1);
-    let numFractionalDigits = 0;
+    let sig = x.significand();
+    let exp = x.exponent();
 
-    if (s.match(/[.]/)) {
-        let [_, rhs] = s.split(".");
-        numFractionalDigits = rhs.length;
-    }
-
-    let rounded = v.round(numFractionalDigits - 1, "halfEven");
-
+    let scaledSig = sig.scale10(MAX_SIGNIFICANT_DIGITS - 1);
+    let rounded = scaledSig.round(0, "halfEven");
     return new Decimal({
-        cohort: rounded,
-        quantum: 0 - numFractionalDigits,
+        cohort: rounded.scale10(0 - MAX_SIGNIFICANT_DIGITS + exp + 1),
+        quantum: 0 - MAX_SIGNIFICANT_DIGITS + exp,
     });
 }
 
@@ -188,6 +189,14 @@ export class Decimal128 {
             this._isFinite = false;
             this._isNegative = true;
         } else {
+            let v = data.cohort;
+            if (v === "-0") {
+                this._isNegative = true;
+            } else if (v === "0") {
+                this._isNegative = false;
+            } else {
+                this._isNegative = v.isNegative;
+            }
             this.d = data;
         }
     }

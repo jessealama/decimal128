@@ -1,8 +1,29 @@
 import { Rational } from "./rational.mjs";
 
+const ratOne = new Rational(1n, 1n);
+const ratTen = new Rational(10n, 1n);
+
 function _cohort(s: string): "0" | "-0" | Rational {
-    if (s === "0" || s === "-0") {
-        return s;
+    if (s.match(/^-/)) {
+        let c = _cohort(s.substring(1));
+
+        if (c === "0") {
+            return "-0";
+        }
+
+        if (c === "-0") {
+            return "0";
+        }
+
+        return c.negate();
+    }
+
+    if (s.match(/^00+/)) {
+        return _cohort(s.substring(1));
+    }
+
+    if (s.match(/^0([.]0+)?$/)) {
+        return "0";
     }
 
     return Rational.fromString(s);
@@ -13,18 +34,23 @@ function _quantum(s: string): number {
         return _quantum(s.substring(1));
     }
 
-    if (!s.match(/[.]/)) {
-        return 0;
+    if (s.match(/[.]/)) {
+        let [_, rhs] = s.split(".");
+
+        if (rhs.match(/[eE]/)) {
+            let [dec, exp] = rhs.split(/[eE]/);
+            return parseInt(exp) - dec.length;
+        }
+
+        return 0 - rhs.length;
     }
 
-    let [_, rhs] = s.split(".");
-
-    if (rhs.match(/[eE]/)) {
-        let [dec, exp] = rhs.split(/[eE]/);
-        return parseInt(exp) - dec.length;
+    if (s.match(/[eE]/)) {
+        let [dec, exp] = s.split(/[eE]/);
+        return parseInt(exp);
     }
 
-    return 0 - rhs.length;
+    return 0;
 }
 
 interface CohortAndQuantum {
@@ -75,5 +101,114 @@ export class Decimal {
         }
 
         return v.isInteger();
+    }
+
+    public isNegative(): boolean {
+        let v = this.cohort;
+
+        if (v === "0") {
+            return false;
+        }
+
+        if (v === "-0") {
+            return true;
+        }
+
+        return v.isNegative;
+    }
+
+    public scale10(n: number, adjustQuantum?: boolean): Decimal {
+        if (!Number.isInteger(n)) {
+            throw new Error("The scale factor must be an integer.");
+        }
+
+        if (0 === n) {
+            return this;
+        }
+
+        let v = this.cohort;
+        let newQuantum = this.quantum;
+
+        if (typeof adjustQuantum === "boolean" && adjustQuantum) {
+            if (n < 0) {
+                newQuantum -= n;
+            } else {
+                newQuantum += n;
+            }
+        }
+
+        if (v === "0" || v === "-0") {
+            return new Decimal({ cohort: v, quantum: newQuantum });
+        }
+
+        return new Decimal({
+            cohort: v.scale10(n),
+            quantum: newQuantum,
+        });
+    }
+
+    public negate(): Decimal {
+        let v = this.cohort;
+
+        if (v === "0") {
+            return new Decimal({ cohort: "-0", quantum: this.quantum });
+        }
+
+        if (v === "-0") {
+            return new Decimal({ cohort: "0", quantum: this.quantum });
+        }
+
+        return new Decimal({
+            cohort: v.negate(),
+            quantum: this.quantum,
+        });
+    }
+
+    public significand(): Rational {
+        if (this.isNegative()) {
+            return this.negate().significand();
+        }
+
+        let v = this.cohort;
+
+        if (v === "0" || v === "-0") {
+            throw new RangeError("Cannot compute coefficient of zero.");
+        }
+
+        while (ratTen.lessThan(v) || ratTen.equals(v)) {
+            v = v.scale10(-1);
+        }
+
+        while (v.lessThan(ratOne)) {
+            v = v.scale10(1);
+        }
+
+        return v;
+    }
+
+    public exponent(): number {
+        if (this.isNegative()) {
+            return this.negate().exponent();
+        }
+
+        let v = this.cohort;
+
+        if (v === "0" || v === "-0") {
+            throw new RangeError("Cannot compute coefficient of zero.");
+        }
+
+        let e = 0;
+
+        while (ratTen.lessThan(v) || ratTen.equals(v)) {
+            v = v.scale10(-1);
+            e++;
+        }
+
+        while (v.lessThan(ratOne)) {
+            v = v.scale10(1);
+            e--;
+        }
+
+        return e;
     }
 }

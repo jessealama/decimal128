@@ -134,3 +134,31 @@ describe("to exponential string", () => {
         ).toStrictEqual("1.042e-2");
     });
 });
+
+describe("scientific string syntax", () => {
+    test("1.23E+3", () => {
+        expect(
+            new Decimal128("1.23E+3").toString({ format: "decimal" })
+        ).toStrictEqual("1230");
+    });
+    test("1.23E+5", () => {
+        expect(
+            new Decimal128("1.23E+5").toString({ format: "decimal" })
+        ).toStrictEqual("123000");
+    });
+    test("1.23E-8", () => {
+        expect(
+            new Decimal128("1.23E-8").toString({ format: "decimal" })
+        ).toStrictEqual("0.0000000123");
+    });
+    test("-1.23E-10", () => {
+        expect(
+            new Decimal128("-1.23E-10").toString({ format: "decimal" })
+        ).toStrictEqual("-0.000000000123");
+    });
+    test("0E+2", () => {
+        expect(
+            new Decimal128("0E+2").toString({ format: "exponential" })
+        ).toStrictEqual("0e+2");
+    });
+});
