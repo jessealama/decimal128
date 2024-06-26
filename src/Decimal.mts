@@ -211,4 +211,16 @@ export class Decimal {
 
         return e;
     }
+
+    public coefficient(): bigint {
+        let sig = this.significand();
+        let exp = this.exponent();
+        let c = sig.scale10(exp);
+
+        if (!c.isInteger()) {
+            throw new TypeError("The coefficient is not an integer.");
+        }
+
+        return c.numerator;
+    }
 }

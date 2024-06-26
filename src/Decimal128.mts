@@ -344,22 +344,60 @@ export class Decimal128 {
 
     private emitDecimal(): string {
         let v = this.cohort();
+        let q = this.quantum();
 
         if (v === "0") {
+            if (q < 0) {
+                return "0" + "." + "0".repeat(0 - q);
+            }
+
             return "0";
         }
 
         if (v === "-0") {
+            if (q < 0) {
+                return "-0" + "." + "0".repeat(0 - q);
+            }
+
             return "-0";
         }
 
-        return v.toPrecision(MAX_SIGNIFICANT_DIGITS);
+        let c = v.scale10(0 - q);
+
+        if (!c.isInteger()) {
+            throw new TypeError("The coefficient is not an integer.");
+        }
+
+        let s = c.numerator.toString();
+        let p = this._isNegative ? "-" : "";
+
+        if (q > 0) {
+            return p + s + "0".repeat(q);
+        }
+
+        if (q === 0) {
+            return p + s;
+        }
+
+        if (s.length < Math.abs(q)) {
+            let numZeroesNeeded = Math.abs(q) - s.length;
+            return p + "0." + "0".repeat(numZeroesNeeded) + s;
+        }
+
+        let integerPart = s.substring(0, s.length + q);
+        let fractionalPart = s.substring(s.length + q);
+
+        if (integerPart === "") {
+            integerPart = "0";
+        }
+
+        return p + integerPart + "." + fractionalPart;
     }
 
     /**
      * Returns a digit string representing this Decimal128.
      */
-    toString(opts?: { format?: "decimal" | "exponential" }): string {
+    toString(opts?: { preserveTrailingZeroes?: boolean }): string {
         if (this.isNaN()) {
             return NAN;
         }
@@ -368,25 +406,29 @@ export class Decimal128 {
             return (this.isNegative() ? "-" : "") + POSITIVE_INFINITY;
         }
 
+        let preserveTrailingZeroes = false;
+
+        if (
+            "object" === typeof opts &&
+            "boolean" === typeof opts.preserveTrailingZeroes
+        ) {
+            preserveTrailingZeroes = opts.preserveTrailingZeroes;
+        }
+
         let asDecimalString = this.emitDecimal();
-        let format = undefined;
 
-        if ("object" === typeof opts && "string" === typeof opts.format) {
-            if (opts.format === "exponential") {
-                format = "exponential";
-            } else if (opts.format === "decimal") {
-                format = "decimal";
-            } else {
-                throw new TypeError(`Invalid toString format "${opts.format}"`);
+        if (!preserveTrailingZeroes && asDecimalString.match(/[.]/)) {
+            asDecimalString = asDecimalString.replace(/0+$/, "");
+            if (asDecimalString === "") {
+                asDecimalString = "0";
+            } else if (asDecimalString === "-") {
+                asDecimalString = "-0";
+            } else if (asDecimalString.match(/[.]$/)) {
+                asDecimalString = asDecimalString.substring(
+                    0,
+                    asDecimalString.length - 1
+                );
             }
-        }
-
-        if (format === "exponential") {
-            return this.emitExponential();
-        }
-
-        if (format === undefined && asDecimalString.length > 20) {
-            return this.emitExponential();
         }
 
         return asDecimalString;
