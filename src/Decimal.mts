@@ -26,6 +26,14 @@ function _cohort(s: string): "0" | "-0" | Rational {
         return "0";
     }
 
+    if (s.match(/^-?0[eE][+-]?[0-9]+$/)) {
+        if (s.match(/^-/)) {
+            return "-0";
+        }
+
+        return "0";
+    }
+
     return Rational.fromString(s);
 }
 

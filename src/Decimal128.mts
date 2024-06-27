@@ -359,11 +359,7 @@ export class Decimal128 {
         let p = this._isNegative ? "-" : "";
 
         if (v === "0" || v === "-0") {
-            if (q < 0) {
-                return p + v + "." + "0".repeat(0 - q);
-            }
-
-            return v;
+            return v + "e" + (q < 0 ? "-" : "+") + Math.abs(q);
         }
 
         let m = this.mantissa();
@@ -504,7 +500,27 @@ export class Decimal128 {
                 : POSITIVE_INFINITY;
         }
 
-        return this.round(n).emitDecimal();
+        let rounded = this.round(n + 1);
+        let roundedRendered = rounded.emitDecimal();
+
+        if (roundedRendered.match(/[.]/)) {
+            let [lhs, rhs] = roundedRendered.split(/[.]/);
+            if (rhs.length < n) {
+                return lhs + "." + rhs + "0".repeat(n - rhs.length);
+            }
+
+            if (n === 0) {
+                return lhs;
+            }
+
+            return lhs + "." + rhs.substring(0, n);
+        }
+
+        if (n === 0) {
+            return roundedRendered;
+        }
+
+        return roundedRendered + "." + "0".repeat(n);
     }
 
     toPrecision(opts?: { digits?: number }): string {

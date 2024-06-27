@@ -31,24 +31,24 @@ describe("to decimal places", function () {
     const d = "123.456";
     const decimalD = new Decimal128(d);
     test("more digits than available means digits get added", () => {
-        expectDecimal128(decimalD.toFixed(4), "123.4560");
+        expectDecimal128(decimalD.toFixed({ digits: 4 }), "123.4560");
     });
     test("same number of digits as available means no change", () => {
-        expectDecimal128(decimalD.toFixed(3), "123.456");
+        expectDecimal128(decimalD.toFixed({ digits: 3 }), "123.456");
     });
     test("cutoff with rounding if number has more digits than requested (1)", () => {
-        expectDecimal128(decimalD.toFixed(2), "123.46");
+        expectDecimal128(decimalD.toFixed({ digits: 2 }), "123.46");
     });
     test("cutoff if number has more digits than requested (no rounding)", () => {
-        expectDecimal128(decimalD.toFixed(1), "123.4");
+        expectDecimal128(decimalD.toFixed({ digits: 1 }), "123.4");
     });
     test("zero decimal places", () => {
-        expectDecimal128(decimalD.toFixed(0), "123");
+        expectDecimal128(decimalD.toFixed({ digits: 0 }), "123");
     });
     test("negative number of decimal places throws", () => {
-        expect(() => decimalD.toFixed(-1)).toThrow(RangeError);
+        expect(() => decimalD.toFixed({ digits: -1 })).toThrow(RangeError);
     });
-    test("non-integer takes floor", () => {
-        expect(decimalD.toFixed(1.5)).toStrictEqual("123.4");
+    test("non-integer does not take floor", () => {
+        expect(() => decimalD.toFixed({ digits: 1.5 })).toThrow(RangeError);
     });
 });
