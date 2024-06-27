@@ -1,7 +1,13 @@
 import { Decimal128 } from "../../src/Decimal128.mjs";
 
 export function expectDecimal128(a, b) {
-    let lhs = a instanceof Decimal128 ? a.toString({ normalize: false }) : a;
-    let rhs = b instanceof Decimal128 ? b.toString({ normalize: false }) : b;
+    let lhs =
+        a instanceof Decimal128
+            ? a.toString({ preserveTrailingZeroes: true })
+            : a;
+    let rhs =
+        b instanceof Decimal128
+            ? b.toString({ preserveTrailingZeroes: true })
+            : b;
     expect(lhs).toStrictEqual(rhs);
 }

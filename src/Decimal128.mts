@@ -40,7 +40,10 @@ const TEN_MAX_EXPONENT = new Rational(
     bigOne
 );
 
-function pickQuantum(d: Rational, preferredQuantum: number): number {
+function pickQuantum(
+    d: "0" | "-0" | Rational,
+    preferredQuantum: number
+): number {
     return preferredQuantum;
 }
 
@@ -69,15 +72,21 @@ function adjustDecimal128(v: Rational, q: number): Decimal {
         throw new RangeError("Integer too large");
     }
 
-    let sig = x.significand();
-    let exp = x.exponent();
+    let c = x.cohort as Rational;
+    let cAsString = c.toFixed(Infinity);
+    let [integerPart, fractionalPart] = cAsString.split(/[.]/);
 
-    let scaledSig = sig.scale10(MAX_SIGNIFICANT_DIGITS - 1);
+    if (integerPart.length > MAX_SIGNIFICANT_DIGITS) {
+        throw new RangeError("Integer part too large");
+    }
+
+    let scaledSig = c.scale10(MAX_SIGNIFICANT_DIGITS - integerPart.length);
     let rounded = scaledSig.round(0, "halfEven");
-    return new Decimal({
-        cohort: rounded.scale10(0 - MAX_SIGNIFICANT_DIGITS + exp + 1),
-        quantum: 0 - MAX_SIGNIFICANT_DIGITS + exp,
-    });
+    let rescaled = rounded.scale10(
+        0 - MAX_SIGNIFICANT_DIGITS + integerPart.length
+    );
+    let rescaledAsString = rescaled.toFixed(Infinity);
+    return new Decimal(rescaledAsString);
 }
 
 function validateConstructorData(x: Decimal128Value): Decimal128Value {
@@ -829,8 +838,19 @@ export class Decimal128 {
         let theirCohort = x.cohort() as Rational;
         let ourExponent = this.quantum() as number;
         let theirExponent = x.quantum() as number;
-        let difference = Rational.subtract(ourCohort, theirCohort);
+        let difference: "0" | "-0" | Rational = Rational.subtract(
+            ourCohort,
+            theirCohort
+        );
         let preferredQuantum = Math.min(ourExponent, theirExponent);
+
+        if (difference.isZero()) {
+            if (this._isNegative) {
+                difference = "-0";
+            }
+
+            difference = "0";
+        }
 
         return new Decimal128(
             new Decimal({
@@ -884,21 +904,37 @@ export class Decimal128 {
             return this.multiply(x.neg()).neg();
         }
 
-        if (this.isZero() || x.isZero()) {
-            return this.clone();
-        }
-
         let ourCohort = this.cohort() as Rational;
         let theirCohort = x.cohort() as Rational;
-        let ourExponent = this.quantum() as number;
-        let theirExponent = x.quantum() as number;
+        let ourQuantum = this.quantum() as number;
+        let theirQuantum = x.quantum() as number;
+        let preferredQuantum = ourQuantum + theirQuantum;
+
+        if (this.isZero()) {
+            return new Decimal128(
+                new Decimal({
+                    cohort: this.cohort(),
+                    quantum: preferredQuantum,
+                })
+            );
+        }
+
+        if (x.isZero()) {
+            return new Decimal128(
+                new Decimal({
+                    cohort: x.cohort(),
+                    quantum: preferredQuantum,
+                })
+            );
+        }
+
         let product = Rational.multiply(ourCohort, theirCohort);
-        let preferredQuantum = ourExponent + theirExponent;
+        let actualQuantum = pickQuantum(product, preferredQuantum);
 
         return new Decimal128(
             new Decimal({
                 cohort: product,
-                quantum: pickQuantum(product, preferredQuantum),
+                quantum: actualQuantum,
             })
         );
     }
@@ -1039,11 +1075,15 @@ export class Decimal128 {
         let v = this.cohort();
 
         if (v === "0") {
-            return new Decimal128("-0");
+            return new Decimal128(
+                new Decimal({ cohort: "-0", quantum: this.quantum() })
+            );
         }
 
         if (v === "-0") {
-            return new Decimal128("0");
+            return new Decimal128(
+                new Decimal({ cohort: "0", quantum: this.quantum() })
+            );
         }
 
         return new Decimal128(
