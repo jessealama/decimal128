@@ -31,8 +31,8 @@ describe("toString", () => {
 describe("toFixed", () => {
     test("zero", () => {
         let d = new Rational(0n, 1n);
-        expect(d.toFixed(1)).toStrictEqual("0");
-        expect(d.toFixed(5)).toStrictEqual("0");
+        expect(d.toFixed(1)).toStrictEqual("0.0");
+        expect(d.toFixed(5)).toStrictEqual("0.00000");
     });
     test("exactly representable", () => {
         expect(new Rational(3n, 2n).toFixed(1)).toStrictEqual("1.5");

@@ -2,6 +2,7 @@ import {
     countFractionalDigits,
     countSignificantDigits,
     Digit,
+    ROUNDING_MODE_TRUNCATE,
     RoundingMode,
 } from "./common.mjs";
 
@@ -423,23 +424,18 @@ export class Rational {
             );
         }
 
-        if (this.isNegative) {
-            return this.negate().round(numFractionalDigits, mode).negate();
-        }
-
         if (numFractionalDigits > 1) {
             return this.scale10(1)
                 .round(numFractionalDigits - 1, mode)
                 .scale10(-1);
         }
-
-        if (mode !== "halfEven") {
-            throw new RangeError("Only half-even rounding mode is supported");
-        }
-
         let s = this.toFixed(1);
 
         let [integerPart, fractionalPart] = s.split(".");
+
+        if (mode === ROUNDING_MODE_TRUNCATE) {
+            return Rational.fromString(integerPart);
+        }
 
         let penultimateDigit = parseInt(
             integerPart.charAt(integerPart.length - 1)

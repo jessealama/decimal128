@@ -1134,6 +1134,10 @@ export class Decimal128 {
             return this.clone();
         }
 
+        if (d.isZero()) {
+            return new Decimal128(NAN);
+        }
+
         if (this.cmp(d) === -1) {
             return this.clone();
         }

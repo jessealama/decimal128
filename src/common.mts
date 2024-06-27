@@ -42,11 +42,11 @@ export function countFractionalDigits(s: string): number {
 export type Digit = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // -1 signals that we're moving from the integer part to the decimal part of a decimal number
 export type DigitOrTen = Digit | 10;
 
-const ROUNDING_MODE_CEILING = "ceil";
-const ROUNDING_MODE_FLOOR = "floor";
-const ROUNDING_MODE_TRUNCATE = "trunc";
-const ROUNDING_MODE_HALF_EVEN = "halfEven";
-const ROUNDING_MODE_HALF_EXPAND = "halfExpand";
+export const ROUNDING_MODE_CEILING = "ceil";
+export const ROUNDING_MODE_FLOOR = "floor";
+export const ROUNDING_MODE_TRUNCATE = "trunc";
+export const ROUNDING_MODE_HALF_EVEN = "halfEven";
+export const ROUNDING_MODE_HALF_EXPAND = "halfExpand";
 
 export type RoundingMode =
     | "ceil"
