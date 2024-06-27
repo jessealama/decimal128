@@ -164,14 +164,14 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
         expect(
             new Decimal128("8.00")
                 .divide(new Decimal128("2"))
-                .toString({ normalize: false })
+                .toString({ preserveTrailingZeroes: true })
         ).toStrictEqual("4.00");
     });
     test("example seven", () => {
         expect(
             new Decimal128("2.400")
                 .divide(new Decimal128("2.0"))
-                .toString({ normalize: false })
+                .toString({ preserveTrailingZeroes: true })
         ).toStrictEqual("1.20");
     });
     test("example eight", () => {
@@ -188,7 +188,7 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
         expect(
             new Decimal128("2.40E+6")
                 .divide(new Decimal128("2"))
-                .toString({ format: "exponential" })
+                .toExponential()
         ).toStrictEqual("1.20e+6");
     });
 });

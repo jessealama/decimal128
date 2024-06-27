@@ -54,12 +54,7 @@ function adjustDecimal128(v: Rational, q: number): Decimal {
 
     let x = new Decimal({ cohort: v, quantum: q });
 
-    if (
-        v
-            .abs()
-            .scale10(0 - q)
-            .cmp(TEN_MAX_EXPONENT) <= 0
-    ) {
+    if (v.scale10(0 - q).cmp(TEN_MAX_EXPONENT) <= 0) {
         return x;
     }
 
@@ -75,6 +70,10 @@ function adjustDecimal128(v: Rational, q: number): Decimal {
     let c = x.cohort as Rational;
     let cAsString = c.toFixed(Infinity);
     let [integerPart, fractionalPart] = cAsString.split(/[.]/);
+
+    if (integerPart === "0") {
+        integerPart = "";
+    }
 
     if (integerPart.length > MAX_SIGNIFICANT_DIGITS) {
         throw new RangeError("Integer part too large");
@@ -267,7 +266,7 @@ export class Decimal128 {
         }
 
         if (this.isNegative()) {
-            let [s, e] = this.neg().significandAndExponent();
+            let [s, e] = this.negate().significandAndExponent();
             return [s.negate(), e];
         }
 
@@ -302,7 +301,7 @@ export class Decimal128 {
         }
 
         if (this.isNegative()) {
-            return this.neg().mantissa().neg();
+            return this.negate().mantissa().negate();
         }
 
         let x: Decimal128 = this;
@@ -345,7 +344,7 @@ export class Decimal128 {
         );
     }
 
-    private significand(): bigint {
+    private coefficient(): bigint {
         if (this.isZero()) {
             throw new RangeError("Zero does not have a significand");
         }
@@ -722,14 +721,14 @@ export class Decimal128 {
 
         if (!this.isFinite()) {
             if (this.isNegative()) {
-                return this.neg();
+                return this.negate();
             }
 
             return this.clone();
         }
 
         if (this.isNegative()) {
-            return this.neg();
+            return this.negate();
         }
 
         return this.clone();
@@ -762,7 +761,7 @@ export class Decimal128 {
         }
 
         if (this.isNegative() && x.isNegative()) {
-            return this.neg().add(x.neg()).neg();
+            return this.negate().add(x.negate()).negate();
         }
 
         if (this.isZero()) {
@@ -819,15 +818,15 @@ export class Decimal128 {
         }
 
         if (!x.isFinite()) {
-            return x.neg();
+            return x.negate();
         }
 
         if (x.isNegative()) {
-            return this.add(x.neg());
+            return this.add(x.negate());
         }
 
         if (this.isZero()) {
-            return x.neg();
+            return x.negate();
         }
 
         if (x.isZero()) {
@@ -897,11 +896,11 @@ export class Decimal128 {
         }
 
         if (this.isNegative()) {
-            return this.neg().multiply(x).neg();
+            return this.negate().multiply(x).negate();
         }
 
         if (x.isNegative()) {
-            return this.multiply(x.neg()).neg();
+            return this.multiply(x.negate()).negate();
         }
 
         let ourCohort = this.cohort() as Rational;
@@ -940,7 +939,19 @@ export class Decimal128 {
     }
 
     private clone(): Decimal128 {
-        return new Decimal128(this.toString());
+        if (this.isNaN()) {
+            return new Decimal128(NAN);
+        }
+
+        if (!this.isFinite()) {
+            return new Decimal128(
+                this.isNegative() ? NEGATIVE_INFINITY : POSITIVE_INFINITY
+            );
+        }
+
+        return new Decimal128(
+            new Decimal({ cohort: this.cohort(), quantum: this.quantum() })
+        );
     }
 
     /**
@@ -953,12 +964,12 @@ export class Decimal128 {
             return new Decimal128(NAN);
         }
 
-        if (this.isZero()) {
-            return this.clone();
-        }
-
         if (x.isZero()) {
             return new Decimal128(NAN);
+        }
+
+        if (this.isZero()) {
+            return this.clone();
         }
 
         if (!this.isFinite()) {
@@ -986,16 +997,16 @@ export class Decimal128 {
         }
 
         if (this.isNegative()) {
-            return this.neg().divide(x).neg();
+            return this.negate().divide(x).negate();
         }
 
         if (x.isNegative()) {
-            return this.divide(x.neg()).neg();
+            return this.divide(x.negate()).negate();
         }
 
         let adjust = 0;
-        let dividendCoefficient = this.significand();
-        let divisorCoefficient = x.significand();
+        let dividendCoefficient = this.coefficient();
+        let divisorCoefficient = x.coefficient();
 
         if (dividendCoefficient !== 0n) {
             while (dividendCoefficient < divisorCoefficient) {
@@ -1029,7 +1040,9 @@ export class Decimal128 {
             }
         }
 
-        let resultExponent = this.exponent() - (x.exponent() + adjust);
+        let ourExponent = this.quantum();
+        let theirExponent = x.quantum();
+        let resultExponent = ourExponent - (theirExponent + adjust);
         return new Decimal128(`${resultCoefficient}E${resultExponent}`);
     }
 
@@ -1061,7 +1074,7 @@ export class Decimal128 {
         return new Decimal128(new Decimal({ cohort: roundedV, quantum: q }));
     }
 
-    neg(): Decimal128 {
+    negate(): Decimal128 {
         if (this.isNaN()) {
             return this.clone();
         }
@@ -1106,11 +1119,11 @@ export class Decimal128 {
         }
 
         if (this.isNegative()) {
-            return this.neg().remainder(d).neg();
+            return this.negate().remainder(d).negate();
         }
 
         if (d.isNegative()) {
-            return this.remainder(d.neg());
+            return this.remainder(d.negate());
         }
 
         if (!this.isFinite()) {

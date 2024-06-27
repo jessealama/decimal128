@@ -213,9 +213,14 @@ export class Decimal {
     }
 
     public coefficient(): bigint {
-        let sig = this.significand();
-        let exp = this.exponent();
-        let c = sig.scale10(exp);
+        let v = this.cohort;
+
+        if (v === "0" || v === "-0") {
+            throw new RangeError("Cannot compute coefficient of zero.");
+        }
+
+        let q = this.quantum;
+        let c = v.scale10(0 - q);
 
         if (!c.isInteger()) {
             throw new TypeError("The coefficient is not an integer.");
