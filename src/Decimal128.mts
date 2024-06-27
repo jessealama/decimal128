@@ -23,6 +23,8 @@ const MAX_SIGNIFICANT_DIGITS = 34;
 
 const bigTen = BigInt(10);
 const bigOne = BigInt(1);
+const ratOne = new Rational(1n, 1n);
+const ratTen = new Rational(10n, 1n);
 
 type NaNValue = "NaN";
 type InfiniteValue = "Infinity" | "-Infinity";
@@ -264,8 +266,6 @@ export class Decimal128 {
         let q = this.quantum() as number;
         let s = v;
         let e = q;
-        const ratTen = new Rational(bigTen, bigOne);
-        const ratOne = new Rational(bigOne, bigOne);
 
         while (s.cmp(ratOne) < 0) {
             s = s.scale10(1);
@@ -281,13 +281,34 @@ export class Decimal128 {
     }
 
     public exponent(): number {
-        let [_, e] = this.significandAndExponent();
-        return e;
+        let mantissa = this.mantissa();
+        let mantissaQuantum = mantissa.quantum();
+        let ourQuantum = this.quantum();
+        return ourQuantum - mantissaQuantum;
     }
 
     public mantissa(): Decimal128 {
-        let [sig, _] = this.significandAndExponent();
-        return new Decimal128(sig.toFixed(MAX_SIGNIFICANT_DIGITS));
+        if (this.isZero()) {
+            throw new RangeError("Zero does not have a mantissa");
+        }
+
+        if (this.isNegative()) {
+            return this.neg().mantissa().neg();
+        }
+
+        let x: Decimal128 = this;
+        let decimalOne = new Decimal128("1");
+        let decimalTen = new Decimal128("10");
+
+        while (0 <= x.cmp(decimalTen)) {
+            x = x.scale10(-1);
+        }
+
+        while (x.cmp(decimalOne) === -1) {
+            x = x.scale10(1);
+        }
+
+        return x;
     }
 
     public scale10(n: number): Decimal128 {
@@ -311,35 +332,37 @@ export class Decimal128 {
         let q = this.quantum() as number;
 
         return new Decimal128(
-            new Decimal({ cohort: v.scale10(n), quantum: q - n })
+            new Decimal({ cohort: v.scale10(n), quantum: q + n })
         );
     }
 
-    private significand(): Rational {
-        let [s, _] = this.significandAndExponent();
-        return s;
+    private significand(): bigint {
+        if (this.isZero()) {
+            throw new RangeError("Zero does not have a significand");
+        }
+
+        let d = this.d as Decimal;
+        return d.coefficient();
     }
 
     private emitExponential(): string {
-        let prefix = this.isNegative() ? "-" : "";
-        let sg = this.significand().toString();
-        let exp = this.exponent();
+        let v = this.cohort();
+        let q = this.quantum();
+        let p = this._isNegative ? "-" : "";
 
-        let adjustedExponent = exp + sg.length - 1;
+        if (v === "0" || v === "-0") {
+            if (q < 0) {
+                return p + v + "." + "0".repeat(0 - q);
+            }
 
-        if (sg.length === 1) {
-            return prefix + sg + "e" + (exp < 0 ? "" : "+") + exp;
+            return v;
         }
 
-        return (
-            prefix +
-            sg.substring(0, 1) +
-            "." +
-            sg.substring(1) +
-            "e" +
-            (adjustedExponent < 0 ? "" : "+") +
-            adjustedExponent
-        );
+        let m = this.mantissa();
+        let e = this.exponent();
+        let mAsString = m.toFixed({ digits: Infinity });
+        let expPart = (e < 0 ? "-" : "+") + Math.abs(e);
+        return p + mAsString + "e" + expPart;
     }
 
     private emitDecimal(): string {
@@ -453,8 +476,14 @@ export class Decimal128 {
             throw new RangeError("Argument must be greater than or equal to 0");
         }
 
+        if (n === Infinity) {
+            return this.emitDecimal();
+        }
+
         if (!Number.isInteger(n)) {
-            throw new RangeError("Argument must be an integer");
+            throw new RangeError(
+                "Argument must be an integer or positive infinity"
+            );
         }
 
         if (this.isNaN()) {
@@ -727,12 +756,28 @@ export class Decimal128 {
             return this.neg().add(x.neg()).neg();
         }
 
+        if (this.isZero()) {
+            return x.clone();
+        }
+
+        if (x.isZero()) {
+            return this.clone();
+        }
+
         let ourCohort = this.cohort() as Rational;
         let theirCohort = x.cohort() as Rational;
         let ourQuantum = this.quantum() as number;
         let theirQuantum = x.quantum() as number;
         let sum = Rational.add(ourCohort, theirCohort);
         let preferredQuantum = Math.min(ourQuantum, theirQuantum);
+
+        if (sum.isZero()) {
+            if (this._isNegative) {
+                return new Decimal128("-0");
+            }
+
+            return new Decimal128("0");
+        }
 
         return new Decimal128(
             new Decimal({
@@ -916,15 +961,15 @@ export class Decimal128 {
         let dividendCoefficient = this.significand();
         let divisorCoefficient = x.significand();
 
-        if (!dividendCoefficient.isZero()) {
-            while (dividendCoefficient.cmp(divisorCoefficient) === -1) {
-                dividendCoefficient = dividendCoefficient.scale10(1);
+        if (dividendCoefficient !== 0n) {
+            while (dividendCoefficient < divisorCoefficient) {
+                dividendCoefficient = dividendCoefficient * 10n;
                 adjust++;
             }
         }
 
-        while (dividendCoefficient.cmp(divisorCoefficient.scale10(1))) {
-            divisorCoefficient = divisorCoefficient.scale10(1);
+        while (dividendCoefficient > divisorCoefficient * 10n) {
+            divisorCoefficient = divisorCoefficient * 10n;
             adjust--;
         }
 
@@ -932,21 +977,18 @@ export class Decimal128 {
         let done = false;
 
         while (!done) {
-            while (divisorCoefficient.cmp(dividendCoefficient) <= 0) {
-                dividendCoefficient = Rational.subtract(
-                    dividendCoefficient,
-                    divisorCoefficient
-                );
+            while (divisorCoefficient <= dividendCoefficient) {
+                dividendCoefficient = dividendCoefficient - divisorCoefficient;
                 resultCoefficient++;
             }
             if (
-                (dividendCoefficient.isZero() && adjust >= 0) ||
+                (dividendCoefficient === 0n && adjust >= 0) ||
                 resultCoefficient.toString().length > MAX_SIGNIFICANT_DIGITS
             ) {
                 done = true;
             } else {
                 resultCoefficient = resultCoefficient * 10n;
-                dividendCoefficient = dividendCoefficient.scale10(1);
+                dividendCoefficient = dividendCoefficient * 10n;
                 adjust++;
             }
         }

@@ -306,7 +306,7 @@ export class Rational {
     }
 
     public toFixed(n: number): string {
-        if (!Number.isInteger(n)) {
+        if (n !== Infinity && !Number.isInteger(n)) {
             throw new TypeError(
                 "Cannot enumerate a non-integer number of decimal places"
             );
@@ -348,6 +348,10 @@ export class Rational {
             }
 
             digit = digitGenerator.next();
+        }
+
+        if (Infinity === n) {
+            return result;
         }
 
         let numFractionalDigits = countFractionalDigits(result);
