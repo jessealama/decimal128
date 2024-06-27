@@ -75,7 +75,7 @@ describe("toprecision", function () {
         expect(() => decimalD.toPrecision({ digits: 1.5 })).toThrow(RangeError);
     });
     describe("negative", () => {
-        let negD = decimalD.neg();
+        let negD = decimalD.negate();
         test("integer part", () => {
             expect(negD.toPrecision({ digits: 3 }).toString()).toStrictEqual(
                 "-123"
