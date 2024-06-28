@@ -11,11 +11,7 @@ function _cohort(s: string): "0" | "-0" | Rational {
             return "-0";
         }
 
-        if (c === "-0") {
-            return "0";
-        }
-
-        return c.negate();
+        return (c as Rational).negate();
     }
 
     if (s.match(/^00+/)) {
@@ -26,11 +22,7 @@ function _cohort(s: string): "0" | "-0" | Rational {
         return "0";
     }
 
-    if (s.match(/^-?0[eE][+-]?[0-9]+$/)) {
-        if (s.match(/^-/)) {
-            return "-0";
-        }
-
+    if (s.match(/^0[eE][+-]?[0-9]+$/)) {
         return "0";
     }
 
@@ -79,7 +71,11 @@ export class Decimal {
         }
 
         if (!Number.isInteger(q)) {
-            throw new Error("The quantum must be an integer.");
+            throw new RangeError("The quantum must be an integer.");
+        }
+
+        if (Object.is(q, -0)) {
+            throw new RangeError("The quantum cannot be negative zero.");
         }
 
         if (v instanceof Rational) {
@@ -96,75 +92,8 @@ export class Decimal {
         this.quantum = q;
     }
 
-    public isZero(): boolean {
-        let v = this.cohort;
-        return v === "0" || v === "-0";
-    }
-
-    public isInteger(): boolean {
-        let v = this.cohort;
-
-        if (v === "0" || v === "-0") {
-            return true;
-        }
-
-        return v.isInteger();
-    }
-
-    public isNegative(): boolean {
-        let v = this.cohort;
-
-        if (v === "0") {
-            return false;
-        }
-
-        if (v === "-0") {
-            return true;
-        }
-
-        return v.isNegative;
-    }
-
-    public scale10(n: number, adjustQuantum?: boolean): Decimal {
-        if (!Number.isInteger(n)) {
-            throw new Error("The scale factor must be an integer.");
-        }
-
-        if (0 === n) {
-            return this;
-        }
-
-        let v = this.cohort;
-        let newQuantum = this.quantum;
-
-        if (typeof adjustQuantum === "boolean" && adjustQuantum) {
-            if (n < 0) {
-                newQuantum -= n;
-            } else {
-                newQuantum += n;
-            }
-        }
-
-        if (v === "0" || v === "-0") {
-            return new Decimal({ cohort: v, quantum: newQuantum });
-        }
-
-        return new Decimal({
-            cohort: v.scale10(n),
-            quantum: newQuantum,
-        });
-    }
-
     public negate(): Decimal {
-        let v = this.cohort;
-
-        if (v === "0") {
-            return new Decimal({ cohort: "-0", quantum: this.quantum });
-        }
-
-        if (v === "-0") {
-            return new Decimal({ cohort: "0", quantum: this.quantum });
-        }
+        let v = this.cohort as Rational;
 
         return new Decimal({
             cohort: v.negate(),
@@ -172,68 +101,10 @@ export class Decimal {
         });
     }
 
-    public significand(): Rational {
-        if (this.isNegative()) {
-            return this.negate().significand();
-        }
-
-        let v = this.cohort;
-
-        if (v === "0" || v === "-0") {
-            throw new RangeError("Cannot compute coefficient of zero.");
-        }
-
-        while (ratTen.lessThan(v) || ratTen.equals(v)) {
-            v = v.scale10(-1);
-        }
-
-        while (v.lessThan(ratOne)) {
-            v = v.scale10(1);
-        }
-
-        return v;
-    }
-
-    public exponent(): number {
-        if (this.isNegative()) {
-            return this.negate().exponent();
-        }
-
-        let v = this.cohort;
-
-        if (v === "0" || v === "-0") {
-            throw new RangeError("Cannot compute coefficient of zero.");
-        }
-
-        let e = 0;
-
-        while (ratTen.lessThan(v) || ratTen.equals(v)) {
-            v = v.scale10(-1);
-            e++;
-        }
-
-        while (v.lessThan(ratOne)) {
-            v = v.scale10(1);
-            e--;
-        }
-
-        return e;
-    }
-
     public coefficient(): bigint {
-        let v = this.cohort;
-
-        if (v === "0" || v === "-0") {
-            throw new RangeError("Cannot compute coefficient of zero.");
-        }
-
+        let v = this.cohort as Rational;
         let q = this.quantum;
         let c = v.scale10(0 - q);
-
-        if (!c.isInteger()) {
-            throw new TypeError("The coefficient is not an integer.");
-        }
-
         return c.numerator;
     }
 }
