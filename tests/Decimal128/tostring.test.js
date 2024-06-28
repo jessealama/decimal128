@@ -1,5 +1,6 @@
 import { Decimal128 } from "../../src/Decimal128.mjs";
 import { expectDecimal128 } from "./util.js";
+import { Decimal } from "../../src/Decimal.mjs";
 
 describe("NaN", () => {
     test("works", () => {
@@ -36,5 +37,10 @@ describe("normalization", () => {
         expect(d.toString({ preserveTrailingZeroes: true })).toStrictEqual(
             "1.20"
         );
+    });
+    test("not normalizing minus zero", () => {
+        expect(
+            new Decimal128("-0.0").toString({ preserveTrailingZeroes: true })
+        ).toStrictEqual("-0.0");
     });
 });

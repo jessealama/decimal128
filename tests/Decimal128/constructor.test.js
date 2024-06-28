@@ -123,6 +123,26 @@ describe("constructor", () => {
                 new Decimal128("-0." + "9".repeat(100)).toString()
             ).toStrictEqual("-1");
         });
+        test("zero with scale beyond limits (negative)", () => {
+            expect(
+                new Decimal128("0." + "0".repeat(10000)).toExponential()
+            ).toStrictEqual("0e-6176");
+        });
+        test("zero with scale beyond limits (positive)", () => {
+            expect(new Decimal128("0E+10000").toExponential()).toStrictEqual(
+                "0e+6111"
+            );
+        });
+        test("minus zero with scale beyond limits (negative)", () => {
+            expect(
+                new Decimal128("-0." + "0".repeat(10000)).toExponential()
+            ).toStrictEqual("-0e-6176");
+        });
+        test("minus zero with scale beyond limits (positive)", () => {
+            expect(new Decimal128("-0E+10000").toExponential()).toStrictEqual(
+                "-0e+6111"
+            );
+        });
         test("lots of digits gets rounded to 10", () => {
             expect(
                 new Decimal128("9." + "9".repeat(100)).toString()

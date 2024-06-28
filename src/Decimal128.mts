@@ -224,22 +224,13 @@ export class Decimal128 {
     }
 
     private cohort(): "0" | "-0" | Rational {
-        let d = this.d;
-        if (d instanceof Decimal) {
-            return d.cohort;
-        }
-
-        throw new TypeError("Cannot compute cohort of a non-finite number");
+        let d = this.d as Decimal;
+        return d.cohort;
     }
 
     private quantum(): number {
-        let d = this.d;
-
-        if (d instanceof Decimal) {
-            return d.quantum;
-        }
-
-        throw new TypeError("Cannot compute quantum of a non-finite number");
+        let d = this.d as Decimal;
+        return d.quantum;
     }
 
     private isZero(): boolean {
@@ -254,38 +245,6 @@ export class Decimal128 {
         let v = this.cohort();
 
         return v === "0" || v === "-0";
-    }
-
-    private significandAndExponent(): [Rational, number] {
-        if (!this.isFinite()) {
-            throw new RangeError("Infinity does not have a significand");
-        }
-
-        if (this.isZero()) {
-            throw new RangeError("Zero does not have a significand");
-        }
-
-        if (this.isNegative()) {
-            let [s, e] = this.negate().significandAndExponent();
-            return [s.negate(), e];
-        }
-
-        let v = this.cohort() as Rational;
-        let q = this.quantum() as number;
-        let s = v;
-        let e = q;
-
-        while (s.cmp(ratOne) < 0) {
-            s = s.scale10(1);
-            e++;
-        }
-
-        while (s.cmp(ratTen) >= 0) {
-            s = s.scale10(-1);
-            e--;
-        }
-
-        return [s, e];
     }
 
     public exponent(): number {
@@ -336,7 +295,12 @@ export class Decimal128 {
             return this.clone();
         }
 
-        let v = this.cohort() as Rational;
+        let v = this.cohort();
+
+        if (v === "0" || v === "-0") {
+            return this.clone();
+        }
+
         let q = this.quantum() as number;
 
         return new Decimal128(
@@ -345,10 +309,6 @@ export class Decimal128 {
     }
 
     private coefficient(): bigint {
-        if (this.isZero()) {
-            throw new RangeError("Zero does not have a significand");
-        }
-
         let d = this.d as Decimal;
         return d.coefficient();
     }
@@ -390,11 +350,6 @@ export class Decimal128 {
         }
 
         let c = v.scale10(0 - q);
-
-        if (!c.isInteger()) {
-            throw new TypeError("The coefficient is not an integer.");
-        }
-
         let s = c.numerator.toString();
         let p = this._isNegative ? "-" : "";
 
@@ -446,11 +401,7 @@ export class Decimal128 {
 
         if (!preserveTrailingZeroes && asDecimalString.match(/[.]/)) {
             asDecimalString = asDecimalString.replace(/0+$/, "");
-            if (asDecimalString === "") {
-                asDecimalString = "0";
-            } else if (asDecimalString === "-") {
-                asDecimalString = "-0";
-            } else if (asDecimalString.match(/[.]$/)) {
+            if (asDecimalString.match(/[.]$/)) {
                 asDecimalString = asDecimalString.substring(
                     0,
                     asDecimalString.length - 1
@@ -505,22 +456,10 @@ export class Decimal128 {
 
         if (roundedRendered.match(/[.]/)) {
             let [lhs, rhs] = roundedRendered.split(/[.]/);
-            if (rhs.length < n) {
-                return lhs + "." + rhs + "0".repeat(n - rhs.length);
-            }
-
-            if (n === 0) {
-                return lhs;
-            }
-
             return lhs + "." + rhs.substring(0, n);
         }
 
-        if (n === 0) {
-            return roundedRendered;
-        }
-
-        return roundedRendered + "." + "0".repeat(n);
+        return roundedRendered;
     }
 
     toPrecision(opts?: { digits?: number }): string {
@@ -560,30 +499,16 @@ export class Decimal128 {
         let p = this.isNegative() ? "-" : "";
 
         if (n <= lhs.length) {
-            if (lhs.match(/[.]$/)) {
-                lhs = lhs.substring(0, n);
-            }
-
             if (lhs.length === n) {
                 return p + lhs;
             }
 
-            if (1 === n) {
-                return p + s.substring(0, 1) + "e+" + `${lhs.length - n}`;
-            }
-
-            return (
-                p +
-                s.substring(0, 1) +
-                "." +
-                s.substring(1, n) +
-                "e+" +
-                `${lhs.length - n + 1}`
-            );
+            return p + s.substring(0, n) + "e+" + `${lhs.length - n + 1}`;
         }
 
         if (n <= lhs.length + rhs.length) {
-            return p + s.substring(0, n + 1); // plus one because of the decimal point
+            let rounded = this.round(n - lhs.length);
+            return rounded.emitDecimal();
         }
 
         return p + lhs + "." + rhs + "0".repeat(n - lhs.length - rhs.length);
@@ -860,10 +785,6 @@ export class Decimal128 {
         let preferredQuantum = Math.min(ourExponent, theirExponent);
 
         if (difference.isZero()) {
-            if (this._isNegative) {
-                difference = "-0";
-            }
-
             difference = "0";
         }
 
@@ -1084,8 +1005,6 @@ export class Decimal128 {
         }
 
         let v = this.cohort() as Rational;
-        let q = this.quantum() as number;
-
         let roundedV = v.round(numDecimalDigits, mode);
 
         if (roundedV.isZero()) {

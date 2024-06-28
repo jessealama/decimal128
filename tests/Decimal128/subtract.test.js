@@ -52,6 +52,21 @@ describe("subtraction", () => {
             ).toStrictEqual("NaN");
         });
     });
+    describe("zero", () => {
+        let d = new Decimal128("42.65");
+        let zero = new Decimal128("0");
+        test("difference is zero", () => {
+            expect(
+                d.subtract(d).toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("0.00");
+        });
+        test("subtracting zero", () => {
+            expect(d.subtract(zero).toString()).toStrictEqual("42.65");
+        });
+        test("subtracting zero", () => {
+            expect(zero.subtract(d).toString()).toStrictEqual("-42.65");
+        });
+    });
 });
 
 describe("infinity", () => {

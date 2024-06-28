@@ -71,6 +71,11 @@ describe("rounding", () => {
             new Decimal128("0.5").round(0, "trunc").toString()
         ).toStrictEqual("0");
     });
+    test("round to minus zero", () => {
+        expect(
+            new Decimal128("-0.5").round(0, "trunc").toString()
+        ).toStrictEqual("-0");
+    });
 });
 
 describe("unsupported rounding mode", () => {
