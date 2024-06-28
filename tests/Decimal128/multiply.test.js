@@ -1,4 +1,7 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../../src/Decimal128.mjs";
+
+let posZero = new Decimal128("0");
+let negZero = new Decimal128("-0");
 
 const examples = [
     ["123.456", "789.789", "97504.190784"],
@@ -24,7 +27,7 @@ function checkProduct(a, b, c) {
     expect(
         new Decimal128(a)
             .multiply(new Decimal128(b))
-            .toString({ normalize: false })
+            .toString({ preserveTrailingZeroes: true })
     ).toStrictEqual(c);
 }
 
@@ -57,6 +60,43 @@ describe("multiplication", () => {
                 new Decimal128("987654321123456789.123456789")
             )
         ).toThrow(RangeError);
+    });
+    describe("zero", () => {
+        let d = new Decimal128("42.65");
+        test("left-hand positive zero", () => {
+            expect(
+                posZero.multiply(d).toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("0.00");
+        });
+        test("left-hand negative zero", () => {
+            expect(
+                negZero.multiply(d).toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("-0.00");
+        });
+        test("right-hand positive zero", () => {
+            expect(
+                d.multiply(posZero).toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("0.00");
+        });
+        test("right-hand negative zero", () => {
+            expect(
+                d.multiply(negZero).toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("-0.00");
+        });
+        test("quantum respected even with positive zero", () => {
+            expect(
+                new Decimal128("0.0")
+                    .multiply(posZero)
+                    .toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("0.0");
+        });
+        test("quantum respected even with negative zero", () => {
+            expect(
+                new Decimal128("-0.0")
+                    .multiply(posZero)
+                    .toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("-0.0");
+        });
     });
     describe("NaN", () => {
         test("NaN times NaN is NaN", () => {
@@ -166,7 +206,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
         expect(
             new Decimal128("1.20")
                 .multiply(new Decimal128("3"))
-                .toString({ normalize: false })
+                .toString({ preserveTrailingZeroes: true })
         ).toStrictEqual("3.60");
     });
     test("example two", () => {
@@ -183,7 +223,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
         expect(
             new Decimal128("0.9")
                 .multiply(new Decimal128("-0"))
-                .toString({ normalize: false })
+                .toString({ preserveTrailingZeroes: true })
         ).toStrictEqual("-0.0");
     });
     test("example five", () => {
@@ -191,7 +231,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
         expect(
             new Decimal128("654321")
                 .multiply(new Decimal128("654321"))
-                .toString({ format: "exponential" })
+                .toExponential()
         ).toStrictEqual("4.28135971041e+11");
     });
 });

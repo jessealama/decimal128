@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../src/Decimal128.mjs";
 
 const zero = new Decimal128("0");
 const one = new Decimal128("1");
@@ -20,4 +20,4 @@ const items = [
     { price: "5.00", count: "1" },
 ];
 const tax = "0.0735";
-console.log(calculateBill(items, tax).toString({ numDecimalDigits: 2 }));
+console.log(calculateBill(items, tax).toFixed({ digits: 2 }));

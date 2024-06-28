@@ -1,14 +1,6 @@
-import { Decimal128 } from "../src/decimal128.mjs";
-import * as string_decoder from "string_decoder";
+import { Decimal128 } from "../../src/Decimal128.mjs";
 import { expectDecimal128 } from "./util.js";
-
-const roundingModes = [
-    "roundTowardPositive",
-    "roundTowardNegative",
-    "roundTowardZero",
-    "roundTiesToEven",
-    "roundTiesToAway",
-];
+import { ROUNDING_MODES } from "../../src/common.mjs";
 
 describe("rounding", () => {
     describe("no arguments (round to integer)", () => {
@@ -20,6 +12,11 @@ describe("rounding", () => {
         });
         test("round up (positive)", () => {
             expect(new Decimal128("2.6").round().toString()).toStrictEqual("3");
+        });
+        test("round up (negative)", () => {
+            expect(new Decimal128("-2.6").round().toString()).toStrictEqual(
+                "-3"
+            );
         });
         test("negative odd", () => {
             expect(new Decimal128("-1.5").round().toString()).toStrictEqual(
@@ -64,10 +61,20 @@ describe("rounding", () => {
         expect(new Decimal128("-42").round().toString()).toStrictEqual("-42");
     });
     test("negative number of digits requested is truncation", () => {
-        expect(new Decimal128("1.5").round(-42).toString()).toStrictEqual("2");
+        expect(() => new Decimal128("1.5").round(-42)).toThrow(RangeError);
     });
     test("too many digits requested", () => {
         expect(() => new Decimal128("1.5").round(2 ** 53)).toThrow(RangeError);
+    });
+    test("round to zero", () => {
+        expect(
+            new Decimal128("0.5").round(0, "trunc").toString()
+        ).toStrictEqual("0");
+    });
+    test("round to minus zero", () => {
+        expect(
+            new Decimal128("-0.5").round(0, "trunc").toString()
+        ).toStrictEqual("-0");
     });
 });
 
@@ -87,137 +94,133 @@ describe("Intl.NumberFormat examples", () => {
     let onePointFive = new Decimal128("1.5");
     describe("ceil", () => {
         test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "roundTowardPositive").toString()
-            ).toStrictEqual("-1");
+            expect(minusOnePointFive.round(0, "ceil").toString()).toStrictEqual(
+                "-1"
+            );
         });
         test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "roundTowardPositive").toString()
-            ).toStrictEqual("1");
+            expect(zeroPointFour.round(0, "ceil").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "roundTowardPositive").toString()
-            ).toStrictEqual("1");
+            expect(zeroPointFive.round(0, "ceil").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("0.6", () => {
-            expect(
-                zeroPointSix.round(0, "roundTowardPositive").toString()
-            ).toStrictEqual("1");
+            expect(zeroPointSix.round(0, "ceil").toString()).toStrictEqual("1");
         });
         test("1.5", () => {
-            expect(
-                onePointFive.round(0, "roundTowardPositive").toString()
-            ).toStrictEqual("2");
+            expect(onePointFive.round(0, "ceil").toString()).toStrictEqual("2");
         });
     });
     describe("floor", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round(0, "roundTowardNegative").toString()
+                minusOnePointFive.round(0, "floor").toString()
             ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "roundTowardNegative").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointFour.round(0, "floor").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "roundTowardNegative").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointFive.round(0, "floor").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.6", () => {
-            expect(
-                zeroPointSix.round(0, "roundTowardNegative").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointSix.round(0, "floor").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("1.5", () => {
-            expect(
-                onePointFive.round(0, "roundTowardNegative").toString()
-            ).toStrictEqual("1");
+            expect(onePointFive.round(0, "floor").toString()).toStrictEqual(
+                "1"
+            );
         });
     });
     describe("trunc", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round(0, "roundTowardZero").toString()
+                minusOnePointFive.round(0, "trunc").toString()
             ).toStrictEqual("-1");
         });
         test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "roundTowardZero").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointFour.round(0, "trunc").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "roundTowardZero").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointFive.round(0, "trunc").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.6", () => {
-            expect(
-                zeroPointSix.round(0, "roundTowardZero").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointSix.round(0, "trunc").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("1.5", () => {
-            expect(
-                onePointFive.round(0, "roundTowardZero").toString()
-            ).toStrictEqual("1");
+            expect(onePointFive.round(0, "trunc").toString()).toStrictEqual(
+                "1"
+            );
         });
     });
     describe("halfExpand", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round(0, "roundTiesToAway").toString()
+                minusOnePointFive.round(0, "halfExpand").toString()
             ).toStrictEqual("-2");
         });
         test("0.4", () => {
             expect(
-                zeroPointFour.round(0, "roundTiesToAway").toString()
+                zeroPointFour.round(0, "halfExpand").toString()
             ).toStrictEqual("0");
         });
         test("0.5", () => {
             expect(
-                zeroPointFive.round(0, "roundTiesToAway").toString()
+                zeroPointFive.round(0, "halfExpand").toString()
             ).toStrictEqual("1");
         });
         test("0.6", () => {
             expect(
-                zeroPointSix.round(0, "roundTiesToAway").toString()
+                zeroPointSix.round(0, "halfExpand").toString()
             ).toStrictEqual("1");
         });
         test("1.5", () => {
             expect(
-                onePointFive.round(0, "roundTiesToAway").toString()
+                onePointFive.round(0, "halfExpand").toString()
             ).toStrictEqual("2");
         });
     });
     describe("halfEven", () => {
         test("-1.5", () => {
             expect(
-                minusOnePointFive.round(0, "roundTiesToEven").toString()
+                minusOnePointFive.round(0, "halfEven").toString()
             ).toStrictEqual("-2");
         });
         test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "roundTiesToEven").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointFour.round(0, "halfEven").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "roundTiesToEven").toString()
-            ).toStrictEqual("0");
+            expect(zeroPointFive.round(0, "halfEven").toString()).toStrictEqual(
+                "0"
+            );
         });
         test("0.6", () => {
-            expect(
-                zeroPointSix.round(0, "roundTiesToEven").toString()
-            ).toStrictEqual("1");
+            expect(zeroPointSix.round(0, "halfEven").toString()).toStrictEqual(
+                "1"
+            );
         });
         test("1.5", () => {
-            expect(
-                onePointFive.round(0, "roundTiesToEven").toString()
-            ).toStrictEqual("2");
+            expect(onePointFive.round(0, "halfEven").toString()).toStrictEqual(
+                "2"
+            );
         });
     });
     test("NaN", () => {
@@ -229,7 +232,7 @@ describe("Intl.NumberFormat examples", () => {
         test(`positive infinity (no argument)`, () => {
             expect(posInf.round().toString()).toStrictEqual("Infinity");
         });
-        for (let roundingMode of roundingModes) {
+        for (let roundingMode of ROUNDING_MODES) {
             test(`positive infinity (${roundingMode})`, () => {
                 expect(posInf.round(0, roundingMode).toString()).toStrictEqual(
                     "Infinity"
@@ -239,7 +242,7 @@ describe("Intl.NumberFormat examples", () => {
         test(`negative infinity (no argument)`, () => {
             expect(negInf.round().toString()).toStrictEqual("-Infinity");
         });
-        for (let roundingMode of roundingModes) {
+        for (let roundingMode of ROUNDING_MODES) {
             test(`negative infinity (${roundingMode})`, () => {
                 expect(negInf.round(0, roundingMode).toString()).toStrictEqual(
                     "-Infinity"
@@ -258,60 +261,53 @@ describe("Intl.NumberFormat examples", () => {
 describe("ceiling", function () {
     test("ceiling works (positive)", () => {
         expect(
-            new Decimal128("123.456").round(0, "roundTowardPositive").toString()
+            new Decimal128("123.456").round(0, "ceil").toString()
         ).toStrictEqual("124");
     });
     test("ceiling works (negative)", () => {
         expect(
-            new Decimal128("-123.456")
-                .round(0, "roundTowardPositive")
-                .toString()
+            new Decimal128("-123.456").round(0, "ceil").toString()
         ).toStrictEqual("-123");
     });
     test("ceiling of an integer is unchanged", () => {
-        expect(
-            new Decimal128("123").round(0, "roundTowardPositive").toString()
-        ).toStrictEqual("123");
+        expect(new Decimal128("123").round(0, "ceil").toString()).toStrictEqual(
+            "123"
+        );
     });
     test("NaN", () => {
-        expect(
-            new Decimal128("NaN").round(0, "roundTowardPositive").toString()
-        ).toStrictEqual("NaN");
+        expect(new Decimal128("NaN").round(0, "ceil").toString()).toStrictEqual(
+            "NaN"
+        );
     });
     test("positive infinity", () => {
         expect(
-            new Decimal128("Infinity")
-                .round(0, "roundTowardPositive")
-                .toString()
+            new Decimal128("Infinity").round(0, "ceil").toString()
         ).toStrictEqual("Infinity");
     });
     test("minus infinity", () => {
         expect(
-            new Decimal128("-Infinity")
-                .round(0, "roundTowardPositive")
-                .toString()
+            new Decimal128("-Infinity").round(0, "ceil").toString()
         ).toStrictEqual("-Infinity");
     });
 });
 
 describe("truncate", () => {
     describe("truncate", () => {
-        let data = {
-            123.45678: "123",
-            "-42.99": "-42",
-            0.00765: "0",
-        };
-        for (let [key, value] of Object.entries(data)) {
-            test(key, () => {
-                expectDecimal128(
-                    new Decimal128(key).round(0, "roundTowardZero"),
-                    value
-                );
-            });
-        }
+        test("123.45678", () => {
+            expectDecimal128(
+                new Decimal128("123.45678").round(0, "trunc"),
+                "123"
+            );
+        });
+        test("-42.99", () => {
+            expectDecimal128(new Decimal128("-42.99").round(0, "trunc"), "-42");
+        });
+        test("0.00765", () => {
+            expectDecimal128(new Decimal128("0.00765").round(0, "trunc"), "0");
+        });
         test("NaN", () => {
             expect(
-                new Decimal128("NaN").round(0, "roundTowardZero").toString()
+                new Decimal128("NaN").round(0, "trunc").toString()
             ).toStrictEqual("NaN");
         });
     });
@@ -319,16 +315,12 @@ describe("truncate", () => {
     describe("infinity", () => {
         test("positive infinity", () => {
             expect(
-                new Decimal128("Infinity")
-                    .round(0, "roundTowardZero")
-                    .toString()
+                new Decimal128("Infinity").round(0, "trunc").toString()
             ).toStrictEqual("Infinity");
         });
         test("negative infinity", () => {
             expect(
-                new Decimal128("-Infinity")
-                    .round(0, "roundTowardZero")
-                    .toString()
+                new Decimal128("-Infinity").round(0, "trunc").toString()
             ).toStrictEqual("-Infinity");
         });
     });
@@ -337,43 +329,37 @@ describe("truncate", () => {
 describe("floor", function () {
     test("floor works (positive)", () => {
         expect(
-            new Decimal128("123.456").round(0, "roundTowardNegative").toString()
+            new Decimal128("123.456").round(0, "floor").toString()
         ).toStrictEqual("123");
     });
     test("floor works (negative)", () => {
         expect(
-            new Decimal128("-123.456")
-                .round(0, "roundTowardNegative")
-                .toString()
+            new Decimal128("-123.456").round(0, "floor").toString()
         ).toStrictEqual("-124");
     });
     test("floor of integer is unchanged", () => {
         expect(
-            new Decimal128("123").round(0, "roundTowardNegative").toString()
+            new Decimal128("123").round(0, "floor").toString()
         ).toStrictEqual("123");
     });
     test("floor of zero is unchanged", () => {
-        expect(
-            new Decimal128("0").round(0, "roundTowardNegative").toString()
-        ).toStrictEqual("0");
+        expect(new Decimal128("0").round(0, "floor").toString()).toStrictEqual(
+            "0"
+        );
     });
     test("NaN", () => {
         expect(
-            new Decimal128("NaN").round(0, "roundTowardNegative").toString()
+            new Decimal128("NaN").round(0, "floor").toString()
         ).toStrictEqual("NaN");
     });
     test("positive infinity", () => {
         expect(
-            new Decimal128("Infinity")
-                .round(0, "roundTowardNegative")
-                .toString()
+            new Decimal128("Infinity").round(0, "floor").toString()
         ).toStrictEqual("Infinity");
     });
     test("minus infinity", () => {
         expect(
-            new Decimal128("-Infinity")
-                .round(0, "roundTowardNegative")
-                .toString()
+            new Decimal128("-Infinity").round(0, "floor").toString()
         ).toStrictEqual("-Infinity");
     });
 });
@@ -381,15 +367,13 @@ describe("floor", function () {
 describe("examples for TC39 plenary slides", () => {
     let a = new Decimal128("1.456");
     test("round to 2 decimal places, rounding mode is ceiling", () => {
-        expect(a.round(2, "roundTowardPositive").toString()).toStrictEqual(
-            "1.46"
-        );
+        expect(a.round(2, "ceil").toString()).toStrictEqual("1.46");
     });
     test("round to 1 decimal place, rounding mode unspecified", () => {
         expect(a.round(1).toString()).toStrictEqual("1.4");
-        expect(a.round(1, "roundTiesToEven").toString()).toStrictEqual("1.4");
+        expect(a.round(1, "halfEven").toString()).toStrictEqual("1.4");
     });
     test("round to 0 decimal places, rounding mode is floor", () => {
-        expect(a.round(0, "roundTowardNegative").toString()).toStrictEqual("1");
+        expect(a.round(0, "floor").toString()).toStrictEqual("1");
     });
 });

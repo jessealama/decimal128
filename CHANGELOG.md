@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [16.0.0]
+
+The purpose of these changes is to align the API with the official spec.
+
 ## [15.0.0] - 2024-05-07
 
 -   Use the official IEEE 754 rounding names rather than "trunc", "ceil", etc. This is a breaking change if you're using those rounding modes. If not, you shouldn't see any change.

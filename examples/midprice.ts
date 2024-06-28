@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../src/Decimal128.mjs";
 
 function getRandomInt(max: number): number {
     return Math.floor(Math.random() * max);
@@ -26,7 +26,7 @@ function compareNumbers(digits1: string, digits2: string): [string, string] {
     let decimalResult = d1.add(d2).divide(two);
     let numberResult = (Number(digits1) + Number(digits2)) / 2;
     let numberResultString = numberResult.toFixed(4);
-    let decimalResultString = decimalResult.toFixed(4);
+    let decimalResultString = decimalResult.toFixed({ digits: 4 });
 
     return [numberResultString, decimalResultString];
 }

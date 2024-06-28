@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../../src/Decimal128.mjs";
 import { expectDecimal128 } from "./util.js";
 
 const MAX_SIGNIFICANT_DIGITS = 34;
@@ -50,6 +50,21 @@ describe("subtraction", () => {
             expect(
                 new Decimal128("1").subtract(new Decimal128("NaN")).toString()
             ).toStrictEqual("NaN");
+        });
+    });
+    describe("zero", () => {
+        let d = new Decimal128("42.65");
+        let zero = new Decimal128("0");
+        test("difference is zero", () => {
+            expect(
+                d.subtract(d).toString({ preserveTrailingZeroes: true })
+            ).toStrictEqual("0.00");
+        });
+        test("subtracting zero", () => {
+            expect(d.subtract(zero).toString()).toStrictEqual("42.65");
+        });
+        test("subtracting zero", () => {
+            expect(zero.subtract(d).toString()).toStrictEqual("-42.65");
         });
     });
 });
@@ -143,7 +158,7 @@ describe("examples from the General Decimal Arithmetic specification", () => {
         expect(
             new Decimal128("1.3")
                 .subtract(new Decimal128("1.30"))
-                .toString({ normalize: false })
+                .toString({ preserveTrailingZeroes: true })
         ).toStrictEqual("0.00");
     });
     test("example three", () => {

@@ -1,4 +1,4 @@
-import { Decimal128 } from "../src/decimal128.mjs";
+import { Decimal128 } from "../../src/Decimal128.mjs";
 
 const a = "4.1";
 const b = "1.25";
@@ -123,7 +123,7 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
         expect(
             new Decimal128("3.6")
                 .remainder(new Decimal128("1.3"))
-                .toString({ normalize: false })
+                .toString({ preserveTrailingZeroes: true })
         ).toStrictEqual("1.0");
     });
 });
