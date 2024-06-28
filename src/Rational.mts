@@ -1,6 +1,5 @@
 import {
     countFractionalDigits,
-    countSignificantDigits,
     Digit,
     ROUNDING_MODE_CEILING,
     ROUNDING_MODE_FLOOR,
@@ -34,56 +33,6 @@ function* nextDigitForDivision(
     let done = false;
 
     while (!done && countFractionalDigits(result) < n) {
-        if (x === zero) {
-            done = true;
-        } else if (x < y) {
-            if (emittedDecimalPoint) {
-                x = x * ten;
-                if (x < y) {
-                    // look ahead: are we still a power of 10 behind?
-                    result = result + "0";
-                    yield 0;
-                }
-            } else {
-                emittedDecimalPoint = true;
-                result = (result === "" ? "0" : result) + ".";
-                x = x * ten;
-                yield -1;
-                if (x < y) {
-                    // look ahead: are we still a power of 10 behind?
-                    result = result + "0";
-                    yield 0;
-                }
-            }
-        } else {
-            let q = x / y;
-            x = x % y;
-            let qString = q.toString();
-            result = result + qString;
-            for (let i = 0; i < qString.length; i++) {
-                yield parseInt(qString.charAt(i)) as Digit;
-            }
-        }
-    }
-
-    return 0;
-}
-
-function* nextSignificantDigitForDivision(
-    x: bigint,
-    y: bigint,
-    n: number
-): Generator<Digit> {
-    let result = "";
-    let emittedDecimalPoint = false;
-    let done = false;
-
-    while (
-        !done &&
-        countSignificantDigits(
-            result.match(/[.]$/) ? result.replace(".", "") : result
-        ) < n
-    ) {
         if (x === zero) {
             done = true;
         } else if (x < y) {
@@ -160,11 +109,6 @@ export class Rational {
         }`;
     }
 
-    public toExponential(): string {
-        let p = this.isNegative ? "-" : "";
-        return `${p}${this.numerator}e${this.denominator}`;
-    }
-
     public static fromString(s: string): Rational {
         if (s.match(/^-/)) {
             return Rational.fromString(s.substring(1)).negate();
@@ -198,12 +142,6 @@ export class Rational {
     }
 
     public scale10(n: number): Rational {
-        if (!Number.isInteger(n)) {
-            throw new TypeError(
-                "Cannot scale by non-integer number of decimal places"
-            );
-        }
-
         if (this.isNegative) {
             return this.negate().scale10(n).negate();
         }
@@ -227,17 +165,6 @@ export class Rational {
 
     public isInteger(): boolean {
         return this.denominator === 1n;
-    }
-
-    public abs(): Rational {
-        let num = this.numerator;
-        let den = this.denominator;
-
-        if (num < 0n) {
-            return new Rational(-num, den);
-        }
-
-        return new Rational(num, den);
     }
 
     public negate(): Rational {
@@ -281,13 +208,6 @@ export class Rational {
         );
     }
 
-    private static _divide(x: Rational, y: Rational): Rational {
-        return new Rational(
-            x.numerator * y.denominator,
-            x.denominator * y.numerator
-        );
-    }
-
     public static add(...theArgs: Rational[]): Rational {
         return theArgs.reduce(
             (acc, cur) => Rational._add(acc, cur),
@@ -304,10 +224,6 @@ export class Rational {
             (acc, cur) => Rational._multiply(acc, cur),
             new Rational(one, one)
         );
-    }
-
-    public static divide(x: Rational, ...theArgs: Rational[]): Rational {
-        return theArgs.reduce((acc, cur) => Rational._divide(acc, cur), x);
     }
 
     public toFixed(n: number): string {
@@ -328,10 +244,6 @@ export class Rational {
         }
 
         if (this.numerator === zero) {
-            if (n === 0) {
-                return "0";
-            }
-
             return "0" + "." + "0".repeat(n);
         }
 
@@ -373,46 +285,6 @@ export class Rational {
         }
 
         return result + "." + zeroesNeeded;
-    }
-
-    public toPrecision(n: number): string {
-        if (!Number.isInteger(n)) {
-            throw new TypeError(
-                "Cannot enumerate a non-integer number of significant digits"
-            );
-        }
-
-        if (n < 0) {
-            throw new RangeError(
-                "Cannot enumerate a negative number of significant places"
-            );
-        }
-
-        if (this.numerator === zero) {
-            return "0" + "." + "0".repeat(n - 1);
-        }
-
-        let digitGenerator = nextSignificantDigitForDivision(
-            this.numerator,
-            this.denominator,
-            n
-        );
-
-        let digit = digitGenerator.next();
-        let result = "";
-
-        while (!digit.done) {
-            let v = digit.value;
-            if (-1 === v) {
-                result = ("" === result ? "0" : result) + ".";
-            } else {
-                result = result + `${v}`;
-            }
-
-            digit = digitGenerator.next();
-        }
-
-        return (this.isNegative ? "-" : "") + result;
     }
 
     private static roundHalfEven(
@@ -482,10 +354,6 @@ export class Rational {
         quantum: Rational
     ): Rational {
         if (initialPart.isNegative) {
-            if (finalDigit === 0) {
-                return initialPart;
-            }
-
             return Rational.subtract(initialPart, quantum);
         }
 
@@ -493,12 +361,6 @@ export class Rational {
     }
 
     round(numFractionalDigits: number, mode: RoundingMode): Rational {
-        if (!Number.isInteger(numFractionalDigits)) {
-            throw new TypeError(
-                "Cannot round to non-integer number of decimal places"
-            );
-        }
-
         if (numFractionalDigits < 0) {
             throw new RangeError(
                 "Cannot round to negative number of decimal places"
@@ -558,16 +420,12 @@ export class Rational {
             );
         }
 
-        if (mode === ROUNDING_MODE_HALF_EXPAND) {
-            return Rational.roundHalfExpand(
-                truncated,
-                penultimateDigit,
-                finalDigit,
-                quantum
-            );
-        }
-
-        throw new RangeError("Unsupported rounding mode: " + mode);
+        return Rational.roundHalfExpand(
+            truncated,
+            penultimateDigit,
+            finalDigit,
+            quantum
+        );
     }
 
     cmp(x: Rational): -1 | 0 | 1 {
@@ -585,14 +443,6 @@ export class Rational {
         }
 
         return 0;
-    }
-
-    lessThan(x: Rational): boolean {
-        return this.cmp(x) === -1;
-    }
-
-    equals(x: Rational): boolean {
-        return this.cmp(x) === 0;
     }
 
     isZero(): boolean {

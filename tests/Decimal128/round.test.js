@@ -13,6 +13,11 @@ describe("rounding", () => {
         test("round up (positive)", () => {
             expect(new Decimal128("2.6").round().toString()).toStrictEqual("3");
         });
+        test("round up (negative)", () => {
+            expect(new Decimal128("-2.6").round().toString()).toStrictEqual(
+                "-3"
+            );
+        });
         test("negative odd", () => {
             expect(new Decimal128("-1.5").round().toString()).toStrictEqual(
                 "-2"
