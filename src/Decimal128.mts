@@ -500,7 +500,7 @@ export class Decimal128 {
                 : POSITIVE_INFINITY;
         }
 
-        let rounded = this.round(n + 1);
+        let rounded = this.round(n);
         let roundedRendered = rounded.emitDecimal();
 
         if (roundedRendered.match(/[.]/)) {
@@ -1087,7 +1087,19 @@ export class Decimal128 {
         let q = this.quantum() as number;
 
         let roundedV = v.round(numDecimalDigits, mode);
-        return new Decimal128(new Decimal({ cohort: roundedV, quantum: q }));
+
+        if (roundedV.isZero()) {
+            return new Decimal128(
+                new Decimal({
+                    cohort: v.isNegative ? "-0" : "0",
+                    quantum: 0 - numDecimalDigits,
+                })
+            );
+        }
+
+        return new Decimal128(
+            new Decimal({ cohort: roundedV, quantum: 0 - numDecimalDigits })
+        );
     }
 
     negate(): Decimal128 {
