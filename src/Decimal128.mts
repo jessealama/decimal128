@@ -18,13 +18,13 @@ import { Rational } from "./Rational.mjs";
 import { Decimal } from "./Decimal.mjs";
 
 const EXPONENT_MIN = -6176;
+const NORMAL_EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6111;
+const NORMAL_EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
 
 const bigTen = BigInt(10);
 const bigOne = BigInt(1);
-const ratOne = new Rational(1n, 1n);
-const ratTen = new Rational(10n, 1n);
 
 type NaNValue = "NaN";
 type InfiniteValue = "Infinity" | "-Infinity";
@@ -40,10 +40,22 @@ const TEN_MAX_EXPONENT = new Rational(
     bigOne
 );
 
+function isQuantumAcceptableForCohort(q: number, c: Rational): boolean {
+    return c.scale10(0 - q).isInteger();
+}
+
 function pickQuantum(
     d: "0" | "-0" | Rational,
     preferredQuantum: number
 ): number {
+    if (preferredQuantum < EXPONENT_MIN) {
+        return EXPONENT_MIN;
+    }
+
+    if (preferredQuantum > EXPONENT_MAX) {
+        return EXPONENT_MAX;
+    }
+
     return preferredQuantum;
 }
 
@@ -1091,6 +1103,74 @@ export class Decimal128 {
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
         return this.subtract(d.multiply(q));
+    }
+
+    isNormal(): boolean {
+        if (this.isNaN()) {
+            throw new RangeError("Cannot determine whether NaN is normal");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError(
+                "Only finite numbers can be said to be normal or not"
+            );
+        }
+
+        if (this.isZero()) {
+            throw new RangeError(
+                "Only non-zero numbers can be said to be normal or not"
+            );
+        }
+
+        let exp = this.exponent();
+        return exp >= NORMAL_EXPONENT_MIN && exp <= NORMAL_EXPONENT_MAX;
+    }
+
+    isSubnormal(): boolean {
+        if (this.isNaN()) {
+            throw new RangeError("Cannot determine whether NaN is subnormal");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError(
+                "Only finite numbers can be said to be subnormal or not"
+            );
+        }
+
+        let exp = this.exponent();
+        return exp < NORMAL_EXPONENT_MIN;
+    }
+
+    truncatedExponent(): number {
+        if (this.isZero() || this.isSubnormal()) {
+            return NORMAL_EXPONENT_MIN;
+        }
+
+        return this.exponent();
+    }
+
+    scaledSignificand(): bigint {
+        if (this.isNaN()) {
+            throw new RangeError("NaN does not have a scaled significand");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError("Infinity does not have a scaled significand");
+        }
+
+        if (this.isZero()) {
+            return 0n;
+        }
+
+        let v = this.cohort() as Rational;
+        let te = this.truncatedExponent();
+        let ss = v.scale10(MAX_SIGNIFICANT_DIGITS - 1 - te);
+
+        if (!ss.isInteger()) {
+            throw new RangeError("Scaled significand is not an integer");
+        }
+
+        return ss.numerator;
     }
 }
 
