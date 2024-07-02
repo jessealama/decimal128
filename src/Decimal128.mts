@@ -24,7 +24,6 @@ const NORMAL_EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
 
 const bigTen = BigInt(10);
-const bigOne = BigInt(1);
 
 type NaNValue = "NaN";
 type InfiniteValue = "Infinity" | "-Infinity";
@@ -35,14 +34,7 @@ type Decimal128Value = NaNValue | InfiniteValue | FiniteValue;
 const NAN = "NaN";
 const POSITIVE_INFINITY = "Infinity";
 const NEGATIVE_INFINITY = "-Infinity";
-const TEN_MAX_EXPONENT = new Rational(
-    bigTen ** BigInt(MAX_SIGNIFICANT_DIGITS),
-    bigOne
-);
-
-function isQuantumAcceptableForCohort(q: number, c: Rational): boolean {
-    return c.scale10(0 - q).isInteger();
-}
+const TEN_MAX_EXPONENT = bigTen ** BigInt(MAX_SIGNIFICANT_DIGITS);
 
 function pickQuantum(
     d: "0" | "-0" | Rational,
@@ -59,29 +51,35 @@ function pickQuantum(
     return preferredQuantum;
 }
 
-function adjustDecimal128(v: Rational, q: number): Decimal {
-    if (v.isNegative) {
-        return adjustDecimal128(v.negate(), q).negate();
+function adjustDecimal128(d: Decimal): Decimal {
+    let v = d.cohort;
+    let q = d.quantum;
+
+    if (v === "0" || v === "-0") {
+        return new Decimal({ cohort: v, quantum: pickQuantum(v, q) });
     }
 
-    let x = new Decimal({ cohort: v, quantum: q });
+    if (d.isNegative()) {
+        return adjustDecimal128(d.negate()).negate();
+    }
 
-    if (v.scale10(0 - q).cmp(TEN_MAX_EXPONENT) <= 0) {
-        return x;
+    if (d.coefficient() <= TEN_MAX_EXPONENT) {
+        return d;
     }
 
     if (v.isInteger()) {
         let tenth = v.scale10(-1);
         if (tenth.isInteger()) {
-            return adjustDecimal128(tenth, q + 1);
+            return adjustDecimal128(
+                new Decimal({ cohort: tenth, quantum: q + 1 })
+            );
         }
 
         throw new RangeError("Integer too large");
     }
 
-    let c = x.cohort as Rational;
-    let cAsString = c.toFixed(Infinity);
-    let [integerPart, fractionalPart] = cAsString.split(/[.]/);
+    let renderedCohort = v.toFixed(Infinity);
+    let [integerPart, _] = renderedCohort.split(/[.]/);
 
     if (integerPart === "0") {
         integerPart = "";
@@ -91,7 +89,7 @@ function adjustDecimal128(v: Rational, q: number): Decimal {
         throw new RangeError("Integer part too large");
     }
 
-    let scaledSig = c.scale10(MAX_SIGNIFICANT_DIGITS - integerPart.length);
+    let scaledSig = v.scale10(MAX_SIGNIFICANT_DIGITS - integerPart.length);
     let rounded = scaledSig.round(0, "halfEven");
     let rescaled = rounded.scale10(
         0 - MAX_SIGNIFICANT_DIGITS + integerPart.length
@@ -110,27 +108,9 @@ function validateConstructorData(x: Decimal128Value): Decimal128Value {
     let v = val.cohort;
     let q = val.quantum;
 
-    if (q > EXPONENT_MAX) {
-        if (v === "0" || v === "-0") {
-            return new Decimal({ cohort: v, quantum: EXPONENT_MAX });
-        }
+    let d = new Decimal({ cohort: v, quantum: q });
 
-        throw new RangeError(`Quantum too big (${q})`);
-    }
-
-    if (q < EXPONENT_MIN) {
-        if (v === "0" || v === "-0") {
-            return new Decimal({ cohort: v, quantum: EXPONENT_MIN });
-        }
-
-        throw new RangeError(`Quantum too small (${q})`);
-    }
-
-    if (v === "0" || v === "-0") {
-        return x;
-    }
-
-    return adjustDecimal128(v, q);
+    return adjustDecimal128(d);
 }
 
 function handleDecimalNotation(s: string): Decimal128Value {

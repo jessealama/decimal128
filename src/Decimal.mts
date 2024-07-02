@@ -107,4 +107,18 @@ export class Decimal {
         let c = v.scale10(0 - q);
         return c.numerator;
     }
+
+    isNegative(): boolean {
+        let v = this.cohort;
+
+        if (v === "-0") {
+            return true;
+        }
+
+        if (v === "0") {
+            return false;
+        }
+
+        return v.isNegative;
+    }
 }
