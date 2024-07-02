@@ -31,9 +31,9 @@ describe("subtraction", () => {
         );
     });
     test("integer overflow", () => {
-        expect(() =>
-            new Decimal128("-" + bigDigits).subtract(new Decimal128("9"))
-        ).toThrow(RangeError);
+        let a = new Decimal128("-" + bigDigits);
+        let b = new Decimal128("9");
+        expect(a.subtract(b).toString()).toStrictEqual("-Infinity");
     });
     describe("NaN", () => {
         test("NaN minus NaN is NaN", () => {

@@ -38,8 +38,10 @@ describe("constructor", () => {
         });
         test("more significant digits than we can store is not OK for integers", () => {
             expect(
-                () => new Decimal128("123456789123456789123456789123456789")
-            ).toThrow(RangeError);
+                new Decimal128(
+                    "123456789123456789123456789123456789"
+                ).toString()
+            ).toStrictEqual("Infinity");
         });
         test("five as last digit past limit: tie to even unchanged", () => {
             expect(
@@ -87,24 +89,22 @@ describe("constructor", () => {
                 new Decimal128("0.3666666666666666666666666666666667")
             ).toBeInstanceOf(Decimal128);
         });
-        test("significant digits are counted, not total digits", () => {
+        test("too many significant digits (positive)", () => {
             expect(
                 new Decimal128(
-                    "100000000000000000000000000000000000000000000000000"
-                )
-            ).toBeInstanceOf(Decimal128);
+                    "10000000000000000000000000000000000000000000"
+                ).toString()
+            ).toStrictEqual("Infinity");
         });
-        test("too many significant digits", () => {
-            expect(
-                () => new Decimal128("-10000000000000000000000000000000008")
-            ).toThrow(RangeError);
+        test("another representation of the previous test works", () => {
+            expect(new Decimal128("1E+44")).toBeInstanceOf(Decimal128);
         });
-        test("significant digits are counted, not total digits", () => {
+        test("too many significant digits (negative)", () => {
             expect(
                 new Decimal128(
-                    "10000000000000000000000000000000000000000000.0000000"
-                )
-            ).toBeInstanceOf(Decimal128);
+                    "-10000000000000000000000000000000000000000000"
+                ).toString()
+            ).toStrictEqual("-Infinity");
         });
         test("ton of digits gets rounded", () => {
             expect(
@@ -200,30 +200,35 @@ describe("constructor", () => {
         });
         test("too many significant digits", () => {
             expect(
-                () => new Decimal128("-10000000000000000000000000000000008E5")
-            ).toThrow(RangeError);
+                new Decimal128(
+                    "-10000000000000000000000000000000008E5"
+                ).toString()
+            ).toStrictEqual("-Infinity");
         });
         test("exponent too big", () => {
-            expect(() => new Decimal128("123E100000")).toThrow(RangeError);
+            expect(new Decimal128("123E100000").toString()).toStrictEqual(
+                "Infinity"
+            );
         });
         test("exponent too small", () => {
-            expect(() => new Decimal128("123E-100000")).toThrow(RangeError);
+            expect(new Decimal128("123E-100000").toString()).toStrictEqual("0");
         });
         test("max exponent", () => {
-            expect(new Decimal128("123E6111")).toBeInstanceOf(Decimal128);
-            expect(() => new Decimal128("123E6112")).toThrow(RangeError);
+            expect(new Decimal128("123E+6111")).toBeInstanceOf(Decimal128);
+            expect(new Decimal128("123E+6112").toString()).toStrictEqual(
+                "Infinity"
+            );
         });
         test("min exponent", () => {
             expect(new Decimal128("123E-6176")).toBeInstanceOf(Decimal128);
-            expect(() => new Decimal128("123E-6177")).toThrow(RangeError);
+            expect(new Decimal128("123E-6177").toString()).toStrictEqual("0");
         });
         test("integer too big", () => {
             expect(
-                () =>
-                    new Decimal128(
-                        "1234567890123456789012345678901234567890E10"
-                    )
-            ).toThrow(RangeError);
+                new Decimal128(
+                    "1234567890123456789012345678901234567890E10"
+                ).toString()
+            ).toStrictEqual("Infinity");
         });
     });
 });
@@ -366,7 +371,7 @@ describe("bigint", () => {
     });
     test("too big", () => {
         expect(
-            () => new Decimal128(123456789012345678901234567890123456789n)
-        ).toThrow(RangeError);
+            new Decimal128(123456789012345678901234567890123456789n).toString()
+        ).toStrictEqual("Infinity");
     });
 });

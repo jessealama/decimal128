@@ -121,4 +121,14 @@ export class Decimal {
 
         return v.isNegative;
     }
+
+    isInteger(): boolean {
+        let v = this.cohort;
+
+        if (v === "0" || v === "-0") {
+            return true;
+        }
+
+        return v.isInteger();
+    }
 }

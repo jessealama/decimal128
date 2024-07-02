@@ -13,7 +13,12 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { RoundingMode, ROUNDING_MODES } from "./common.mjs";
+import {
+    RoundingMode,
+    ROUNDING_MODES,
+    ROUNDING_MODE_HALF_EVEN,
+    ROUNDING_MODE_TRUNCATE,
+} from "./common.mjs";
 import { Rational } from "./Rational.mjs";
 import { Decimal } from "./Decimal.mjs";
 
@@ -51,7 +56,7 @@ function pickQuantum(
     return preferredQuantum;
 }
 
-function adjustDecimal128(d: Decimal): Decimal {
+function adjustDecimal128(d: Decimal): Decimal128Value {
     let v = d.cohort;
     let q = d.quantum;
 
@@ -60,22 +65,23 @@ function adjustDecimal128(d: Decimal): Decimal {
     }
 
     if (d.isNegative()) {
-        return adjustDecimal128(d.negate()).negate();
-    }
+        let adjusted = adjustDecimal128(d.negate());
 
-    if (d.coefficient() <= TEN_MAX_EXPONENT) {
-        return d;
-    }
-
-    if (v.isInteger()) {
-        let tenth = v.scale10(-1);
-        if (tenth.isInteger()) {
-            return adjustDecimal128(
-                new Decimal({ cohort: tenth, quantum: q + 1 })
-            );
+        if (adjusted === "NaN") {
+            return "NaN";
         }
 
-        throw new RangeError("Integer too large");
+        if (adjusted === "Infinity") {
+            return "-Infinity";
+        }
+
+        return (adjusted as Decimal).negate();
+    }
+
+    let coef = d.coefficient();
+
+    if (coef <= TEN_MAX_EXPONENT && EXPONENT_MIN <= q && q <= EXPONENT_MAX) {
+        return d;
     }
 
     let renderedCohort = v.toFixed(Infinity);
@@ -86,7 +92,7 @@ function adjustDecimal128(d: Decimal): Decimal {
     }
 
     if (integerPart.length > MAX_SIGNIFICANT_DIGITS) {
-        throw new RangeError("Integer part too large");
+        return "Infinity";
     }
 
     let scaledSig = v.scale10(MAX_SIGNIFICANT_DIGITS - integerPart.length);
@@ -94,6 +100,11 @@ function adjustDecimal128(d: Decimal): Decimal {
     let rescaled = rounded.scale10(
         0 - MAX_SIGNIFICANT_DIGITS + integerPart.length
     );
+
+    if (rescaled.isZero()) {
+        return new Decimal({ cohort: "0", quantum: pickQuantum("0", q) });
+    }
+
     let rescaledAsString = rescaled.toFixed(Infinity);
     return new Decimal(rescaledAsString);
 }
@@ -148,14 +159,6 @@ function handleDecimalNotation(s: string): Decimal128Value {
 
     return new Decimal(s);
 }
-
-export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
-export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
-export const ROUNDING_MODE_TRUNCATE: RoundingMode = "trunc";
-export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "halfEven";
-export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "halfExpand";
-
-const ROUNDING_MODE_DEFAULT: RoundingMode = ROUNDING_MODE_HALF_EVEN;
 
 export class Decimal128 {
     private readonly d: Decimal | undefined = undefined;
@@ -982,7 +985,7 @@ export class Decimal128 {
      */
     round(
         numDecimalDigits: number = 0,
-        mode: RoundingMode = ROUNDING_MODE_DEFAULT
+        mode: RoundingMode = ROUNDING_MODE_HALF_EVEN
     ): Decimal128 {
         if (!ROUNDING_MODES.includes(mode)) {
             throw new RangeError(`Invalid rounding mode "${mode}"`);

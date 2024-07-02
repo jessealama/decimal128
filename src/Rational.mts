@@ -244,6 +244,12 @@ export class Rational {
         }
 
         if (this.numerator === zero) {
+            if (Infinity === n) {
+                throw new RangeError(
+                    "Cannot enumerate infinite decimal places of zero"
+                );
+            }
+
             return "0" + "." + "0".repeat(n);
         }
 
