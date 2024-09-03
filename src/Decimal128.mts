@@ -67,10 +67,6 @@ function adjustDecimal128(d: Decimal): Decimal128Value {
     if (d.isNegative()) {
         let adjusted = adjustDecimal128(d.negate());
 
-        if (adjusted === "NaN") {
-            return "NaN";
-        }
-
         if (adjusted === "Infinity") {
             return "-Infinity";
         }
@@ -1148,10 +1144,6 @@ export class Decimal128 {
         let v = this.cohort() as Rational;
         let te = this.truncatedExponent();
         let ss = v.scale10(MAX_SIGNIFICANT_DIGITS - 1 - te);
-
-        if (!ss.isInteger()) {
-            throw new RangeError("Scaled significand is not an integer");
-        }
 
         return ss.numerator;
     }

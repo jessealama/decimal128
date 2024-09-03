@@ -67,6 +67,13 @@ describe("subtraction", () => {
             expect(zero.subtract(d).toString()).toStrictEqual("-42.65");
         });
     });
+    describe("minus zero", () => {
+        let x = new Decimal128("42.54");
+        let minusZero = new Decimal128("-0");
+        test("subtracting minus zero", () => {
+            expect(x.subtract(minusZero).toString()).toStrictEqual("42.54");
+        });
+    });
 });
 
 describe("infinity", () => {
