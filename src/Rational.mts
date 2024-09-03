@@ -163,10 +163,6 @@ export class Rational {
         );
     }
 
-    public isInteger(): boolean {
-        return this.denominator === 1n;
-    }
-
     public negate(): Rational {
         if (this.isNegative) {
             return new Rational(this.numerator, this.denominator);
