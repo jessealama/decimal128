@@ -31,9 +31,9 @@ describe("subtraction", () => {
         );
     });
     test("integer overflow", () => {
-        expect(() =>
-            new Decimal128("-" + bigDigits).subtract(new Decimal128("9"))
-        ).toThrow(RangeError);
+        let a = new Decimal128("-" + bigDigits);
+        let b = new Decimal128("9");
+        expect(a.subtract(b).toString()).toStrictEqual("-Infinity");
     });
     describe("NaN", () => {
         test("NaN minus NaN is NaN", () => {
@@ -65,6 +65,13 @@ describe("subtraction", () => {
         });
         test("subtracting zero", () => {
             expect(zero.subtract(d).toString()).toStrictEqual("-42.65");
+        });
+    });
+    describe("minus zero", () => {
+        let x = new Decimal128("42.54");
+        let minusZero = new Decimal128("-0");
+        test("subtracting minus zero", () => {
+            expect(x.subtract(minusZero).toString()).toStrictEqual("42.54");
         });
     });
 });

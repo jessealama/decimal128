@@ -13,18 +13,22 @@
  * @author Jesse Alama <jesse@igalia.com>
  */
 
-import { RoundingMode, ROUNDING_MODES } from "./common.mjs";
+import {
+    RoundingMode,
+    ROUNDING_MODES,
+    ROUNDING_MODE_HALF_EVEN,
+    ROUNDING_MODE_TRUNCATE,
+} from "./common.mjs";
 import { Rational } from "./Rational.mjs";
 import { Decimal } from "./Decimal.mjs";
 
 const EXPONENT_MIN = -6176;
+const NORMAL_EXPONENT_MIN = -6143;
 const EXPONENT_MAX = 6111;
+const NORMAL_EXPONENT_MAX = 6144;
 const MAX_SIGNIFICANT_DIGITS = 34;
 
 const bigTen = BigInt(10);
-const bigOne = BigInt(1);
-const ratOne = new Rational(1n, 1n);
-const ratTen = new Rational(10n, 1n);
 
 type NaNValue = "NaN";
 type InfiniteValue = "Infinity" | "-Infinity";
@@ -35,55 +39,68 @@ type Decimal128Value = NaNValue | InfiniteValue | FiniteValue;
 const NAN = "NaN";
 const POSITIVE_INFINITY = "Infinity";
 const NEGATIVE_INFINITY = "-Infinity";
-const TEN_MAX_EXPONENT = new Rational(
-    bigTen ** BigInt(MAX_SIGNIFICANT_DIGITS),
-    bigOne
-);
+const TEN_MAX_EXPONENT = bigTen ** BigInt(MAX_SIGNIFICANT_DIGITS);
 
 function pickQuantum(
     d: "0" | "-0" | Rational,
     preferredQuantum: number
 ): number {
+    if (preferredQuantum < EXPONENT_MIN) {
+        return EXPONENT_MIN;
+    }
+
+    if (preferredQuantum > EXPONENT_MAX) {
+        return EXPONENT_MAX;
+    }
+
     return preferredQuantum;
 }
 
-function adjustDecimal128(v: Rational, q: number): Decimal {
-    if (v.isNegative) {
-        return adjustDecimal128(v.negate(), q).negate();
+function adjustDecimal128(d: Decimal): Decimal128Value {
+    let v = d.cohort;
+    let q = d.quantum;
+
+    if (v === "0" || v === "-0") {
+        return new Decimal({ cohort: v, quantum: pickQuantum(v, q) });
     }
 
-    let x = new Decimal({ cohort: v, quantum: q });
+    if (d.isNegative()) {
+        let adjusted = adjustDecimal128(d.negate());
 
-    if (v.scale10(0 - q).cmp(TEN_MAX_EXPONENT) <= 0) {
-        return x;
-    }
-
-    if (v.isInteger()) {
-        let tenth = v.scale10(-1);
-        if (tenth.isInteger()) {
-            return adjustDecimal128(tenth, q + 1);
+        if (adjusted === "Infinity") {
+            return "-Infinity";
         }
 
-        throw new RangeError("Integer too large");
+        return (adjusted as Decimal).negate();
     }
 
-    let c = x.cohort as Rational;
-    let cAsString = c.toFixed(Infinity);
-    let [integerPart, fractionalPart] = cAsString.split(/[.]/);
+    let coef = d.coefficient();
+
+    if (coef <= TEN_MAX_EXPONENT && EXPONENT_MIN <= q && q <= EXPONENT_MAX) {
+        return d;
+    }
+
+    let renderedCohort = v.toFixed(Infinity);
+    let [integerPart, _] = renderedCohort.split(/[.]/);
 
     if (integerPart === "0") {
         integerPart = "";
     }
 
     if (integerPart.length > MAX_SIGNIFICANT_DIGITS) {
-        throw new RangeError("Integer part too large");
+        return "Infinity";
     }
 
-    let scaledSig = c.scale10(MAX_SIGNIFICANT_DIGITS - integerPart.length);
+    let scaledSig = v.scale10(MAX_SIGNIFICANT_DIGITS - integerPart.length);
     let rounded = scaledSig.round(0, "halfEven");
     let rescaled = rounded.scale10(
         0 - MAX_SIGNIFICANT_DIGITS + integerPart.length
     );
+
+    if (rescaled.isZero()) {
+        return new Decimal({ cohort: "0", quantum: pickQuantum("0", q) });
+    }
+
     let rescaledAsString = rescaled.toFixed(Infinity);
     return new Decimal(rescaledAsString);
 }
@@ -98,27 +115,9 @@ function validateConstructorData(x: Decimal128Value): Decimal128Value {
     let v = val.cohort;
     let q = val.quantum;
 
-    if (q > EXPONENT_MAX) {
-        if (v === "0" || v === "-0") {
-            return new Decimal({ cohort: v, quantum: EXPONENT_MAX });
-        }
+    let d = new Decimal({ cohort: v, quantum: q });
 
-        throw new RangeError(`Quantum too big (${q})`);
-    }
-
-    if (q < EXPONENT_MIN) {
-        if (v === "0" || v === "-0") {
-            return new Decimal({ cohort: v, quantum: EXPONENT_MIN });
-        }
-
-        throw new RangeError(`Quantum too small (${q})`);
-    }
-
-    if (v === "0" || v === "-0") {
-        return x;
-    }
-
-    return adjustDecimal128(v, q);
+    return adjustDecimal128(d);
 }
 
 function handleDecimalNotation(s: string): Decimal128Value {
@@ -156,14 +155,6 @@ function handleDecimalNotation(s: string): Decimal128Value {
 
     return new Decimal(s);
 }
-
-export const ROUNDING_MODE_CEILING: RoundingMode = "ceil";
-export const ROUNDING_MODE_FLOOR: RoundingMode = "floor";
-export const ROUNDING_MODE_TRUNCATE: RoundingMode = "trunc";
-export const ROUNDING_MODE_HALF_EVEN: RoundingMode = "halfEven";
-export const ROUNDING_MODE_HALF_EXPAND: RoundingMode = "halfExpand";
-
-const ROUNDING_MODE_DEFAULT: RoundingMode = ROUNDING_MODE_HALF_EVEN;
 
 export class Decimal128 {
     private readonly d: Decimal | undefined = undefined;
@@ -990,7 +981,7 @@ export class Decimal128 {
      */
     round(
         numDecimalDigits: number = 0,
-        mode: RoundingMode = ROUNDING_MODE_DEFAULT
+        mode: RoundingMode = ROUNDING_MODE_HALF_EVEN
     ): Decimal128 {
         if (!ROUNDING_MODES.includes(mode)) {
             throw new RangeError(`Invalid rounding mode "${mode}"`);
@@ -1091,6 +1082,70 @@ export class Decimal128 {
 
         let q = this.divide(d).round(0, ROUNDING_MODE_TRUNCATE);
         return this.subtract(d.multiply(q));
+    }
+
+    isNormal(): boolean {
+        if (this.isNaN()) {
+            throw new RangeError("Cannot determine whether NaN is normal");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError(
+                "Only finite numbers can be said to be normal or not"
+            );
+        }
+
+        if (this.isZero()) {
+            throw new RangeError(
+                "Only non-zero numbers can be said to be normal or not"
+            );
+        }
+
+        let exp = this.exponent();
+        return exp >= NORMAL_EXPONENT_MIN && exp <= NORMAL_EXPONENT_MAX;
+    }
+
+    isSubnormal(): boolean {
+        if (this.isNaN()) {
+            throw new RangeError("Cannot determine whether NaN is subnormal");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError(
+                "Only finite numbers can be said to be subnormal or not"
+            );
+        }
+
+        let exp = this.exponent();
+        return exp < NORMAL_EXPONENT_MIN;
+    }
+
+    truncatedExponent(): number {
+        if (this.isZero() || this.isSubnormal()) {
+            return NORMAL_EXPONENT_MIN;
+        }
+
+        return this.exponent();
+    }
+
+    scaledSignificand(): bigint {
+        if (this.isNaN()) {
+            throw new RangeError("NaN does not have a scaled significand");
+        }
+
+        if (!this.isFinite()) {
+            throw new RangeError("Infinity does not have a scaled significand");
+        }
+
+        if (this.isZero()) {
+            return 0n;
+        }
+
+        let v = this.cohort() as Rational;
+        let te = this.truncatedExponent();
+        let ss = v.scale10(MAX_SIGNIFICANT_DIGITS - 1 - te);
+
+        return ss.numerator;
     }
 }
 

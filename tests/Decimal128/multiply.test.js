@@ -48,18 +48,25 @@ describe("multiplication", () => {
         checkProduct("-987.654", "-321.987", "318011.748498");
     });
     test("integer overflow", () => {
-        expect(() =>
-            new Decimal128("123456789123456789").multiply(
-                new Decimal128("987654321987654321")
-            )
-        ).toThrow(RangeError);
+        expect(
+            new Decimal128("123456789123456789")
+                .multiply(new Decimal128("987654321987654321"))
+                .toString()
+        ).toStrictEqual("Infinity");
+    });
+    test("integer overflow (negative)", () => {
+        expect(
+            new Decimal128("123456789123456789")
+                .multiply(new Decimal128("-987654321987654321"))
+                .toString()
+        ).toStrictEqual("-Infinity");
     });
     test("decimal overflow", () => {
-        expect(() =>
-            new Decimal128("123456789123456789.987654321").multiply(
-                new Decimal128("987654321123456789.123456789")
-            )
-        ).toThrow(RangeError);
+        expect(
+            new Decimal128("123456789123456789.987654321")
+                .multiply(new Decimal128("987654321123456789.123456789"))
+                .toString()
+        ).toStrictEqual("Infinity");
     });
     describe("zero", () => {
         let d = new Decimal128("42.65");

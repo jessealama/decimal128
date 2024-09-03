@@ -78,16 +78,6 @@ export class Decimal {
             throw new RangeError("The quantum cannot be negative zero.");
         }
 
-        if (v instanceof Rational) {
-            let scaledV = v.scale10(0 - q);
-
-            if (!scaledV.isInteger()) {
-                throw new RangeError(
-                    `Scaled value is not an integer (v = ${v}, q = ${q})`
-                );
-            }
-        }
-
         this.cohort = v;
         this.quantum = q;
     }
@@ -106,5 +96,10 @@ export class Decimal {
         let q = this.quantum;
         let c = v.scale10(0 - q);
         return c.numerator;
+    }
+
+    isNegative(): boolean {
+        let v = this.cohort as Rational;
+        return v.isNegative;
     }
 }
