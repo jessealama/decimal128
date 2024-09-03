@@ -50,10 +50,10 @@ describe("addition", () => {
         expect(big.add(one).toString()).toStrictEqual(one.add(big).toString());
     });
     test("two plus big is not OK (too many significant digits)", () => {
-        expect(() => two.add(big)).toThrow(RangeError);
+        expect(two.add(big).toString()).toStrictEqual("Infinity");
     });
     test("big plus two is not OK (too many significant digits)", () => {
-        expect(() => big.add(two)).toThrow(RangeError);
+        expect(big.add(two).toString()).toStrictEqual("Infinity");
     });
     describe("non-normalized", () => {
         test("one point zero plus one point zero", () => {
