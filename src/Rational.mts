@@ -142,6 +142,10 @@ export class Rational {
     }
 
     public scale10(n: number): Rational {
+        if (!Number.isInteger(n)) {
+            throw new TypeError("The exponent must be an integer.");
+        }
+
         if (this.isNegative) {
             return this.negate().scale10(n).negate();
         }
@@ -204,6 +208,13 @@ export class Rational {
         );
     }
 
+    private static _divide(x: Rational, y: Rational): Rational {
+        return new Rational(
+            x.numerator * y.denominator,
+            x.denominator * y.numerator
+        );
+    }
+
     public static add(...theArgs: Rational[]): Rational {
         return theArgs.reduce(
             (acc, cur) => Rational._add(acc, cur),
@@ -220,6 +231,27 @@ export class Rational {
             (acc, cur) => Rational._multiply(acc, cur),
             new Rational(one, one)
         );
+    }
+
+    public static divide(x: Rational, ...theArgs: Rational[]): Rational {
+        return theArgs.reduce(
+            (acc, cur) => Rational._divide(acc, cur),
+            x
+        );
+    }
+
+    public isInteger(): boolean
+    {
+        return this.denominator === one;
+    }
+
+    public abs(): Rational
+    {
+        if (this.isNegative) {
+            return this.negate();
+        }
+
+        return this;
     }
 
     public toFixed(n: number): string {
