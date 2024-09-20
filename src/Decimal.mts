@@ -1,8 +1,5 @@
 import { Rational } from "./Rational.mjs";
 
-const ratOne = new Rational(1n, 1n);
-const ratTen = new Rational(10n, 1n);
-
 function _cohort(s: string): "0" | "-0" | Rational {
     if (s.match(/^-/)) {
         let c = _cohort(s.substring(1));
@@ -76,6 +73,12 @@ export class Decimal {
 
         if (Object.is(q, -0)) {
             throw new RangeError("The quantum cannot be negative zero.");
+        }
+
+        if (v instanceof Rational) {
+            if (!v.scale10(0 - q).isInteger()) {
+                throw new RangeError("The scaled cohort must be an integer.");
+            }
         }
 
         this.cohort = v;

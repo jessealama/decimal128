@@ -40,20 +40,129 @@ const NAN = "NaN";
 const POSITIVE_INFINITY = "Infinity";
 const NEGATIVE_INFINITY = "-Infinity";
 const TEN_MAX_EXPONENT = bigTen ** BigInt(MAX_SIGNIFICANT_DIGITS);
+const ratZero = new Rational(0n, 1n);
+const ratOne = new Rational(1n, 1n);
+const ratTen = new Rational(10n, 1n);
+
+type DecimalCohort = "NaN" | "Infinity" | "-Infinity" | "0" | "-0" | Rational;
+
+function exponentOf(v: Rational): number
+{
+    v = v.abs();
+
+    if (v.isZero()) {
+        throw new RangeError("Zero does not have an exponent");
+    }
+
+    let e = 0;
+
+    if (v.cmp(ratOne) === -1) {
+        let tenE = new Rational(1n, 10n ** BigInt(e));
+        let tenEPlusOne = new Rational(1n, 10n ** BigInt(e + 1));
+
+        while (v.cmp(tenE) === 1) {
+            e++;
+            tenE = Rational.divide(tenE, ratTen);
+            tenEPlusOne = Rational.divide(tenEPlusOne, ratTen);
+        }
+
+        return e;
+    }
+
+    let tenE = new Rational(10n ** BigInt(e), 1n);
+    let tenEPlusOne = new Rational(10n ** BigInt(e + 1), 1n);
+
+    while (v.cmp(tenE) === 1) {
+        e++;
+        tenE = Rational.multiply(tenE, ratTen);
+        tenEPlusOne = Rational.multiply(tenEPlusOne, ratTen);
+    }
+
+    return e;
+}
 
 function pickQuantum(
-    d: "0" | "-0" | Rational,
+    d: DecimalCohort,
+    v: Rational,
     preferredQuantum: number
-): number {
-    if (preferredQuantum < EXPONENT_MIN) {
-        return EXPONENT_MIN;
+): Decimal128Value {
+    if (d === "NaN" || d === "Infinity" || d === "-Infinity") {
+        return d;
     }
 
-    if (preferredQuantum > EXPONENT_MAX) {
-        return EXPONENT_MAX;
+    let inexact = false;
+    let qMax = Infinity;
+    let qMin = -Infinity;
+    let q = 0;
+
+    if (d === "0" || d === "-0") {
+        qMax = 6111;
+        qMin = -6176;
+        if (!v.isZero()) {
+            inexact = true;
+        }
+    } else {
+        let e = exponentOf(v);
+        qMin = e - 33;
+        if (qMin < -6176) {
+            qMin = -6176;
+        }
+        let m = v.scale10(0 - qMin);
+
+        if (!m.isInteger()) {
+            if (v.cmp(ratZero) === -1) {
+                return "-Infinity";
+            }
+
+            return "Infinity";
+        }
+
+        if (m.cmp(ratZero) === -1) {
+            throw new RangeError("Scaled v is negative");
+        }
+
+        if (m.cmp(ratTen.scale10(34)) === 1) {
+            throw new RangeError("Scaled v is too large");
+        }
+
+        let n = 0;
+
+        while (m.scale10(0 - n).isInteger()) {
+            n++;
+        }
+
+        qMax = qMin + n;
+
+        if (qMax > 6111) {
+            qMax = 6111;
+        }
+
+        if (v.cmp(d) !== 0) {
+            inexact = true;
+        }
     }
 
-    return preferredQuantum;
+    if (inexact) {
+        q = qMin;
+    } else {
+        q = preferredQuantum;
+        if (q < qMin) {
+            q = qMin;
+        }
+        if (q > qMax) {
+            q = qMax;
+        }
+    }
+
+    return new Decimal({ cohort: d, quantum: q });
+}
+
+function roundToDecimal128Domain(v: Rational, roundingMode?: RoundingMode): "Infinity" | "-Infinity" | "0" | "-0" | Rational {
+    return new Rational(0n, 1n);
+}
+
+function roundAndPickQuantum(d: Rational, preferredQuantum: number, roundingMode?: RoundingMode): Decimal128Value {
+    return pickQuantum(roundToDecimal128Domain(d, roundingMode), d, preferredQuantum);
 }
 
 function adjustDecimal128(d: Decimal): Decimal128Value {
@@ -61,7 +170,7 @@ function adjustDecimal128(d: Decimal): Decimal128Value {
     let q = d.quantum;
 
     if (v === "0" || v === "-0") {
-        return new Decimal({ cohort: v, quantum: pickQuantum(v, q) });
+        return pickQuantum(v, new Rational(0n, 1n), q);
     }
 
     if (d.isNegative()) {
@@ -98,7 +207,7 @@ function adjustDecimal128(d: Decimal): Decimal128Value {
     );
 
     if (rescaled.isZero()) {
-        return new Decimal({ cohort: "0", quantum: pickQuantum("0", q) });
+        return pickQuantum("0", new Rational(0n, 1n), q);
     }
 
     let rescaledAsString = rescaled.toFixed(Infinity);
@@ -297,11 +406,6 @@ export class Decimal128 {
         return new Decimal128(
             new Decimal({ cohort: v.scale10(n), quantum: q + n })
         );
-    }
-
-    private coefficient(): bigint {
-        let d = this.d as Decimal;
-        return d.coefficient();
     }
 
     private emitExponential(): string {
@@ -719,12 +823,7 @@ export class Decimal128 {
             return new Decimal128("0");
         }
 
-        return new Decimal128(
-            new Decimal({
-                cohort: sum,
-                quantum: pickQuantum(sum, preferredQuantum),
-            })
-        );
+        return new Decimal128(pickQuantum(sum, sum, preferredQuantum));
     }
 
     /**
@@ -779,11 +878,12 @@ export class Decimal128 {
             difference = "0";
         }
 
+        if (difference === "0") {
+            throw new Error("WIP");
+        }
+
         return new Decimal128(
-            new Decimal({
-                cohort: difference,
-                quantum: pickQuantum(difference, preferredQuantum),
-            })
+            pickQuantum(difference, difference, preferredQuantum)
         );
     }
 
@@ -856,14 +956,8 @@ export class Decimal128 {
         }
 
         let product = Rational.multiply(ourCohort, theirCohort);
-        let actualQuantum = pickQuantum(product, preferredQuantum);
 
-        return new Decimal128(
-            new Decimal({
-                cohort: product,
-                quantum: actualQuantum,
-            })
-        );
+        return new Decimal128(pickQuantum(product, product, preferredQuantum));
     }
 
     private clone(): Decimal128 {
@@ -932,46 +1026,15 @@ export class Decimal128 {
             return this.divide(x.negate()).negate();
         }
 
-        let adjust = 0;
-        let dividendCoefficient = this.coefficient();
-        let divisorCoefficient = x.coefficient();
+        let ourV = this.cohort() as Rational;
+        let theirV = x.cohort() as Rational;
+        let ourQ = this.quantum();
+        let theirQ = x.quantum();
 
-        if (dividendCoefficient !== 0n) {
-            while (dividendCoefficient < divisorCoefficient) {
-                dividendCoefficient = dividendCoefficient * 10n;
-                adjust++;
-            }
-        }
+        let quotient = Rational.divide(ourV, theirV);
+        let preferredQuantum = theirQ - ourQ;
 
-        while (dividendCoefficient > divisorCoefficient * 10n) {
-            divisorCoefficient = divisorCoefficient * 10n;
-            adjust--;
-        }
-
-        let resultCoefficient = 0n;
-        let done = false;
-
-        while (!done) {
-            while (divisorCoefficient <= dividendCoefficient) {
-                dividendCoefficient = dividendCoefficient - divisorCoefficient;
-                resultCoefficient++;
-            }
-            if (
-                (dividendCoefficient === 0n && adjust >= 0) ||
-                resultCoefficient.toString().length > MAX_SIGNIFICANT_DIGITS
-            ) {
-                done = true;
-            } else {
-                resultCoefficient = resultCoefficient * 10n;
-                dividendCoefficient = dividendCoefficient * 10n;
-                adjust++;
-            }
-        }
-
-        let ourExponent = this.quantum();
-        let theirExponent = x.quantum();
-        let resultExponent = ourExponent - (theirExponent + adjust);
-        return new Decimal128(`${resultCoefficient}E${resultExponent}`);
+        return new Decimal128(pickQuantum(quotient, quotient, preferredQuantum));
     }
 
     /**
