@@ -33,14 +33,7 @@ describe("normalization", () => {
     test("on by default", () => {
         expect(d.toString()).toStrictEqual("1.2");
     });
-    test("can be disabled", () => {
-        expect(d.toString({ preserveTrailingZeroes: true })).toStrictEqual(
-            "1.20"
-        );
-    });
     test("not normalizing minus zero", () => {
-        expect(
-            new Decimal128("-0.0").toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("-0.0");
+        expect(new Decimal128("-0.0").toString()).toStrictEqual("-0");
     });
 });

@@ -6,13 +6,13 @@ let negZero = new Decimal128("-0");
 const examples = [
     ["123.456", "789.789", "97504.190784"],
     ["2", "3", "6"],
-    ["2", "3.0", "6.0"],
-    ["2.0", "3.0", "6.00"],
-    ["4", "0.5", "2.0"],
+    ["2", "3.0", "6"],
+    ["2.0", "3.0", "6"],
+    ["4", "0.5", "2"],
     ["10", "100", "1000"],
     ["0.1", "0.2", "0.02"],
     ["0.25", "1.5", "0.375"],
-    ["0.12345", "0.67890", "0.0838102050"],
+    ["0.12345", "0.67890", "0.083810205"],
     ["0.123456789", "0.987654321", "0.121932631112635269"],
     ["100000.123", "99999.321", "9999944399.916483"],
     ["123456.123456789", "987654.987654321", "121932056088.565269013112635269"],
@@ -25,13 +25,11 @@ const examples = [
 
 function checkProduct(a, b, c) {
     expect(
-        new Decimal128(a)
-            .multiply(new Decimal128(b))
-            .toString({ preserveTrailingZeroes: true })
+        new Decimal128(a).multiply(new Decimal128(b)).toString()
     ).toStrictEqual(c);
 }
 
-describe("multiplication", () => {
+describe("multiply", () => {
     describe("worked-out examples", () => {
         for (const [a, b, c] of examples)
             test(`${a} * ${b} = ${c}`, () => {
@@ -71,38 +69,26 @@ describe("multiplication", () => {
     describe("zero", () => {
         let d = new Decimal128("42.65");
         test("left-hand positive zero", () => {
-            expect(
-                posZero.multiply(d).toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("0.00");
+            expect(posZero.multiply(d).toString()).toStrictEqual("0");
         });
         test("left-hand negative zero", () => {
-            expect(
-                negZero.multiply(d).toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("-0.00");
+            expect(negZero.multiply(d).toString()).toStrictEqual("-0");
         });
         test("right-hand positive zero", () => {
-            expect(
-                d.multiply(posZero).toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("0.00");
+            expect(d.multiply(posZero).toString()).toStrictEqual("0");
         });
         test("right-hand negative zero", () => {
-            expect(
-                d.multiply(negZero).toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("-0.00");
+            expect(d.multiply(negZero).toString()).toStrictEqual("-0");
         });
-        test("quantum respected even with positive zero", () => {
+        test("positive zero point zero", () => {
             expect(
-                new Decimal128("0.0")
-                    .multiply(posZero)
-                    .toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("0.0");
+                new Decimal128("0.0").multiply(posZero).toString()
+            ).toStrictEqual("0");
         });
-        test("quantum respected even with negative zero", () => {
+        test("negative zero point zero", () => {
             expect(
-                new Decimal128("-0.0")
-                    .multiply(posZero)
-                    .toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("-0.0");
+                new Decimal128("-0.0").multiply(posZero).toString()
+            ).toStrictEqual("-0");
         });
     });
     describe("NaN", () => {
@@ -211,10 +197,8 @@ describe("multiplication", () => {
 describe("examples from the General Decimal Arithmetic specification", () => {
     test("example one", () => {
         expect(
-            new Decimal128("1.20")
-                .multiply(new Decimal128("3"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("3.60");
+            new Decimal128("1.20").multiply(new Decimal128("3")).toString()
+        ).toStrictEqual("3.6"); // would be 3.60 in official IEEE 754
     });
     test("example two", () => {
         expect(
@@ -228,10 +212,8 @@ describe("examples from the General Decimal Arithmetic specification", () => {
     });
     test("example four", () => {
         expect(
-            new Decimal128("0.9")
-                .multiply(new Decimal128("-0"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("-0.0");
+            new Decimal128("0.9").multiply(new Decimal128("-0")).toString()
+        ).toStrictEqual("-0"); // would be -0.0 in official IEEE 754
     });
     test("example five", () => {
         // slightly modified because we have more precision

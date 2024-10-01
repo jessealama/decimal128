@@ -58,10 +58,8 @@ describe("addition", () => {
     describe("non-normalized", () => {
         test("one point zero plus one point zero", () => {
             expect(
-                new Decimal128("1.0")
-                    .add(new Decimal128("1.0"))
-                    .toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("2.0");
+                new Decimal128("1.0").add(new Decimal128("1.0")).toString()
+            ).toStrictEqual("2");
         });
     });
     describe("NaN", () => {
@@ -128,10 +126,8 @@ describe("specify rounding mode", () => {
 describe("examples from the General Decimal Arithmetic specification", () => {
     test("example one", () => {
         expect(
-            new Decimal128("12")
-                .add(new Decimal128("7.00"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("19.00");
+            new Decimal128("12").add(new Decimal128("7.00")).toString()
+        ).toStrictEqual("19");
     });
     test("example two", () => {
         expect(
