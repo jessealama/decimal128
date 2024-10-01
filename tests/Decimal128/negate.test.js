@@ -23,12 +23,10 @@ describe("negate", () => {
             "-42.51"
         );
     });
-    test("preserve trailing zeros", () => {
-        expect(
-            new Decimal128("-42.510")
-                .negate()
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("42.510");
+    test("do not preserve trailing zeros", () => {
+        expect(new Decimal128("-42.510").negate().toString()).toStrictEqual(
+            "42.51"
+        );
     });
     test("-Infinity", () => {
         expect(new Decimal128("-Infinity").negate().toString()).toStrictEqual(

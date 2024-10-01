@@ -121,10 +121,8 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
     });
     test("example six", () => {
         expect(
-            new Decimal128("3.6")
-                .remainder(new Decimal128("1.3"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("1.0");
+            new Decimal128("3.6").remainder(new Decimal128("1.3")).toString()
+        ).toStrictEqual("1"); // would be 1.0 in official IEEE 754
     });
 });
 

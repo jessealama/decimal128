@@ -162,17 +162,13 @@ describe("examples from the General Decimal Arithmetic Specification", () => {
     });
     test("example six", () => {
         expect(
-            new Decimal128("8.00")
-                .divide(new Decimal128("2"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("4.00");
+            new Decimal128("8.00").divide(new Decimal128("2")).toString()
+        ).toStrictEqual("4");
     });
     test("example seven", () => {
         expect(
-            new Decimal128("2.400")
-                .divide(new Decimal128("2.0"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("1.20");
+            new Decimal128("2.400").divide(new Decimal128("2.0")).toString()
+        ).toStrictEqual("1.2"); // would be 1.20 in official IEEE 754
     });
     test("example eight", () => {
         expect(

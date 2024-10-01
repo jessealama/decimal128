@@ -8,7 +8,7 @@ describe("subtraction", () => {
     test("subtract decimal part", () => {
         expectDecimal128(
             new Decimal128("123.456").subtract(new Decimal128("0.456")),
-            "123.000"
+            "123"
         );
     });
     test("minus negative number", () => {
@@ -56,9 +56,7 @@ describe("subtraction", () => {
         let d = new Decimal128("42.65");
         let zero = new Decimal128("0");
         test("difference is zero", () => {
-            expect(
-                d.subtract(d).toString({ preserveTrailingZeroes: true })
-            ).toStrictEqual("0.00");
+            expect(d.subtract(d).toString()).toStrictEqual("0");
         });
         test("subtracting zero", () => {
             expect(d.subtract(zero).toString()).toStrictEqual("42.65");
@@ -163,10 +161,8 @@ describe("examples from the General Decimal Arithmetic specification", () => {
     });
     test("example two", () => {
         expect(
-            new Decimal128("1.3")
-                .subtract(new Decimal128("1.30"))
-                .toString({ preserveTrailingZeroes: true })
-        ).toStrictEqual("0.00");
+            new Decimal128("1.3").subtract(new Decimal128("1.30")).toString()
+        ).toStrictEqual("0"); // would be 0.00 in official IEEE 754
     });
     test("example three", () => {
         expect(
