@@ -370,7 +370,7 @@ export class Decimal128 {
     /**
      * Returns a digit string representing this Decimal128.
      */
-    toString(opts?: { preserveTrailingZeroes?: boolean }): string {
+    toString(): string {
         if (this.isNaN()) {
             return NAN;
         }
@@ -379,18 +379,9 @@ export class Decimal128 {
             return (this.isNegative() ? "-" : "") + POSITIVE_INFINITY;
         }
 
-        let preserveTrailingZeroes = false;
-
-        if (
-            "object" === typeof opts &&
-            "boolean" === typeof opts.preserveTrailingZeroes
-        ) {
-            preserveTrailingZeroes = opts.preserveTrailingZeroes;
-        }
-
         let asDecimalString = this.emitDecimal();
 
-        if (!preserveTrailingZeroes && asDecimalString.match(/[.]/)) {
+        if (asDecimalString.match(/[.]/)) {
             asDecimalString = asDecimalString.replace(/0+$/, "");
             if (asDecimalString.match(/[.]$/)) {
                 asDecimalString = asDecimalString.substring(
