@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [17.0.0]
+## [18.0.0]
 
 ### Removed
 
 -   Support for quantum/precision, including support for trailing zeroes. This is a breaking change if you're using these features.
+
+## [17.0.0]
+
+### Added
 
 ## [16.0.0]
 
