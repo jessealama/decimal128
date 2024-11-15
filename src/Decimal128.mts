@@ -53,6 +53,10 @@ function pickQuantum(
         return EXPONENT_MAX;
     }
 
+    if (d === "0" || d === "-0") {
+        return preferredQuantum;
+    }
+
     return preferredQuantum;
 }
 

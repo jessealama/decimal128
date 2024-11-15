@@ -1,8 +1,5 @@
 import { Rational } from "./Rational.mjs";
 
-const ratOne = new Rational(1n, 1n);
-const ratTen = new Rational(10n, 1n);
-
 function _cohort(s: string): "0" | "-0" | Rational {
     if (s.match(/^-/)) {
         let c = _cohort(s.substring(1));
@@ -46,7 +43,7 @@ function _quantum(s: string): number {
     }
 
     if (s.match(/[eE]/)) {
-        let [dec, exp] = s.split(/[eE]/);
+        let [_, exp] = s.split(/[eE]/);
         return parseInt(exp);
     }
 
