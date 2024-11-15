@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [20.0.0]
+
+### Changed
+
+-   We now emit CommonJS and ESM modules. The ESM and CJS are now found, respecively, in the `dist/esm` and `dist/cjs` directories.
+
+## [19.0.0]
+
+### Changed
+
+-   Updated dependencies. No user-visible changes are expected.
+
 ## [18.0.0]
 
 ### Removed
