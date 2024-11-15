@@ -1,7 +1,6 @@
 {
     "name": "decimal128",
     "version": "19.0.0",
-    "main": "src/Decimal128.js",
     "type": "module",
     "description": "Partial implementation of IEEE 754 Decimal128 decimal floating-point numbers",
     "directories": {
@@ -11,8 +10,12 @@
         "type": "git",
         "url": "https://github.com/jessealama/decimal128.js.git"
     },
+    "main": "dist/cjs/Decimal128.cjs",
+    "module": "dist/esm/Decimal128.mjs",
+    "typings": "dist/esm/Decimal128.d.ts",
     "sideEffects": false,
     "scripts": {
+        "build": "rollup -c",
         "test": "jest",
         "format": "prettier . --write",
         "lint": "prettier . --check",
@@ -34,11 +37,13 @@
     "author": "Jesse Alama <jesse@igalia.com>",
     "license": "ISC",
     "devDependencies": {
+        "@rollup/plugin-typescript": "^12.1.1",
         "@types/jest": "^29.5.1",
         "c8": "^10.1.2",
         "jest": "^29.5.0",
         "jest-light-runner": "^0.6.0",
         "prettier": "^3.0.0",
+        "rollup": "^4.26.0",
         "ts-jest": "^29.1.0",
         "tsx": "^4.10.2",
         "typescript": "^5.1.3"
