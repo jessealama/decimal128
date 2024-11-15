@@ -8,7 +8,7 @@ import typescript from "@rollup/plugin-typescript";
 const createConfig = (format) => {
     const extension = format === "esm" ? "mjs" : "cjs";
     return {
-        input: "src/decimal128.mts",
+        input: "src/Decimal128.mts",
         output: [
             {
                 sourcemap: true,
