@@ -13,6 +13,15 @@
     "main": "dist/cjs/Decimal128.cjs",
     "module": "dist/esm/Decimal128.mjs",
     "typings": "dist/esm/Decimal128.d.ts",
+    "exports": {
+        "node": {
+            "module-sync": "./dist/esm/Decimal128.mjs",
+            "types": "./dist/esm/Decimal128.d.ts",
+            "default": "./dist/cjs/Decimal128.cjs"
+        },
+        "types": "./dist/esm/Decimal128.d.ts",
+        "default": "./dist/esm/Decimal128.mjs"
+    },
     "sideEffects": false,
     "scripts": {
         "build": "rollup -c",
@@ -53,8 +62,5 @@
             "type": "BSD-2-Clause",
             "url": "https://opensource.org/license/bsd-2-clause/"
         }
-    ],
-    "exports": {
-        ".": "./src/Decimal128.mjs"
-    }
+    ]
 }
