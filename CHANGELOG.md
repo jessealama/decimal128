@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [21.2.0]
+
+### Changed
+
+-   Use [JSBI](https://www.npmjs.com/package/jsbi) in favor of native JS bigints (thanks @amoshydra)
+-   Fix exports in package.json (thanks @amoshydra)
+
 ## [21.1.0]
 
 ### Removed
