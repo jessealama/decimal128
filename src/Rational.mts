@@ -11,7 +11,6 @@ import {
     RoundingMode,
 } from "./common.mjs";
 
-
 const zero = JSBI.BigInt(0);
 const one = JSBI.BigInt(1);
 const minusOne = JSBI.BigInt(-1);
@@ -26,11 +25,7 @@ function gcd(a: JSBI, b: JSBI): JSBI {
     return a;
 }
 
-function* nextDigitForDivision(
-    x: JSBI,
-    y: JSBI,
-    n: number
-): Generator<Digit> {
+function* nextDigitForDivision(x: JSBI, y: JSBI, n: number): Generator<Digit> {
     let result = "";
     let emittedDecimalPoint = false;
     let done = false;
@@ -137,7 +132,10 @@ export class Rational {
             }
 
             let numerator = JSBI.BigInt(whole + decimal);
-            let denominator = JSBI.exponentiate(ten, JSBI.BigInt(decimal.length));
+            let denominator = JSBI.exponentiate(
+                ten,
+                JSBI.BigInt(decimal.length)
+            );
             return new Rational(numerator, denominator);
         }
 
@@ -156,12 +154,18 @@ export class Rational {
         if (n < 0) {
             return new Rational(
                 this.numerator,
-                JSBI.multiply(this.denominator, JSBI.exponentiate(ten, JSBI.BigInt(0 - n)))
+                JSBI.multiply(
+                    this.denominator,
+                    JSBI.exponentiate(ten, JSBI.BigInt(0 - n))
+                )
             );
         }
 
         return new Rational(
-            JSBI.multiply(this.numerator, JSBI.exponentiate(ten, JSBI.BigInt(n))),
+            JSBI.multiply(
+                this.numerator,
+                JSBI.exponentiate(ten, JSBI.BigInt(n))
+            ),
             this.denominator
         );
     }
@@ -171,7 +175,10 @@ export class Rational {
             return new Rational(this.numerator, this.denominator);
         }
 
-        return new Rational(JSBI.multiply(this.numerator, minusOne), this.denominator);
+        return new Rational(
+            JSBI.multiply(this.numerator, minusOne),
+            this.denominator
+        );
     }
 
     private static _add(x: Rational, y: Rational): Rational {
@@ -184,7 +191,10 @@ export class Rational {
         }
 
         return new Rational(
-            JSBI.add(JSBI.multiply(x.numerator, y.denominator), JSBI.multiply(y.numerator, x.denominator)),
+            JSBI.add(
+                JSBI.multiply(x.numerator, y.denominator),
+                JSBI.multiply(y.numerator, x.denominator)
+            ),
             JSBI.multiply(x.denominator, y.denominator)
         );
     }
@@ -195,7 +205,10 @@ export class Rational {
         }
 
         return new Rational(
-            JSBI.subtract(JSBI.multiply(x.numerator, y.denominator), JSBI.multiply(y.numerator, x.denominator)),
+            JSBI.subtract(
+                JSBI.multiply(x.numerator, y.denominator),
+                JSBI.multiply(y.numerator, x.denominator)
+            ),
             JSBI.multiply(x.denominator, y.denominator)
         );
     }
@@ -434,10 +447,14 @@ export class Rational {
     }
 
     cmp(x: Rational): -1 | 0 | 1 {
-        let a =
-            JSBI.multiply(JSBI.multiply((this.isNegative ? minusOne : one), this.numerator), x.denominator);
-        let b =
-            JSBI.multiply(JSBI.multiply((x.isNegative ? minusOne : one), x.numerator), this.denominator);
+        let a = JSBI.multiply(
+            JSBI.multiply(this.isNegative ? minusOne : one, this.numerator),
+            x.denominator
+        );
+        let b = JSBI.multiply(
+            JSBI.multiply(x.isNegative ? minusOne : one, x.numerator),
+            this.denominator
+        );
 
         if (JSBI.LT(a, b)) {
             return -1;

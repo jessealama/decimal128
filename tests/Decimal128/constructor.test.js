@@ -383,7 +383,9 @@ describe("JSBI", () => {
     });
     test("too big", () => {
         expect(
-            new Decimal128(JSBI.BigInt("123456789012345678901234567890123456789")).toString()
+            new Decimal128(
+                JSBI.BigInt("123456789012345678901234567890123456789")
+            ).toString()
         ).toStrictEqual("Infinity");
     });
 });

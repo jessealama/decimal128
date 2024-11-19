@@ -41,6 +41,8 @@ describe("simple examples", () => {
         expect(new Decimal128("42").toBigInt()).toStrictEqual(JSBI.BigInt(42));
     });
     test("-123", () => {
-        expect(new Decimal128("-123").toBigInt()).toStrictEqual(JSBI.BigInt(-123));
+        expect(new Decimal128("-123").toBigInt()).toStrictEqual(
+            JSBI.BigInt(-123)
+        );
     });
 });

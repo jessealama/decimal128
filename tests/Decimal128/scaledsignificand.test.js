@@ -20,25 +20,38 @@ describe("infinities", () => {
 
 describe("finite values", () => {
     test("0", () => {
-        expect(new Decimal128("0").scaledSignificand()).toStrictEqual(JSBI.BigInt(0));
+        expect(new Decimal128("0").scaledSignificand()).toStrictEqual(
+            JSBI.BigInt(0)
+        );
     });
     test("-0", () => {
-        expect(new Decimal128("-0").scaledSignificand()).toStrictEqual(JSBI.BigInt(0));
+        expect(new Decimal128("-0").scaledSignificand()).toStrictEqual(
+            JSBI.BigInt(0)
+        );
     });
     let solution = JSBI.BigInt("420000000000000000000000000");
     test("simple number, greater than 10, with exponent apparently at limit", () => {
         expect(new Decimal128("42E-6143").scaledSignificand()).toStrictEqual(
-            JSBI.multiply(JSBI.BigInt(42), JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(32)))
+            JSBI.multiply(
+                JSBI.BigInt(42),
+                JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(32))
+            )
         );
     });
     test("simple number between 1 and 10 with exponent apparently at limit", () => {
         expect(new Decimal128("4.2E-6143").scaledSignificand()).toStrictEqual(
-            JSBI.multiply(JSBI.BigInt(42), JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(32)))
+            JSBI.multiply(
+                JSBI.BigInt(42),
+                JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(32))
+            )
         );
     });
     test("simple number with exponent beyond limit", () => {
         expect(new Decimal128("4.2E-6150").scaledSignificand()).toStrictEqual(
-            JSBI.multiply(JSBI.BigInt(42), JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(25)))
+            JSBI.multiply(
+                JSBI.BigInt(42),
+                JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(25))
+            )
         );
     });
 });

@@ -41,7 +41,10 @@ type Decimal128Value = NaNValue | InfiniteValue | FiniteValue;
 const NAN = "NaN";
 const POSITIVE_INFINITY = "Infinity";
 const NEGATIVE_INFINITY = "-Infinity";
-const TEN_MAX_EXPONENT = JSBI.exponentiate(bigTen, JSBI.BigInt(MAX_SIGNIFICANT_DIGITS));
+const TEN_MAX_EXPONENT = JSBI.exponentiate(
+    bigTen,
+    JSBI.BigInt(MAX_SIGNIFICANT_DIGITS)
+);
 
 function pickQuantum(
     d: "0" | "-0" | Rational,
@@ -82,7 +85,11 @@ function adjustDecimal128(d: Decimal): Decimal128Value {
 
     let coef = d.coefficient();
 
-    if (JSBI.LE(coef, TEN_MAX_EXPONENT) && JSBI.LE(EXPONENT_MIN, q) && JSBI.LE(q, EXPONENT_MAX)) {
+    if (
+        JSBI.LE(coef, TEN_MAX_EXPONENT) &&
+        JSBI.LE(EXPONENT_MIN, q) &&
+        JSBI.LE(q, EXPONENT_MAX)
+    ) {
         return d;
     }
 
@@ -176,7 +183,7 @@ export class Decimal128 {
                 // the condition above may get transpiled into "typeof n === 'bigint'",
                 // causing the condition above to always be false.
                 // This is fine as we will be hanlding bigint below.
-                data = handleDecimalNotation(n.toString())
+                data = handleDecimalNotation(n.toString());
             } else {
                 data = n;
             }
@@ -943,13 +950,24 @@ export class Decimal128 {
 
         if (JSBI.notEqual(dividendCoefficient, JSBI.BigInt(0))) {
             while (JSBI.LT(dividendCoefficient, divisorCoefficient)) {
-                dividendCoefficient = JSBI.multiply(dividendCoefficient, JSBI.BigInt(10));
+                dividendCoefficient = JSBI.multiply(
+                    dividendCoefficient,
+                    JSBI.BigInt(10)
+                );
                 adjust++;
             }
         }
 
-        while (JSBI.GT(dividendCoefficient, JSBI.multiply(divisorCoefficient, JSBI.BigInt(10)))) {
-            divisorCoefficient = JSBI.multiply(divisorCoefficient, JSBI.BigInt(10));
+        while (
+            JSBI.GT(
+                dividendCoefficient,
+                JSBI.multiply(divisorCoefficient, JSBI.BigInt(10))
+            )
+        ) {
+            divisorCoefficient = JSBI.multiply(
+                divisorCoefficient,
+                JSBI.BigInt(10)
+            );
             adjust--;
         }
 
@@ -958,17 +976,27 @@ export class Decimal128 {
 
         while (!done) {
             while (JSBI.LE(divisorCoefficient, dividendCoefficient)) {
-                dividendCoefficient = JSBI.subtract(dividendCoefficient, divisorCoefficient);
+                dividendCoefficient = JSBI.subtract(
+                    dividendCoefficient,
+                    divisorCoefficient
+                );
                 resultCoefficient = JSBI.add(resultCoefficient, JSBI.BigInt(1));
             }
             if (
-                (JSBI.equal(dividendCoefficient, JSBI.BigInt(0)) && adjust >= 0) ||
+                (JSBI.equal(dividendCoefficient, JSBI.BigInt(0)) &&
+                    adjust >= 0) ||
                 resultCoefficient.toString().length > MAX_SIGNIFICANT_DIGITS
             ) {
                 done = true;
             } else {
-                resultCoefficient = JSBI.multiply(resultCoefficient, JSBI.BigInt(10));
-                dividendCoefficient = JSBI.multiply(dividendCoefficient, JSBI.BigInt(10));
+                resultCoefficient = JSBI.multiply(
+                    resultCoefficient,
+                    JSBI.BigInt(10)
+                );
+                dividendCoefficient = JSBI.multiply(
+                    dividendCoefficient,
+                    JSBI.BigInt(10)
+                );
                 adjust++;
             }
         }
