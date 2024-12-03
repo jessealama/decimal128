@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [22.0.0]
+
+### Changed
+
+-   We now emit a single JS file in the `dist` directory rather than several JS module files. No need for ESM or CJS subdirectories anymore.
+
 ## [21.2.0]
 
 ### Changed

@@ -21,8 +21,6 @@ jobs:
               run: npm install
             - name: lint
               run: npm run lint
-            - name: build
-              run: npm run build
             - name: compile typescript
               run: npx tsc
             - name: test
@@ -33,3 +31,5 @@ jobs:
               run: npx c8 check-coverage --lines 99 --functions 99 --branches 99 --statements 99
             - name: examples do not crash
               run: for f in examples/*.ts; do npx tsx "$f" || (echo "'$f' crashed"; exit 1); done
+            - name: build
+              run: npm run build
