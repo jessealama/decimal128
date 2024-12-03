@@ -24,7 +24,7 @@
     },
     "sideEffects": false,
     "scripts": {
-        "build": "esbuild dist/esm/Decimal128.mjs --bundle --outfile=./Decimal128-full.js",
+        "build": "mkdir -p dist && esbuild ./src/Decimal128.mjs --bundle --outfile=./dist/Decimal128.js",
         "test": "jest",
         "format": "prettier . --write",
         "lint": "prettier . --check",
