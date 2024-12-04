@@ -6,3 +6,4 @@ examples/
 .github/
 .prettierignore
 jest.config.cjs
+tsconfig.json
