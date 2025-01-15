@@ -1,5 +1,7 @@
 # decimal128.js—A userland approximation to IEEE 754 Decimal128 in JavaScript
 
+*This repository has been archived. Development has moved to [proposal-decimal-polyfill](https://github.com/jessealama/proposal-decimal-polyfill).*
+
 This library is a prototype for the [decimal proposal](https://github.com/tc39/proposal-decimal). There should be no observable difference between what this library does and what the proposal is [supposed to do](http://tc39.es/proposal-decimal/). If you find a mismatch, please file [an issue](https://github.com/jessealama/decimal128/issues) in this repo.
 
 ## Operations
