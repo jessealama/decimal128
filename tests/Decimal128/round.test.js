@@ -1,366 +1,357 @@
 import { Decimal128 } from "../../src/Decimal128.mjs";
-import { expectDecimal128 } from "./util.js";
-import { ROUNDING_MODES } from "../../src/common.mjs";
+
+const NoArguments = Symbol("NoArgument");
+const NoExplicitMode = Symbol("NoExplicitMode");
+
+/**
+ * zero repeats n times
+ */
+const _0r = (n) => "0".repeat(n);
+const _9r = (n) => "9".repeat(n);
 
 describe("rounding", () => {
     describe("no arguments (round to integer)", () => {
-        test("positive odd", () => {
-            expect(new Decimal128("1.5").round().toString()).toStrictEqual("2");
-        });
-        test("positive even", () => {
-            expect(new Decimal128("2.5").round().toString()).toStrictEqual("2");
-        });
-        test("round up (positive)", () => {
-            expect(new Decimal128("2.6").round().toString()).toStrictEqual("3");
-        });
-        test("round up (negative)", () => {
-            expect(new Decimal128("-2.6").round().toString()).toStrictEqual(
-                "-3"
-            );
-        });
-        test("negative odd", () => {
-            expect(new Decimal128("-1.5").round().toString()).toStrictEqual(
-                "-2"
-            );
-        });
-        test("negative even", () => {
-            expect(new Decimal128("-2.5").round().toString()).toStrictEqual(
-                "-2"
-            );
-        });
-        test("round down (positive)", () => {
-            expect(new Decimal128("1.1").round().toString()).toStrictEqual("1");
+        test.each`
+            name                        | input       | output
+            ${"positive odd"}           |  ${" 1.5"}  |  ${" 2"}
+            ${"positive even"}          |  ${" 2.5"}  |  ${" 2"}
+            ${"round up (positive)"}    |  ${" 2.6"}  |  ${" 3"}
+            ${"round up (negative)"}    |  ${"-2.6"}  |  ${"-3"}
+            ${"negative odd"}           |  ${"-1.5"}  |  ${"-2"}
+            ${"negative even"}          |  ${"-2.5"}  |  ${"-2"}
+            ${"round down (positive)"}  |  ${" 1.1"}  |  ${" 1"}
+        `("$name", ({ input, output }) => {
+            const d = new Decimal128(input.trim());
+            const r = output.trim();
+            expect(d.round().toString()).toStrictEqual(r);
         });
     });
-    describe("round after a certain number of decimal digits", () => {
-        test("multiple digits", () => {
-            expect(new Decimal128("42.345").round(2).toString()).toStrictEqual(
-                "42.34"
-            );
+    describe("error RangeError", () => {
+        const a = new Decimal128("1.5")
+
+        test("negative number of digits requested is truncation", () => {
+            expect(() => a.round(-42)).toThrow(RangeError);
         });
-        test("more digits than are available", () => {
-            expect(new Decimal128("1.5").round(1).toString()).toStrictEqual(
-                "1.5"
-            );
+        test("too many digits requested", () => {
+            expect(() => a.round(2 ** 53)).toThrow(RangeError);
         });
-        test("negative odd", () => {
-            expect(new Decimal128("-1.5").round(1).toString()).toStrictEqual(
-                "-1.5"
-            );
+        test("unsupported rounding mode", () => {
+            expect(() => a.round(0, "foobar")).toThrow(RangeError);
         });
-        test("round down (positive)", () => {
-            expect(new Decimal128("1.1").round(6).toString()).toStrictEqual(
-                "1.1"
-            );
-        });
-    });
-    test("integer", () => {
-        expect(new Decimal128("42").round().toString()).toStrictEqual("42");
-    });
-    test("negative integer", () => {
-        expect(new Decimal128("-42").round().toString()).toStrictEqual("-42");
-    });
-    test("negative number of digits requested is truncation", () => {
-        expect(() => new Decimal128("1.5").round(-42)).toThrow(RangeError);
-    });
-    test("too many digits requested", () => {
-        expect(() => new Decimal128("1.5").round(2 ** 53)).toThrow(RangeError);
-    });
-    test("round to zero", () => {
-        expect(
-            new Decimal128("0.5").round(0, "trunc").toString()
-        ).toStrictEqual("0");
-    });
-    test("round to minus zero", () => {
-        expect(
-            new Decimal128("-0.5").round(0, "trunc").toString()
-        ).toStrictEqual("-0");
     });
 });
 
-describe("unsupported rounding mode", () => {
-    test("throws", () => {
-        expect(() => new Decimal128("1.5").round(0, "foobar")).toThrow(
-            RangeError
-        );
+describe("rounding non-decimal", () => {
+    // rounding should have no effect on integer value for all mode
+    describe.each([
+        NoArguments,
+        "trunc",
+        "ceil",
+        "floor",
+        "halfExpand",
+        "halfEven",
+    ])("mode: %s", (mode) => {
+        test.each`
+            decimals  | input           | output
+            // decimal to integer (zero)
+            ${0}      |  ${"0.0"}       |  ${"0"}
+            ${0}      | ${"-0.0"}       | ${"-0"}
+            ${1}      |  ${"0.0"}       |  ${"0"}
+            ${1}      | ${"-0.0"}       | ${"-0"}
+            ${10}     |  ${"0.0"}       |  ${"0"}
+            ${10}     | ${"-0.0"}       | ${"-0"}
+            // integer
+            ${0}      |  ${"0"}         |  ${"0"}
+            ${0}      |  ${"1"}         |  ${"1"}
+            ${0}      | ${"-0"}         | ${"-0"}
+            ${0}      | ${"-1"}         | ${"-1"}
+            ${1}      |  ${"0"}         |  ${"0"}
+            ${1}      |  ${"1"}         |  ${"1"}
+            ${1}      | ${"-0"}         | ${"-0"}
+            ${1}      | ${"-1"}         | ${"-1"}
+            ${10}     |  ${"0"}         |  ${"0"}
+            ${10}     |  ${"1"}         |  ${"1"}
+            ${10}     | ${"-0"}         | ${"-0"}
+            ${10}     | ${"-1"}         | ${"-1"}
+            // positive exponent
+            ${0}      |  ${"1.11e+10"}  |  ${"11100000000"}
+            ${0}      | ${"-1.11e+10"}  | ${"-11100000000"}
+            ${1}      |  ${"1.11e+10"}  |  ${"11100000000"}
+            ${1}      | ${"-1.11e+10"}  | ${"-11100000000"}
+            ${10}     |  ${"1.11e+10"}  |  ${"11100000000"}
+            ${10}     | ${"-1.11e+10"}  | ${"-11100000000"}
+            // integer represented in decimal form
+            ${0}      |  ${"0.011e+10"} |  ${"110000000"}
+            ${0}      | ${"-0.011e+10"} | ${"-110000000"}
+            ${1}      |  ${"0.011e+10"} |  ${"110000000"}
+            ${1}      | ${"-0.011e+10"} | ${"-110000000"}
+            ${10}     |  ${"0.011e+10"} |  ${"110000000"}
+            ${10}     | ${"-0.011e+10"} | ${"-110000000"}
+            // NaN
+            ${0}      | ${"NaN"}        | ${"NaN"}
+            ${1}      | ${"NaN"}        | ${"NaN"}
+            ${10}     | ${"NaN"}        | ${"NaN"}
+            // Infinity
+            ${0}      | ${"-Infinity"}  | ${"-Infinity"}
+            ${0}      |  ${"Infinity"}  |  ${"Infinity"}
+            ${1}      | ${"-Infinity"}  | ${"-Infinity"}
+            ${1}      |  ${"Infinity"}  |  ${"Infinity"}
+            ${10}     | ${"-Infinity"}  | ${"-Infinity"}
+            ${10}     |  ${"Infinity"}  |  ${"Infinity"}
+        `("$input round($decimals) to be $output", ({ decimals, input, output }) => {
+            const a = new Decimal128(input.trim());
+            const o = output.trim();
+
+            let result;
+            if (mode === NoArguments) {
+                result = a.round();
+            } else {
+                result = a.round(decimals, mode);
+            }
+
+            expect(result.toString()).toStrictEqual(o);
+        });
     });
 });
 
-describe("Intl.NumberFormat examples", () => {
-    let minusOnePointFive = new Decimal128("-1.5");
-    let zeroPointFour = new Decimal128("0.4");
-    let zeroPointFive = new Decimal128("0.5");
-    let zeroPointSix = new Decimal128("0.6");
-    let onePointFive = new Decimal128("1.5");
-    describe("ceil", () => {
-        test("-1.5", () => {
-            expect(minusOnePointFive.round(0, "ceil").toString()).toStrictEqual(
-                "-1"
-            );
+describe("rounding decimals", () => {
+    const createTestGroupsFor = (mode) => ({ decimals, input, ...modes }) => {
+        const modeSelector = mode === NoExplicitMode ? "$NoMode" : mode;
+        const output = modes[modeSelector];
+
+        it(`decimals: "${decimals}" > output: "${output}"`, () => {
+            const a = new Decimal128(input.trim());
+            const o = output.trim();
+
+            let result;
+            if (mode === NoExplicitMode) {
+                result = a.round(decimals);
+            } else {
+                result = a.round(decimals, mode);
+            }
+
+            expect(result.toString()).toStrictEqual(o);
         });
-        test("0.4", () => {
-            expect(zeroPointFour.round(0, "ceil").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("0.5", () => {
-            expect(zeroPointFive.round(0, "ceil").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "ceil").toString()).toStrictEqual("1");
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "ceil").toString()).toStrictEqual("2");
-        });
-    });
-    describe("floor", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "floor").toString()
-            ).toStrictEqual("-2");
-        });
-        test("0.4", () => {
-            expect(zeroPointFour.round(0, "floor").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("0.5", () => {
-            expect(zeroPointFive.round(0, "floor").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "floor").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "floor").toString()).toStrictEqual(
-                "1"
-            );
-        });
-    });
-    describe("trunc", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "trunc").toString()
-            ).toStrictEqual("-1");
-        });
-        test("0.4", () => {
-            expect(zeroPointFour.round(0, "trunc").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("0.5", () => {
-            expect(zeroPointFive.round(0, "trunc").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "trunc").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "trunc").toString()).toStrictEqual(
-                "1"
-            );
-        });
-    });
-    describe("halfExpand", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "halfExpand").toString()
-            ).toStrictEqual("-2");
-        });
-        test("0.4", () => {
-            expect(
-                zeroPointFour.round(0, "halfExpand").toString()
-            ).toStrictEqual("0");
-        });
-        test("0.5", () => {
-            expect(
-                zeroPointFive.round(0, "halfExpand").toString()
-            ).toStrictEqual("1");
-        });
-        test("0.6", () => {
-            expect(
-                zeroPointSix.round(0, "halfExpand").toString()
-            ).toStrictEqual("1");
-        });
-        test("1.5", () => {
-            expect(
-                onePointFive.round(0, "halfExpand").toString()
-            ).toStrictEqual("2");
-        });
-    });
-    describe("halfEven", () => {
-        test("-1.5", () => {
-            expect(
-                minusOnePointFive.round(0, "halfEven").toString()
-            ).toStrictEqual("-2");
-        });
-        test("0.4", () => {
-            expect(zeroPointFour.round(0, "halfEven").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("0.5", () => {
-            expect(zeroPointFive.round(0, "halfEven").toString()).toStrictEqual(
-                "0"
-            );
-        });
-        test("0.6", () => {
-            expect(zeroPointSix.round(0, "halfEven").toString()).toStrictEqual(
-                "1"
-            );
-        });
-        test("1.5", () => {
-            expect(onePointFive.round(0, "halfEven").toString()).toStrictEqual(
-                "2"
-            );
-        });
-    });
-    test("NaN", () => {
-        expect(new Decimal128("NaN").round().toString()).toStrictEqual("NaN");
-    });
-    describe("infinity", () => {
-        let posInf = new Decimal128("Infinity");
-        let negInf = new Decimal128("-Infinity");
-        test(`positive infinity (no argument)`, () => {
-            expect(posInf.round().toString()).toStrictEqual("Infinity");
-        });
-        for (let roundingMode of ROUNDING_MODES) {
-            test(`positive infinity (${roundingMode})`, () => {
-                expect(posInf.round(0, roundingMode).toString()).toStrictEqual(
-                    "Infinity"
-                );
+    };
+
+
+    describe("unnecessary rounding should return the same output as the input", () => {
+        // rounding should have no effect on decimal value with precision lower than the request rounding decimals
+        describe.each([
+            NoExplicitMode,
+            "trunc",
+            "ceil",
+            "floor",
+            "halfExpand",
+            "halfEven",
+        ])("mode: %s", (mode) => {
+            test.each`
+                decimals  | input
+                ${1}      |  ${"0.5"}
+                ${1}      |  ${"1.5"}
+                ${1}      | ${"-0.5"}
+                ${1}      | ${"-1.5"}
+                ${2}      |  ${"0.15"}
+                ${2}      |  ${"1.15"}
+                ${2}      | ${"-0.15"}
+                ${2}      | ${"-1.15"}
+                ${34}     |  ${`0.1${_0r(31)}15`}
+                ${34}     | ${`-0.1${_0r(31)}15`}
+                ${34}     |  ${`0.1${_0r(31)}1`}
+                ${34}     | ${`-0.1${_0r(31)}1`}
+                ${33}     |  ${`1.${_0r(31)}15`}
+                ${33}     | ${`-1.${_0r(31)}15`}
+                ${33}     |  ${`1.${_0r(31)}1`}
+                ${33}     | ${`-1.${_0r(31)}1`}
+                ${34}     |  ${`0.1${_0r(15)}15`}
+                ${34}     | ${`-0.1${_0r(15)}15`}
+                ${34}     |  ${`0.1${_0r(15)}1`}
+                ${34}     | ${`-0.1${_0r(15)}1`}
+                ${33}     |  ${`1.${_0r(15)}15`}
+                ${33}     | ${`-1.${_0r(15)}15`}
+                ${33}     |  ${`1.${_0r(15)}1`}
+                ${33}     | ${`-1.${_0r(15)}1`}
+            `("$input round($decimals) to be $input", ({ decimals, input }) => {
+                const a = new Decimal128(input.trim());
+                const o = input.trim();
+
+                let result;
+                if (mode === NoExplicitMode) {
+                    result = a.round(decimals);
+                } else {
+                    result = a.round(decimals, mode);
+                }
+
+                expect(result.toString()).toStrictEqual(o);
             });
-        }
-        test(`negative infinity (no argument)`, () => {
-            expect(negInf.round().toString()).toStrictEqual("-Infinity");
-        });
-        for (let roundingMode of ROUNDING_MODES) {
-            test(`negative infinity (${roundingMode})`, () => {
-                expect(negInf.round(0, roundingMode).toString()).toStrictEqual(
-                    "-Infinity"
-                );
-            });
-        }
-        test("rounding positive a certain number of digits makes no difference", () => {
-            expect(posInf.round(2).toString()).toStrictEqual("Infinity");
-        });
-        test("rounding negative infinity a certain number of digits makes no difference", () => {
-            expect(negInf.round(2).toString()).toStrictEqual("-Infinity");
-        });
-    });
-});
-
-describe("ceiling", function () {
-    test("ceiling works (positive)", () => {
-        expect(
-            new Decimal128("123.456").round(0, "ceil").toString()
-        ).toStrictEqual("124");
-    });
-    test("ceiling works (negative)", () => {
-        expect(
-            new Decimal128("-123.456").round(0, "ceil").toString()
-        ).toStrictEqual("-123");
-    });
-    test("ceiling of an integer is unchanged", () => {
-        expect(new Decimal128("123").round(0, "ceil").toString()).toStrictEqual(
-            "123"
-        );
-    });
-    test("NaN", () => {
-        expect(new Decimal128("NaN").round(0, "ceil").toString()).toStrictEqual(
-            "NaN"
-        );
-    });
-    test("positive infinity", () => {
-        expect(
-            new Decimal128("Infinity").round(0, "ceil").toString()
-        ).toStrictEqual("Infinity");
-    });
-    test("minus infinity", () => {
-        expect(
-            new Decimal128("-Infinity").round(0, "ceil").toString()
-        ).toStrictEqual("-Infinity");
-    });
-});
-
-describe("truncate", () => {
-    describe("truncate", () => {
-        test("123.45678", () => {
-            expectDecimal128(
-                new Decimal128("123.45678").round(0, "trunc"),
-                "123"
-            );
-        });
-        test("-42.99", () => {
-            expectDecimal128(new Decimal128("-42.99").round(0, "trunc"), "-42");
-        });
-        test("0.00765", () => {
-            expectDecimal128(new Decimal128("0.00765").round(0, "trunc"), "0");
-        });
-        test("NaN", () => {
-            expect(
-                new Decimal128("NaN").round(0, "trunc").toString()
-            ).toStrictEqual("NaN");
         });
     });
 
-    describe("infinity", () => {
-        test("positive infinity", () => {
-            expect(
-                new Decimal128("Infinity").round(0, "trunc").toString()
-            ).toStrictEqual("Infinity");
-        });
-        test("negative infinity", () => {
-            expect(
-                new Decimal128("-Infinity").round(0, "trunc").toString()
-            ).toStrictEqual("-Infinity");
-        });
-    });
-});
 
-describe("floor", function () {
-    test("floor works (positive)", () => {
-        expect(
-            new Decimal128("123.456").round(0, "floor").toString()
-        ).toStrictEqual("123");
-    });
-    test("floor works (negative)", () => {
-        expect(
-            new Decimal128("-123.456").round(0, "floor").toString()
-        ).toStrictEqual("-124");
-    });
-    test("floor of integer is unchanged", () => {
-        expect(
-            new Decimal128("123").round(0, "floor").toString()
-        ).toStrictEqual("123");
-    });
-    test("floor of zero is unchanged", () => {
-        expect(new Decimal128("0").round(0, "floor").toString()).toStrictEqual(
-            "0"
-        );
-    });
-    test("NaN", () => {
-        expect(
-            new Decimal128("NaN").round(0, "floor").toString()
-        ).toStrictEqual("NaN");
-    });
-    test("positive infinity", () => {
-        expect(
-            new Decimal128("Infinity").round(0, "floor").toString()
-        ).toStrictEqual("Infinity");
-    });
-    test("minus infinity", () => {
-        expect(
-            new Decimal128("-Infinity").round(0, "floor").toString()
-        ).toStrictEqual("-Infinity");
+    describe.each([
+        NoExplicitMode,
+        "trunc",
+        "ceil",
+        "floor",
+        "halfExpand",
+        "halfEven",
+    ])(`"%s"`, (mode) => {
+        describe("rounding decimal to integer", () => {
+            describe.each`
+                decimals  | input       | $NoMode     | trunc      | ceil       | floor      | halfExpand | halfEven
+                ${0}      |  ${"0.4"}   |  ${"0"}     |  ${"0"}    |  ${"1"}    |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${0}      |  ${"0.5"}   |  ${"0"}     |  ${"0"}    |  ${"1"}    |  ${"0"}    |  ${"1"}    |  ${"0"}
+                ${0}      |  ${"0.6"}   |  ${"1"}     |  ${"0"}    |  ${"1"}    |  ${"0"}    |  ${"1"}    |  ${"1"}
+                --        |             |             |            |            |            |            |
+                ${0}      |  ${"1.4"}   |  ${"1"}     |  ${"1"}    |  ${"2"}    |  ${"1"}    |  ${"1"}    |  ${"1"}
+                ${0}      |  ${"1.5"}   |  ${"2"}     |  ${"1"}    |  ${"2"}    |  ${"1"}    |  ${"2"}    |  ${"2"}
+                ${0}      |  ${"1.6"}   |  ${"2"}     |  ${"1"}    |  ${"2"}    |  ${"1"}    |  ${"2"}    |  ${"2"}
+                --        |             |             |            |            |            |            |
+                ${0}      |  ${"2.4"}   |  ${"2"}     |  ${"2"}    |  ${"3"}    |  ${"2"}    |  ${"2"}    |  ${"2"}
+                ${0}      |  ${"2.5"}   |  ${"2"}     |  ${"2"}    |  ${"3"}    |  ${"2"}    |  ${"3"}    |  ${"2"}
+                ${0}      |  ${"2.6"}   |  ${"3"}     |  ${"2"}    |  ${"3"}    |  ${"2"}    |  ${"3"}    |  ${"3"}
+                --        |             |             |            |            |            |            |
+                ${0}      | ${"-0.4"}   | ${"-0"}     | ${"-0"}    | ${"-0"}    | ${"-1"}    | ${"-0"}    | ${"-0"}
+                ${0}      | ${"-0.5"}   | ${"-0"}     | ${"-0"}    | ${"-0"}    | ${"-1"}    | ${"-1"}    | ${"-0"}
+                ${0}      | ${"-0.6"}   | ${"-1"}     | ${"-0"}    | ${"-0"}    | ${"-1"}    | ${"-1"}    | ${"-1"}
+                --        |             |             |            |            |            |            |
+                ${0}      | ${"-1.4"}   | ${"-1"}     | ${"-1"}    | ${"-1"}    | ${"-2"}    | ${"-1"}    | ${"-1"}
+                ${0}      | ${"-1.5"}   | ${"-2"}     | ${"-1"}    | ${"-1"}    | ${"-2"}    | ${"-2"}    | ${"-2"}
+                ${0}      | ${"-1.6"}   | ${"-2"}     | ${"-1"}    | ${"-1"}    | ${"-2"}    | ${"-2"}    | ${"-2"}
+                --        |             |             |            |            |            |            |
+                ${0}      | ${"-2.4"}   | ${"-2"}     | ${"-2"}    | ${"-2"}    | ${"-3"}    | ${"-2"}    | ${"-2"}
+                ${0}      | ${"-2.5"}   | ${"-2"}     | ${"-2"}    | ${"-2"}    | ${"-3"}    | ${"-3"}    | ${"-2"}
+                ${0}      | ${"-2.6"}   | ${"-3"}     | ${"-2"}    | ${"-2"}    | ${"-3"}    | ${"-3"}    | ${"-3"}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
+
+        describe("rounding decimal to integer with possible carry forward", () => {
+            describe.each`
+                decimals  | input       | $NoMode     | trunc      | ceil       | floor      | halfExpand | halfEven
+                ${0}      |  ${"9.4"}   |   ${"9"}    |   ${"9"}   |  ${"10"}   |   ${"9"}   |   ${"9"}   |   ${"9"}
+                ${0}      |  ${"9.5"}   |  ${"10"}    |   ${"9"}   |  ${"10"}   |   ${"9"}   |  ${"10"}   |  ${"10"}
+                ${0}      |  ${"9.6"}   |  ${"10"}    |   ${"9"}   |  ${"10"}   |   ${"9"}   |  ${"10"}   |  ${"10"}
+                --        |             |             |            |            |            |            |
+                ${0}      | ${"-9.4"}   |  ${"-9"}    |  ${"-9"}   |  ${"-9"}   | ${"-10"}   |  ${"-9"}   |  ${"-9"}
+                ${0}      | ${"-9.5"}   | ${"-10"}    |  ${"-9"}   |  ${"-9"}   | ${"-10"}   | ${"-10"}   | ${"-10"}
+                ${0}      | ${"-9.6"}   | ${"-10"}    |  ${"-9"}   |  ${"-9"}   | ${"-10"}   | ${"-10"}   | ${"-10"}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
+
+        describe("rounding decimal (1)", () => {
+            describe.each`
+                decimals  | input       | $NoMode     | trunc      | ceil       | floor      | halfExpand | halfEven
+                ${1}      |  ${"0.04"}  |   ${"0"}    |  ${"0"}    |  ${"0.1"}  |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${1}      |  ${"0.05"}  |   ${"0"}    |  ${"0"}    |  ${"0.1"}  |  ${"0"}    |  ${"0.1"}  |  ${"0"}
+                ${1}      |  ${"0.06"}  |   ${"0.1"}  |  ${"0"}    |  ${"0.1"}  |  ${"0"}    |  ${"0.1"}  |  ${"0.1"}
+                --        |             |             |            |            |            |            |
+                ${1}      |  ${"0.14"}  |   ${"0.1"}  |  ${"0.1"}  |  ${"0.2"}  |  ${"0.1"}  |  ${"0.1"}  |  ${"0.1"}
+                ${1}      |  ${"0.15"}  |   ${"0.2"}  |  ${"0.1"}  |  ${"0.2"}  |  ${"0.1"}  |  ${"0.2"}  |  ${"0.2"}
+                ${1}      |  ${"0.16"}  |   ${"0.2"}  |  ${"0.1"}  |  ${"0.2"}  |  ${"0.1"}  |  ${"0.2"}  |  ${"0.2"}
+                --        |             |             |            |            |            |            |
+                ${1}      | ${"-0.04"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}    | ${"-0.1"}  | ${"-0"}    | ${"-0"}
+                ${1}      | ${"-0.05"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}    | ${"-0.1"}  | ${"-0.1"}  | ${"-0"}
+                ${1}      | ${"-0.06"}  |  ${"-0.1"}  | ${"-0"}    | ${"-0"}    | ${"-0.1"}  | ${"-0.1"}  | ${"-0.1"}
+                --        |             |             |            |            |            |            |
+                ${1}      | ${"-0.14"}  |  ${"-0.1"}  | ${"-0.1"}  | ${"-0.1"}  | ${"-0.2"}  | ${"-0.1"}  | ${"-0.1"}
+                ${1}      | ${"-0.15"}  |  ${"-0.2"}  | ${"-0.1"}  | ${"-0.1"}  | ${"-0.2"}  | ${"-0.2"}  | ${"-0.2"}
+                ${1}      | ${"-0.16"}  |  ${"-0.2"}  | ${"-0.1"}  | ${"-0.1"}  | ${"-0.2"}  | ${"-0.2"}  | ${"-0.2"}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
+
+        describe("rounding decimal (1) with possible carry forward", () => {
+            describe.each`
+                decimals  | input       | $NoMode     | trunc      | ceil        | floor       | halfExpand  | halfEven
+                ${1}      |  ${"0.94"}  |   ${"0.9"}  |  ${"0.9"}  |   ${"1"}    |   ${"0.9"}  |   ${"0.9"}  |   ${"0.9"}
+                ${1}      |  ${"0.95"}  |   ${"1"}    |  ${"0.9"}  |   ${"1"}    |   ${"0.9"}  |   ${"1"}    |   ${"1"}
+                ${1}      |  ${"0.96"}  |   ${"1"}    |  ${"0.9"}  |   ${"1"}    |   ${"0.9"}  |   ${"1"}    |   ${"1"}
+                --        |             |             |            |             |             |             |
+                ${1}      |  ${"9.94"}  |   ${"9.9"}  |  ${"9.9"}  |  ${"10"}    |   ${"9.9"}  |   ${"9.9"}  |   ${"9.9"}
+                ${1}      |  ${"9.95"}  |  ${"10"}    |  ${"9.9"}  |  ${"10"}    |   ${"9.9"}  |  ${"10"}    |  ${"10"}
+                ${1}      |  ${"9.96"}  |  ${"10"}    |  ${"9.9"}  |  ${"10"}    |   ${"9.9"}  |  ${"10"}    |  ${"10"}
+                --        |             |             |            |             |             |             |
+                ${1}      | ${"-0.94"}  |  ${"-0.9"}  | ${"-0.9"}  |  ${"-0.9"}  |  ${"-1"}    |  ${"-0.9"}  |  ${"-0.9"}
+                ${1}      | ${"-0.95"}  |  ${"-1"}    | ${"-0.9"}  |  ${"-0.9"}  |  ${"-1"}    |  ${"-1"}    |  ${"-1"}
+                ${1}      | ${"-0.96"}  |  ${"-1"}    | ${"-0.9"}  |  ${"-0.9"}  |  ${"-1"}    |  ${"-1"}    |  ${"-1"}
+                --        |             |             |            |             |             |             |
+                ${1}      | ${"-9.94"}  |  ${"-9.9"}  | ${"-9.9"}  |  ${"-9.9"}  | ${"-10"}    |  ${"-9.9"}  |  ${"-9.9"}
+                ${1}      | ${"-9.95"}  | ${"-10"}    | ${"-9.9"}  |  ${"-9.9"}  | ${"-10"}    | ${"-10"}    | ${"-10"}
+                ${1}      | ${"-9.96"}  | ${"-10"}    | ${"-9.9"}  |  ${"-9.9"}  | ${"-10"}    | ${"-10"}    | ${"-10"}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
+
+        describe("rounding decimal (1) on number with much higher (> 2) precision", () => {
+            describe.each`
+                decimals  | input         | $NoMode     | trunc      | ceil        | floor      | halfExpand | halfEven
+                ${1}      |  ${"0.0004"}  |   ${"0"}    |  ${"0"}    |  ${"0.1"}   |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${1}      |  ${"0.0005"}  |   ${"0"}    |  ${"0"}    |  ${"0.1"}   |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${1}      |  ${"0.0006"}  |   ${"0"}    |  ${"0"}    |  ${"0.1"}   |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${2}      |  ${"0.0004"}  |   ${"0"}    |  ${"0"}    |  ${"0.01"}  |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${2}      |  ${"0.0005"}  |   ${"0"}    |  ${"0"}    |  ${"0.01"}  |  ${"0"}    |  ${"0"}    |  ${"0"}
+                ${2}      |  ${"0.0006"}  |   ${"0"}    |  ${"0"}    |  ${"0.01"}  |  ${"0"}    |  ${"0"}    |  ${"0"}
+                --        |               |             |            |             |            |            |
+                ${1}      |  ${"5.0004"}  |   ${"5"}    |  ${"5"}    |  ${"5.1"}   |  ${"5"}    |  ${"5"}    |  ${"5"}
+                ${1}      |  ${"5.0005"}  |   ${"5"}    |  ${"5"}    |  ${"5.1"}   |  ${"5"}    |  ${"5"}    |  ${"5"}
+                ${1}      |  ${"5.0006"}  |   ${"5"}    |  ${"5"}    |  ${"5.1"}   |  ${"5"}    |  ${"5"}    |  ${"5"}
+                ${2}      |  ${"5.0004"}  |   ${"5"}    |  ${"5"}    |  ${"5.01"}  |  ${"5"}    |  ${"5"}    |  ${"5"}
+                ${2}      |  ${"5.0005"}  |   ${"5"}    |  ${"5"}    |  ${"5.01"}  |  ${"5"}    |  ${"5"}    |  ${"5"}
+                ${2}      |  ${"5.0006"}  |   ${"5"}    |  ${"5"}    |  ${"5.01"}  |  ${"5"}    |  ${"5"}    |  ${"5"}
+                --        |               |             |            |             |            |            |
+                ${1}      | ${"-0.0004"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}     | ${"-0.1"}  | ${"-0"}    | ${"-0"}
+                ${1}      | ${"-0.0005"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}     | ${"-0.1"}  | ${"-0"}    | ${"-0"}
+                ${1}      | ${"-0.0006"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}     | ${"-0.1"}  | ${"-0"}    | ${"-0"}
+                ${2}      | ${"-0.0004"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}     | ${"-0.01"} | ${"-0"}    | ${"-0"}
+                ${2}      | ${"-0.0005"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}     | ${"-0.01"} | ${"-0"}    | ${"-0"}
+                ${2}      | ${"-0.0006"}  |  ${"-0"}    | ${"-0"}    | ${"-0"}     | ${"-0.01"} | ${"-0"}    | ${"-0"}
+                --        |               |             |            |             |            |            |
+                ${1}      | ${"-5.0004"}  |  ${"-5"}    | ${"-5"}    | ${"-5"}     | ${"-5.1"}  | ${"-5"}    | ${"-5"}
+                ${1}      | ${"-5.0005"}  |  ${"-5"}    | ${"-5"}    | ${"-5"}     | ${"-5.1"}  | ${"-5"}    | ${"-5"}
+                ${1}      | ${"-5.0006"}  |  ${"-5"}    | ${"-5"}    | ${"-5"}     | ${"-5.1"}  | ${"-5"}    | ${"-5"}
+                ${2}      | ${"-5.0004"}  |  ${"-5"}    | ${"-5"}    | ${"-5"}     | ${"-5.01"} | ${"-5"}    | ${"-5"}
+                ${2}      | ${"-5.0005"}  |  ${"-5"}    | ${"-5"}    | ${"-5"}     | ${"-5.01"} | ${"-5"}    | ${"-5"}
+                ${2}      | ${"-5.0006"}  |  ${"-5"}    | ${"-5"}    | ${"-5"}     | ${"-5.01"} | ${"-5"}    | ${"-5"}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
+
+        describe("rounding decimal (33)", () => {
+            describe.each`
+                decimals  | input                  | $NoMode                | trunc                 | ceil                  | floor                 | halfExpand            | halfEven
+                ${33}     |  ${`0.1${_0r(31)}04`}  |   ${`0.1`}             |  ${`0.1`}             |  ${`0.1${_0r(31)}1`}  |  ${`0.1`}             |  ${`0.1`}             |  ${`0.1`}
+                ${33}     |  ${`0.1${_0r(31)}05`}  |   ${`0.1`}             |  ${`0.1`}             |  ${`0.1${_0r(31)}1`}  |  ${`0.1`}             |  ${`0.1${_0r(31)}1`}  |  ${`0.1`}
+                ${33}     |  ${`0.1${_0r(31)}06`}  |   ${`0.1${_0r(31)}1`}  |  ${`0.1`}             |  ${`0.1${_0r(31)}1`}  |  ${`0.1`}             |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}1`}
+                ${33}     |  ${`0.1${_0r(31)}14`}  |   ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}1`}
+                ${33}     |  ${`0.1${_0r(31)}15`}  |   ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}2`}
+                ${33}     |  ${`0.1${_0r(31)}16`}  |   ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}1`}  |  ${`0.1${_0r(31)}2`}  |  ${`0.1${_0r(31)}2`}
+                --        |                        |                        |                       |                       |                       |                       |
+                ${33}     | ${`-0.1${_0r(31)}04`}  |  ${`-0.1`}             | ${`-0.1`}             | ${`-0.1`}             | ${`-0.1${_0r(31)}1`}  | ${`-0.1`}             | ${`-0.1`}
+                ${33}     | ${`-0.1${_0r(31)}05`}  |  ${`-0.1`}             | ${`-0.1`}             | ${`-0.1`}             | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1`}
+                ${33}     | ${`-0.1${_0r(31)}06`}  |  ${`-0.1${_0r(31)}1`}  | ${`-0.1`}             | ${`-0.1`}             | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}
+                ${33}     | ${`-0.1${_0r(31)}14`}  |  ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}
+                ${33}     | ${`-0.1${_0r(31)}15`}  |  ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}2`}
+                ${33}     | ${`-0.1${_0r(31)}16`}  |  ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}1`}  | ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}2`}  | ${`-0.1${_0r(31)}2`}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
+
+        describe("rounding decimal (32-33) with possible carry forward", () => {
+            describe.each`
+                decimals  | input                  | $NoMode                | trunc                 | ceil                  | floor                 | halfExpand            | halfEven
+                ${33}     |  ${`0.${_9r(32)}94`}   |   ${`0.${_9r(32)}9`}   |  ${`0.${_9r(32)}9`}   |   ${`1`}              |   ${`0.${_9r(32)}9`}  |   ${`0.${_9r(32)}9`}  |   ${`0.${_9r(32)}9`}
+                ${33}     |  ${`0.${_9r(32)}95`}   |   ${`1`}               |  ${`0.${_9r(32)}9`}   |   ${`1`}              |   ${`0.${_9r(32)}9`}  |   ${`1`}              |   ${`1`}
+                ${33}     |  ${`0.${_9r(32)}96`}   |   ${`1`}               |  ${`0.${_9r(32)}9`}   |   ${`1`}              |   ${`0.${_9r(32)}9`}  |   ${`1`}              |   ${`1`}
+                --        |                        |                        |                       |                       |                       |                       |
+                ${32}     |  ${`9.${_9r(31)}94`}   |   ${`9.${_9r(31)}9`}   |  ${`9.${_9r(31)}9`}   |  ${`10`}              |   ${`9.${_9r(31)}9`}  |   ${`9.${_9r(31)}9`}  |   ${`9.${_9r(31)}9`}
+                ${32}     |  ${`9.${_9r(31)}95`}   |  ${`10`}               |  ${`9.${_9r(31)}9`}   |  ${`10`}              |   ${`9.${_9r(31)}9`}  |  ${`10`}              |  ${`10`}
+                ${32}     |  ${`9.${_9r(31)}96`}   |  ${`10`}               |  ${`9.${_9r(31)}9`}   |  ${`10`}              |   ${`9.${_9r(31)}9`}  |  ${`10`}              |  ${`10`}
+                --        |                        |                        |                       |                       |                       |                       |
+                ${33}     | ${`-0.${_9r(32)}94`}   |  ${`-0.${_9r(32)}9`}   | ${`-0.${_9r(32)}9`}   |  ${`-0.${_9r(32)}9`}  |  ${`-1`}              |  ${`-0.${_9r(32)}9`}  |  ${`-0.${_9r(32)}9`}
+                ${33}     | ${`-0.${_9r(32)}95`}   |  ${`-1`}               | ${`-0.${_9r(32)}9`}   |  ${`-0.${_9r(32)}9`}  |  ${`-1`}              |  ${`-1`}              |  ${`-1`}
+                ${33}     | ${`-0.${_9r(32)}96`}   |  ${`-1`}               | ${`-0.${_9r(32)}9`}   |  ${`-0.${_9r(32)}9`}  |  ${`-1`}              |  ${`-1`}              |  ${`-1`}
+                --        |                        |                        |                       |                       |                       |                       |
+                ${32}     | ${`-9.${_9r(31)}94`}   |  ${`-9.${_9r(31)}9`}   | ${`-9.${_9r(31)}9`}   |  ${`-9.${_9r(31)}9`}  | ${`-10`}              |  ${`-9.${_9r(31)}9`}  |  ${`-9.${_9r(31)}9`}
+                ${32}     | ${`-9.${_9r(31)}95`}   | ${`-10`}               | ${`-9.${_9r(31)}9`}   |  ${`-9.${_9r(31)}9`}  | ${`-10`}              | ${`-10`}              | ${`-10`}
+                ${32}     | ${`-9.${_9r(31)}96`}   | ${`-10`}               | ${`-9.${_9r(31)}9`}   |  ${`-9.${_9r(31)}9`}  | ${`-10`}              | ${`-10`}              | ${`-10`}
+            `(`input: "$input"`, createTestGroupsFor(mode));
+        });
     });
 });
 
